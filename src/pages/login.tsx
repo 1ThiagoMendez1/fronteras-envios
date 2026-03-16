@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Footer } from "@/components/ui/footer-section"
 
 export type LoginRequestRole = "admin" | "operator" | "driver" | "client"
 
@@ -70,8 +71,9 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen w-full flex bg-slate-50">
-      {/* Left branding */}
+    <div className="min-h-screen w-full flex flex-col bg-slate-50">
+      <div className="flex-1 flex flex-col lg:flex-row w-full">
+        {/* Left branding */}
       <div className="hidden lg:flex flex-1 flex-col justify-between bg-primary p-12 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-accent opacity-90 z-0" />
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-white/10 rounded-full blur-3xl z-0" />
@@ -230,6 +232,10 @@ export default function Login() {
           </div>
         </div>
       </div>
+      </div>
+      
+      {/* Footer Section integrating at the bottom spanning full width */}
+      <Footer />
     </div>
   )
 }
