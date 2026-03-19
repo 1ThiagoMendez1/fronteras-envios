@@ -1,9 +1,10 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRoute, Link } from "wouter"
+import SignatureCanvas from "react-signature-canvas"
 // Mock hooks to replace useGetShipment and useListDrivers
 const useGetShipment = (_id: number, _options?: any) => ({
   data: {
-    id: _id, guideNumber: `GUIA-${1000 + _id}`, senderName: "Empresa A", senderCity: "Bogota", senderPhone: "3001234567", senderAddress: "Calle Principal 123", recipientName: "Cliente B", recipientCity: "Medellin", recipientPhone: "3109876543", recipientAddress: "Carrera 45 #67-89", weight: 5.5, declaredValue: 50000, shippingCost: 15000, driverPayment: 10000, status: "in_transit", createdAt: new Date().toISOString(), driverId: null, driverName: "Carlos Sanchez", observations: "Ninguna", history: [{ id: 1, status: "created", createdAt: new Date().toISOString(), note: "Creado" }]
+    id: _id, guideNumber: `GUIA-${1000 + _id}`, senderName: "Empresa A", senderCity: "Bogota", senderPhone: "3001234567", senderAddress: "Calle Principal 123", recipientName: "Cliente B", recipientCity: "Medellin", recipientPhone: "3109876543", recipientAddress: "Carrera 45 #67-89", weight: 5.5, declaredValue: 50000, shippingCost: 15000, driverPayment: 10000, branchOrigin: "Bogotá", status: "in_transit", createdAt: new Date().toISOString(), driverId: null, driverName: "Carlos Sanchez", driverSignature: null, observations: "Ninguna", history: [{ id: 1, status: "created", createdAt: new Date().toISOString(), note: "Creado" }]
   },
   isLoading: false
 })
@@ -26,6 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { QRCodeSVG } from "qrcode.react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { ChatBox } from "@/components/chat-box"
 
 export default function ShipmentDetail() {
   const [, params] = useRoute("/shipments/:id")
@@ -41,6 +43,12 @@ export default function ShipmentDetail() {
   const [statusNote, setStatusNote] = useState("")
   const [driverId, setDriverId] = useState<string>("")
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false)
+  const [isSignatureDialogOpen, setIsSignatureDialogOpen] = useState(false)
+  const sigCanvas = useRef<SignatureCanvas>(null)
+
+  // Local state for signature and driver display (mocking actual persistence hook)
+  const [localSignature, setLocalSignature] = useState<string | null>(null)
+  const [localDriverId, setLocalDriverId] = useState<string | null>(null)
 
   if (isLoading || !shipment) {
     return (
@@ -63,20 +71,122 @@ export default function ShipmentDetail() {
     setStatusNote("")
   }
 
-  const handleAssignDriver = async () => {
+  const handleAssignClick = () => {
     if (!driverId) return
+    setIsSignatureDialogOpen(true)
+  }
+
+  const handleConfirmAssignment = async () => {
+    if (!driverId) return
+    let sig = null;
+    try {
+      if (sigCanvas.current && !sigCanvas.current.isEmpty()) {
+        sig = sigCanvas.current.getTrimmedCanvas().toDataURL("image/png")
+      }
+    } catch(e) { console.error(e) }
+    
     await assignMutation.mutateAsync({
       id,
-      data: { driverId: parseInt(driverId) }
+      data: { driverId: parseInt(driverId), driverSignature: sig }
     })
+    
+    if (sig) setLocalSignature(sig)
+    setLocalDriverId(driverId)
+    setIsSignatureDialogOpen(false)
+  }
+
+  const clearSignature = () => {
+    sigCanvas.current?.clear()
   }
 
   const handlePrint = () => {
     window.print()
   }
 
+  const handlePrintActa = () => {
+    const printWindow = window.open('', '', 'width=800,height=800')
+    if (!printWindow) return
+
+    const effectiveDriverId = localDriverId || shipment.driverId
+    const driverInfo = drivers?.find(d => d.id.toString() === effectiveDriverId?.toString())
+    const effectiveDriverName = driverInfo ? driverInfo.name : shipment.driverName
+    const sigImage = localSignature || shipment.driverSignature
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Acta de Entrega - ${shipment.guideNumber}</title>
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #1e293b; max-width: 800px; margin: 0 auto; }
+            .header { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+            .title { font-size: 24px; font-weight: bold; margin: 0; color: #0f172a; }
+            .subtitle { color: #64748b; margin-top: 8px; font-size: 14px; }
+            .grid { display: flex; gap: 20px; margin-bottom: 30px; }
+            .box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; flex: 1; background: #f8fafc; }
+            .label { font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em; }
+            .value { font-size: 14px; margin: 6px 0; color: #334155; line-height: 1.5; }
+            .signature-box { border: 2px dashed #cbd5e1; padding: 30px; text-align: center; margin-top: 40px; border-radius: 12px; background: white; }
+            .signature-img { max-width: 300px; max-height: 150px; }
+            .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1 class="title">ACTA DE ENTREGA A CONDUCTOR TERCERIZADO</h1>
+            <p class="subtitle">Fronteras Express - <strong>Guía ${shipment.guideNumber}</strong></p>
+            <p class="subtitle">Fecha de Asignación: ${new Date().toLocaleDateString('es-CO')} - Sede de Origen: ${shipment.branchOrigin}</p>
+          </div>
+          
+          <div class="grid">
+            <div class="box">
+              <p class="label">Datos del Envío</p>
+              <p class="value"><strong>Origen:</strong> ${shipment.senderCity} (${shipment.senderName})</p>
+              <p class="value"><strong>Destino:</strong> ${shipment.recipientCity} (${shipment.recipientName})</p>
+              <p class="value"><strong>Peso Registrado:</strong> ${shipment.weight} kg</p>
+              <p class="value"><strong>Total Flete:</strong> $${shipment.shippingCost.toLocaleString()}</p>
+            </div>
+            <div class="box">
+              <p class="label">Datos del Conductor</p>
+              <p class="value"><strong>Nombre:</strong> ${effectiveDriverName}</p>
+              <p class="value"><strong>Vehículo:</strong> ${driverInfo?.vehicleType || 'No especificado'}</p>
+              <p class="value"><strong>Ciudad Base:</strong> ${driverInfo?.city || 'No especificada'}</p>
+              <p class="value"><strong>Valor Pactado (Pago):</strong> $${(shipment.driverPayment || 0).toLocaleString()}</p>
+            </div>
+          </div>
+          
+          <p style="margin-top: 30px; line-height: 1.8; color: #334155; font-size: 15px; text-align: justify;">
+            Yo, <strong>${effectiveDriverName}</strong>, con vehículo tipo <strong>${driverInfo?.vehicleType || 'N/A'}</strong>, certifico formalmente que he recibido los paquetes correspondientes a la guía <strong>${shipment.guideNumber}</strong> en perfectas condiciones por parte de Fronteras Express. Me comprometo responsablemente a realizar el traslado y la entrega de la mercancía en <strong>${shipment.recipientCity}</strong>, asumiendo toda la responsabilidad civil, contractual y comercial sobre el estado de la mercancía hasta su destino final según lo estipulado.
+          </p>
+          
+          <div class="signature-box">
+            <p class="label" style="margin-bottom: 20px;">Firma Digital Registrada en Sistema</p>
+            ${sigImage ? `<img src="${sigImage}" class="signature-img" />` : '<p style="color: #ef4444; font-weight: bold;">No hay firma registrada</p>'}
+            <div style="margin-top: 20px;">
+              <p style="display: inline-block; padding: 10px 40px 0; border-top: 1px solid #94a3b8; color: #475569; font-size: 14px;">Firma de Aceptación del Transportador</p>
+            </div>
+          </div>
+          
+          <div class="footer">
+            Documento jurídico generado automáticamente por la plataforma de Fronteras Express.<br>
+            Cualquier alteración a este documento invalida su efecto.
+          </div>
+        </body>
+      </html>
+    `)
+    
+    printWindow.document.close()
+    printWindow.focus()
+    setTimeout(() => {
+      printWindow.print()
+    }, 600)
+  }
+
   // Generate QR URL based on current origin
-  const trackingUrl = `${window.location.origin}/track/${shipment.guideNumber}`
+  const trackingUrl = `${window.location.origin}/?guide=${shipment.guideNumber}`
+
+  const effectiveDriverId = localDriverId || shipment.driverId;
+  const driverObj = effectiveDriverId ? drivers?.find(d => d.id.toString() === effectiveDriverId.toString()) : null;
+  const effectiveDriverName = driverObj ? driverObj.name : shipment.driverName;
 
   return (
     <DashboardLayout>
@@ -217,24 +327,54 @@ export default function ShipmentDetail() {
               )}
             </Card>
 
+            {/* Profit Margin Info */}
+            <Card className="p-6 rounded-2xl shadow-sm border-border/50 bg-green-50/50 border-green-100 mt-4">
+               <div className="flex items-center justify-between">
+                 <div>
+                   <p className="text-sm font-bold text-green-800 uppercase tracking-widest mb-1">Margen de Ganancia (Sede {shipment.branchOrigin})</p>
+                   <p className="text-xs text-green-700">Cobro al cliente ({formatCurrency(shipment.shippingCost)}) - Pago T. ({formatCurrency(shipment.driverPayment)})</p>
+                 </div>
+                 <div className="text-2xl font-black text-green-700">
+                    {formatCurrency(shipment.shippingCost - shipment.driverPayment)}
+                 </div>
+               </div>
+            </Card>
+
             {/* Driver Assignment */}
             <Card className="p-6 rounded-2xl shadow-sm border-border/50">
               <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                 <Truck className="w-5 h-5 text-primary" /> Asignación de Conductor
               </h3>
               
-              {shipment.driverId ? (
-                <div className="flex items-center justify-between p-4 bg-slate-50 border rounded-xl">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center border shadow-sm text-xl font-bold text-slate-700">
-                      {shipment.driverName?.charAt(0) || 'C'}
+              {effectiveDriverId ? (
+                <div className="flex flex-col gap-4 p-4 bg-slate-50 border rounded-xl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center border shadow-sm text-xl font-bold text-slate-700">
+                        {effectiveDriverName?.charAt(0) || 'C'}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900">{effectiveDriverName}</p>
+                        <p className="text-sm text-slate-500">{driverObj?.vehicleType || 'Transportador'} • {driverObj?.city || 'Asociado'}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-900">{shipment.driverName}</p>
-                      <p className="text-sm text-slate-500">Conductor Tercerizado</p>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="secondary" onClick={handlePrintActa} className="h-9 font-medium bg-slate-200 hover:bg-slate-300 text-slate-700">
+                        <Printer className="w-4 h-4 mr-2" /> Acta
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => { setLocalDriverId(null); setLocalSignature(null); }} className="h-9">Reasignar</Button>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setDriverId("")}>Reasignar</Button>
+                  
+                  {/* Digital Signature Display */}
+                  {(localSignature || shipment.driverSignature) && (
+                    <div className="mt-4 border-t pt-4">
+                      <p className="text-xs font-bold text-slate-500 uppercase mb-4">Firma del Conductor (Acta Digital)</p>
+                      <div className="bg-white border rounded-lg p-2 max-w-xs block overflow-hidden">
+                        <img src={(localSignature || shipment.driverSignature) || undefined} alt="Firma del conductor" className="w-full h-auto" />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -248,13 +388,45 @@ export default function ShipmentDetail() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button 
-                    className="h-12 px-6 rounded-xl" 
-                    onClick={handleAssignDriver}
-                    disabled={!driverId || assignMutation.isPending}
-                  >
-                    Asignar
-                  </Button>
+                  
+                  <Dialog open={isSignatureDialogOpen} onOpenChange={setIsSignatureDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        className="h-12 px-6 rounded-xl bg-slate-900" 
+                        onClick={(e) => { e.preventDefault(); handleAssignClick(); }}
+                        disabled={!driverId || assignMutation.isPending}
+                      >
+                        Asignar y Firmar
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md rounded-3xl">
+                      <DialogHeader>
+                        <DialogTitle>Acta de Entrega al Conductor</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <p className="text-sm text-muted-foreground">
+                          El conductor debe firmar digitalmente para confirmar la recolección de la mercancía.
+                        </p>
+                        <div className="border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50 overflow-hidden relative touch-none">
+                           <SignatureCanvas 
+                             ref={sigCanvas} 
+                             penColor="black"
+                             canvasProps={{className: "w-full h-48 signature-canvas"}} 
+                           />
+                           <Button variant="ghost" size="sm" onClick={clearSignature} className="absolute top-2 right-2 h-7 text-xs bg-white/80 backdrop-blur">
+                             Limpiar
+                           </Button>
+                        </div>
+                        <Button 
+                          className="w-full h-12 rounded-xl bg-primary text-white font-bold" 
+                          onClick={handleConfirmAssignment}
+                          disabled={assignMutation.isPending}
+                        >
+                          {assignMutation.isPending ? "Procesando..." : "Confirmar Firma y Asignar"}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               )}
             </Card>
@@ -284,6 +456,10 @@ export default function ShipmentDetail() {
                 ))}
               </div>
             </Card>
+
+            <div className="mt-6 h-[500px]">
+              <ChatBox guideNumber={shipment.guideNumber} isAdmin={true} className="h-full" />
+            </div>
           </div>
         </div>
       </div>

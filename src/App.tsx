@@ -11,6 +11,7 @@ import PublicTracking from "@/pages/public-tracking"
 import Shipments from "@/pages/shipments"
 import ShipmentDetail from "@/pages/shipment-detail"
 import NewShipment from "@/pages/shipment-new"
+import EditShipment from "@/pages/shipment-edit"
 import Drivers from "@/pages/drivers"
 import Financial from "@/pages/financial"
 import DailyClosePage from "@/pages/daily-close"
@@ -25,12 +26,13 @@ function Router() {
 
       {/* Public routes */}
       <Route path="/login" component={Login} />
-      <Route path="/track" component={PublicTracking} />
+      <Route path="/" component={PublicTracking} />
 
       {/* App routes (sin protección por ahora) */}
-      <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/shipments" component={Shipments} />
       <Route path="/shipments/new" component={NewShipment} />
+      <Route path="/shipments/:id/edit" component={EditShipment} />
       <Route path="/shipments/:id" component={ShipmentDetail} />
       <Route path="/drivers" component={Drivers} />
       <Route path="/clients" component={ClientsPage} />

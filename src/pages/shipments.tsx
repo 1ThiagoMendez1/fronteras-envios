@@ -3,8 +3,8 @@ import { useState } from "react"
 const useListShipments = (_options?: any) => ({
   data: {
     shipments: [
-      { id: 1, guideNumber: "GUIA-1001", senderName: "Empresa A", senderCity: "Bogota", recipientName: "Cliente B", recipientCity: "Medellin", shippingCost: 15000, status: "in_transit", createdAt: new Date().toISOString() },
-      { id: 2, guideNumber: "GUIA-1002", senderName: "Empresa C", senderCity: "Cali", recipientName: "Cliente D", recipientCity: "Bogota", shippingCost: 25000, status: "delivered", createdAt: new Date().toISOString() }
+      { id: 1, guideNumber: "GUIA-1001", senderName: "Empresa A", senderCity: "Bogota", recipientName: "Cliente B", recipientCity: "Medellin", shippingCost: 15000, driverPayment: 10000, branchOrigin: "Bogotá", status: "in_transit", createdAt: new Date().toISOString() },
+      { id: 2, guideNumber: "GUIA-1002", senderName: "Empresa C", senderCity: "Cali", recipientName: "Cliente D", recipientCity: "Bogota", shippingCost: 25000, driverPayment: 18000, branchOrigin: "Medellín", status: "delivered", createdAt: new Date().toISOString() }
     ],
     total: 2
   },
@@ -17,11 +17,13 @@ import { Card } from "@/components/ui/card"
 import { formatCurrency, getStatusColor, getStatusLabel, cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { Plus, Search, Filter, ChevronRight } from "lucide-react"
+import { Plus, Search, Filter, ChevronRight, Pencil } from "lucide-react"
 import { Link } from "wouter"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useLocation } from "wouter"
 
 export default function Shipments() {
+  const [, setLocation] = useLocation()
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [search, setSearch] = useState("")
 
@@ -47,11 +49,9 @@ export default function Shipments() {
             <h1 className="text-3xl font-display font-bold text-foreground">Gestión de Envíos</h1>
             <p className="text-muted-foreground mt-1">Administra todos los paquetes y despachos de la red.</p>
           </div>
-          <Link href="/shipments/new">
-            <Button className="rounded-xl h-12 px-6 font-semibold shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all">
-              <Plus className="mr-2 w-5 h-5" /> Nuevo Envío
-            </Button>
-          </Link>
+          <Button className="rounded-xl h-12 px-6 font-semibold shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all" onClick={() => setLocation("/shipments/new")}>
+            <Plus className="mr-2 w-5 h-5" /> Nuevo Envío
+          </Button>
         </div>
 
         <Card className="p-4 rounded-2xl border-border/50 shadow-sm flex flex-col md:flex-row gap-4 items-center bg-white/50 backdrop-blur-sm">
@@ -91,8 +91,9 @@ export default function Shipments() {
                 <tr>
                   <th className="px-6 py-4">Guía</th>
                   <th className="px-6 py-4">Remitente</th>
+                  <th className="px-6 py-4">Sede Origen</th>
                   <th className="px-6 py-4">Destinatario</th>
-                  <th className="px-6 py-4">Valor Flete</th>
+                  <th className="px-6 py-4">Flete / Ganancia</th>
                   <th className="px-6 py-4">Estado</th>
                   <th className="px-6 py-4">Fecha</th>
                   <th className="px-6 py-4"></th>
@@ -112,7 +113,7 @@ export default function Shipments() {
                     </td>
                   </tr>
                 ) : (
-                  filteredShipments.map((shipment) => (
+                  filteredShipments.map((shipment: any) => (
                     <tr key={shipment.id} className="hover:bg-slate-50 transition-colors group">
                       <td className="px-6 py-4">
                         <Link href={`/shipments/${shipment.id}`} className="font-bold text-primary hover:underline">
@@ -124,11 +125,17 @@ export default function Shipments() {
                         <div className="text-xs text-slate-500">{shipment.senderCity}</div>
                       </td>
                       <td className="px-6 py-4">
+                        <span className="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-xs font-semibold text-slate-700">
+                          {shipment.branchOrigin || "Bogotá"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
                         <div className="font-semibold text-slate-800">{shipment.recipientName}</div>
                         <div className="text-xs text-slate-500">{shipment.recipientCity}</div>
                       </td>
-                      <td className="px-6 py-4 font-medium text-slate-700">
-                        {formatCurrency(shipment.shippingCost)}
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-slate-700">Flete: {formatCurrency(shipment.shippingCost)}</div>
+                        <div className="text-[11px] font-bold text-green-600 uppercase tracking-widest mt-0.5">Neto: {formatCurrency(shipment.shippingCost - (shipment.driverPayment || 0))}</div>
                       </td>
                       <td className="px-6 py-4">
                         <span className={cn("px-3 py-1 rounded-full text-xs font-bold border inline-flex items-center", getStatusColor(shipment.status))}>
@@ -139,11 +146,14 @@ export default function Shipments() {
                         {format(new Date(shipment.createdAt), "d MMM yyyy", { locale: es })}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <Link href={`/shipments/${shipment.id}`}>
-                          <Button variant="ghost" size="icon" className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-200" onClick={() => setLocation(`/shipments/${shipment.id}/edit`)}>
+                            <Pencil className="w-4 h-4 text-slate-500" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-200" onClick={() => setLocation(`/shipments/${shipment.id}`)}>
                             <ChevronRight className="w-5 h-5 text-slate-400" />
                           </Button>
-                        </Link>
+                        </div>
                       </td>
                     </tr>
                   ))

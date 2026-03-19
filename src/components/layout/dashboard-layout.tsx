@@ -30,7 +30,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const navItems = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "operator"] },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "operator"] },
     { href: "/clients", label: "Clientes", icon: UserCircle, roles: ["admin", "operator"] },
     { href: "/shipments", label: "Envíos", icon: Package, roles: ["admin", "operator", "client", "driver"] },
     { href: "/drivers", label: "Conductores", icon: Users, roles: ["admin", "operator"] },
@@ -61,7 +61,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           isCollapsed ? "justify-center px-0" : "justify-between"
         )}>
           {!isCollapsed && (
-            <Link href="/" className="flex items-center gap-3 font-display text-xl font-bold tracking-tight overflow-hidden">
+            <Link href="/dashboard" className="flex items-center gap-3 font-display text-xl font-bold tracking-tight overflow-hidden">
               <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm shrink-0">
                 <Truck className="h-5 w-5" />
               </div>

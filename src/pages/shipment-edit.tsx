@@ -1,4 +1,4 @@
-import { useLocation } from "wouter"
+import { useLocation, useRoute } from "wouter"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -7,11 +7,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
-import { useCreateShipmentMutation } from "@/hooks/use-shipments-wrapper"
+import { useUpdateShipmentMutation } from "@/hooks/use-shipments-wrapper"
 import { ArrowLeft, Package, User, MapPin, DollarSign, Loader2, Search } from "lucide-react"
-import { Link } from "wouter"
 import { useClients } from "@/hooks/use-clients"
-// Mock hook to replace useListDrivers
+import { useEffect } from "react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+// Mock hooks to replace useGetShipment and useListDrivers
+const useGetShipment = (_id: number, _options?: any) => ({
+  data: {
+    id: _id, guideNumber: `GUIA-${1000 + _id}`, senderName: "Empresa A", senderCity: "Bogota", senderPhone: "3001234567", senderAddress: "Calle Principal 123", senderDocument: "900123456", recipientName: "Cliente B", recipientCity: "Medellin", recipientPhone: "3109876543", recipientAddress: "Carrera 45 #67-89", weight: 5.5, declaredValue: 50000, shippingCost: 15000, driverPayment: 10000, status: "in_transit", createdAt: new Date().toISOString(), driverId: null, driverName: "Carlos Sanchez", observations: "Ninguna", branchOrigin: "Bogotá", history: [{ id: 1, status: "created", createdAt: new Date().toISOString(), note: "Creado" }]
+  },
+  isLoading: false
+})
 const useListDrivers = () => ({
   data: [
     { id: 1, name: "Carlos Sanchez", vehicleType: "Camión", city: "Bogota", isActive: true },
@@ -19,7 +27,7 @@ const useListDrivers = () => ({
   ],
   isLoading: false
 })
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 const formSchema = z.object({
   senderDocument: z.string().min(5, "Requerido"),
   senderName: z.string().min(2, "Requerido"),
@@ -41,54 +49,79 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
-export default function NewShipment() {
+export default function EditShipment() {
   const [, setLocation] = useLocation()
-  const createMutation = useCreateShipmentMutation()
+  const [, params] = useRoute("/shipments/:id/edit")
+  const id = parseInt(params?.id || "0")
+  
+  const { data: shipment, isLoading } = useGetShipment(id, { query: { enabled: !!id } })
+  const updateMutation = useUpdateShipmentMutation(id)
   const { data: drivers } = useListDrivers()
   const { getClientByDocument, upsertClient } = useClients()
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
-      senderDocument: "",
-      weight: 1,
-      declaredValue: 0,
-      shippingCost: 0,
-      driverPayment: 0,
-      branchOrigin: "Bogotá",
+      senderDocument: "", weight: 1, declaredValue: 0, shippingCost: 0, driverPayment: 0, branchOrigin: "Bogotá"
     }
   })
 
+  // State for the driver select, because we can't reliably rely on setValue for Radix UI Select components without explicit state or watching the form
+  useEffect(() => {
+    if (shipment) {
+      reset({
+        senderDocument: shipment.senderDocument || "",
+        senderName: shipment.senderName || "",
+        senderPhone: shipment.senderPhone || "",
+        senderAddress: shipment.senderAddress || "",
+        senderCity: shipment.senderCity || "",
+        recipientName: shipment.recipientName || "",
+        recipientPhone: shipment.recipientPhone || "",
+        recipientAddress: shipment.recipientAddress || "",
+        recipientCity: shipment.recipientCity || "",
+        weight: shipment.weight || 1,
+        declaredValue: shipment.declaredValue || 0,
+        shippingCost: shipment.shippingCost || 0,
+        driverPayment: shipment.driverPayment || 0,
+        observations: shipment.observations || "",
+        driverId: shipment.driverId || undefined,
+        branchOrigin: shipment.branchOrigin || "Bogotá"
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shipment?.id, reset])
+
   const onSubmit = async (data: any) => {
     try {
-      // Save client context
       upsertClient({
-        document: data.senderDocument,
-        name: data.senderName,
-        phone: data.senderPhone,
-        city: data.senderCity,
-        address: data.senderAddress
+        document: data.senderDocument, name: data.senderName, phone: data.senderPhone, city: data.senderCity, address: data.senderAddress
       })
-
-      const result = await createMutation.mutateAsync({ data })
-      setLocation(`/shipments/${result.id}`)
+      await updateMutation.mutateAsync({ data })
+      setLocation(`/shipments/${id}`)
     } catch (e) {
-      // error handled in mutation wrapper
     }
+  }
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-6 pb-20">
         <div className="flex items-center gap-4">
-          <Link href="/shipments">
-            <Button variant="outline" size="icon" className="rounded-xl">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
+          <Button variant="outline" size="icon" className="rounded-xl" onClick={() => setLocation(`/shipments/${id}`)}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <div>
-            <h1 className="text-3xl font-display font-bold text-foreground">Registrar Nuevo Envío</h1>
-            <p className="text-muted-foreground mt-1">Completa los datos para generar la guía.</p>
+            <h1 className="text-3xl font-display font-bold text-foreground">Editar Envío</h1>
+            <p className="text-muted-foreground mt-1 text-primary font-bold">{shipment?.guideNumber}</p>
           </div>
         </div>
 
@@ -224,7 +257,7 @@ export default function NewShipment() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
               <div className="space-y-2">
                 <Label>Asignar Conductor (Opcional)</Label>
-                <Select onValueChange={(v) => setValue("driverId", parseInt(v))}>
+                <Select value={shipment?.driverId ? String(shipment.driverId) : undefined} onValueChange={(v) => setValue("driverId", parseInt(v))}>
                   <SelectTrigger className="bg-slate-50/50 rounded-xl h-12">
                     <SelectValue placeholder="Seleccionar conductor..." />
                   </SelectTrigger>
@@ -237,7 +270,7 @@ export default function NewShipment() {
               </div>
               <div className="space-y-2">
                 <Label>Sede de Origen</Label>
-                <Select defaultValue="Bogotá" onValueChange={(v) => setValue("branchOrigin", v)}>
+                <Select value={shipment?.branchOrigin || "Bogotá"} onValueChange={(v) => setValue("branchOrigin", v)}>
                   <SelectTrigger className="bg-slate-50/50 rounded-xl h-12">
                     <SelectValue placeholder="Sede" />
                   </SelectTrigger>
@@ -255,16 +288,14 @@ export default function NewShipment() {
           </Card>
 
           <div className="flex justify-end gap-4">
-            <Link href="/shipments">
-              <Button variant="outline" type="button" className="h-12 px-6 rounded-xl font-semibold">Cancelar</Button>
-            </Link>
+            <Button variant="outline" type="button" className="h-12 px-6 rounded-xl font-semibold" onClick={() => setLocation(`/shipments/${id}`)}>Cancelar</Button>
             <Button 
               type="submit" 
-              className="h-12 px-8 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all"
-              disabled={createMutation.isPending}
+              className="h-12 px-8 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
+              disabled={updateMutation.isPending}
             >
-              {createMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Package className="w-5 h-5 mr-2" />}
-              Generar Guía de Envío
+              {updateMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Package className="w-5 h-5 mr-2" />}
+              Guardar Cambios
             </Button>
           </div>
         </form>

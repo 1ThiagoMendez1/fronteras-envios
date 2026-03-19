@@ -19,8 +19,8 @@ const footerLinks: FooterSection[] = [
 	{
 		label: 'Plataforma',
 		links: [
-			{ title: 'Generar Guía', href: '/track' },
-			{ title: 'Rastreo de Envíos', href: '/track' },
+			{ title: 'Generar Guía', href: '/' },
+			{ title: 'Rastreo de Envíos', href: '/' },
 			{ title: 'Ingreso Comercial', href: '/login' },
 			{ title: 'Cobertura Nacional', href: '#' },
 		],

@@ -7,6 +7,20 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Footer } from "@/components/ui/footer-section"
+import React from "react"
+
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: any}> {
+  constructor(props: {children: React.ReactNode}) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error: any) { return { hasError: true, error }; }
+  componentDidCatch(error: any, errorInfo: any) { console.error("Map Error:", error, errorInfo); }
+  render() {
+    if (this.state.hasError) {
+      return <div className="p-4 bg-red-100 text-red-900 border rounded-xl overflow-auto w-full text-sm"><h3 className="font-bold mb-2">Error cargando el mapa:</h3><pre>{String(this.state.error?.stack || this.state.error)}</pre></div>;
+    }
+    return this.props.children;
+  }
+}
+
 // Mock hook to replace useTrackShipment
 const useTrackShipment = (guideNumber: string, _options?: any) => ({
   data: guideNumber.length > 5 ? {
@@ -28,7 +42,8 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { getStatusColor, getStatusLabel, cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { Link } from "wouter"
+import { ChatBox } from "@/components/chat-box"
+import { ColombiaMap } from "@/components/colombia-map"
 
 const STATUS_ORDER = ["created","assigned","picked_up","in_transit","out_for_delivery","delivered"]
 const STEP_LABELS: Record<string, string> = {
@@ -104,9 +119,12 @@ function TrackingResult({ tracking }: { tracking: any }) {
       initial={{ opacity: 0, y: 32 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="max-w-3xl mx-auto"
+      className="max-w-6xl mx-auto w-full"
     >
-      {/* Status header card */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Col - Tracking Details */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Status header card */}
       <div className={cn(
         "rounded-2xl p-6 mb-4 border shadow-lg",
         tracking.status === "delivered"
@@ -202,6 +220,13 @@ function TrackingResult({ tracking }: { tracking: any }) {
           </div>
         </div>
       </div>
+    </div>
+
+        {/* Right Col - Chat */}
+        <div className="lg:col-span-1 h-[600px] lg:h-auto">
+          <ChatBox guideNumber={tracking.guideNumber} className="h-full border-primary/20 shadow-xl" />
+        </div>
+      </div>
     </motion.div>
   )
 }
@@ -237,11 +262,6 @@ export default function PublicTracking() {
         <div className="flex items-center gap-5">
           <a href="#servicios" className="hidden md:block text-sm font-medium text-blue-100 hover:text-white transition-colors">Servicios</a>
           <a href="#contacto" className="hidden md:block text-sm font-medium text-blue-100 hover:text-white transition-colors">Contacto</a>
-          <Link href="/login">
-            <Button variant="outline" className="font-bold border-transparent bg-white text-primary hover:bg-slate-50 hover:text-primary transition-all rounded-xl h-10 px-6">
-              Acceso Empleados
-            </Button>
-          </Link>
         </div>
       </nav>
 
@@ -370,7 +390,7 @@ export default function PublicTracking() {
           {[
             { icon: <Box className="w-6 h-6" />, value: "+50.000", label: "Paquetes entregados", color: "text-primary" },
             { icon: <Users className="w-6 h-6" />, value: "+1.200", label: "Clientes satisfechos", color: "text-accent" },
-            { icon: <Globe className="w-6 h-6" />, value: "32", label: "Ciudades cubiertas", color: "text-indigo-600" },
+            { icon: <Globe className="w-6 h-6" />, value: "27", label: "Ciudades cubiertas", color: "text-indigo-600" },
             { icon: <TrendingUp className="w-6 h-6" />, value: "98.7%", label: "Entregas a tiempo", color: "text-green-600" },
           ].map((stat, i) => (
             <motion.div
@@ -409,18 +429,21 @@ export default function PublicTracking() {
               title: "Envío Express",
               desc: "Entrega el mismo día o al día siguiente dentro del área metropolitana. Velocidad garantizada.",
               color: "bg-amber-50 text-amber-600 border-amber-100",
+              href: "#contacto"
             },
             {
               icon: <Globe className="w-7 h-7" />,
               title: "Cobertura Nacional",
-              desc: "Llegamos a más de 32 ciudades y municipios de Colombia con conductores verificados.",
+              desc: "Llegamos a 27 ciudades principales y municipios de Colombia con conductores verificados.",
               color: "bg-blue-50 text-blue-600 border-blue-100",
+              href: "#cobertura"
             },
             {
               icon: <Shield className="w-7 h-7" />,
               title: "Envío Seguro",
               desc: "Seguro de carga incluido en todos los envíos. Tu mercancía protegida de principio a fin.",
               color: "bg-green-50 text-green-600 border-green-100",
+              href: "#contacto"
             },
           ].map((s, i) => (
             <motion.div
@@ -435,12 +458,80 @@ export default function PublicTracking() {
                 {s.icon}
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-3">{s.title}</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">{s.desc}</p>
-              <div className="mt-6 flex items-center gap-1.5 text-primary font-semibold text-sm group-hover:gap-3 transition-all">
+              <p className="text-slate-500 text-sm leading-relaxed mb-6">{s.desc}</p>
+              <a href={s.href} className="mt-auto inline-flex items-center gap-1.5 text-primary font-semibold text-sm group-hover:gap-3 transition-all cursor-pointer">
                 Saber más <ArrowRight className="w-4 h-4" />
-              </div>
+              </a>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* MAPA DE COBERTURA */}
+      <section id="cobertura" className="py-20 bg-white border-t border-slate-100">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <span className="text-accent font-bold text-sm uppercase tracking-widest">Cobertura Nacional</span>
+              <h2 className="text-4xl font-black text-slate-900 mt-2 mb-3">Conectando a Colombia</h2>
+              <p className="text-slate-500 max-w-xl mx-auto">Llegamos a los principales destinos nacionales con seguridad y cumplimiento absoluto.</p>
+            </motion.div>
+          </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+          >
+            <ErrorBoundary>
+              <ColombiaMap />
+            </ErrorBoundary>
+          </motion.div>
+
+          {/* SEDES LOCALES */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4 }}
+            className="mt-16"
+          >
+            <div className="text-center mb-10">
+              <h3 className="text-3xl font-black text-slate-900 mb-3">Visítanos, nos encantará atenderte</h3>
+              <p className="text-slate-500 max-w-lg mx-auto">Pasa por cualquiera de nuestras oficinas y recibe atención amable, rápida y directa.</p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex gap-4 items-start shadow-sm hover:shadow-md transition-shadow group">
+                <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-colors">
+                  <MapPin className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-lg text-slate-900 mb-1">Sede Bogotá</h4>
+                  <p className="text-slate-600 text-sm leading-relaxed mb-0">
+                    Calle 22c 68f-37 oficina 144<br/>
+                    Terminal de Salitre
+                  </p>
+                </div>
+              </div>
+              
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex gap-4 items-start shadow-sm hover:shadow-md transition-shadow group">
+                <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-colors">
+                  <MapPin className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-lg text-slate-900 mb-1">Sede Medellín</h4>
+                  <p className="text-slate-600 text-sm leading-relaxed mb-0">
+                    Carrera 64 calle 78- 580 Local 148<br/>
+                    Terminal del Norte
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -473,6 +564,82 @@ export default function PublicTracking() {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* CHAT HIGHLIGHT */}
+      <section className="py-20 bg-slate-50 border-t border-slate-100">
+        <div className="max-w-5xl mx-auto px-4">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="bg-slate-900 rounded-[2.5rem] p-8 md:p-14 text-white shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center gap-12 border border-slate-800"
+          >
+            {/* Background elements */}
+            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "linear-gradient(#475569 1px, transparent 1px), linear-gradient(90deg, #475569 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+            <div className="absolute -top-40 -right-20 w-80 h-80 bg-accent/30 blur-[100px] rounded-full pointer-events-none" />
+            <div className="absolute -bottom-40 -left-20 w-80 h-80 bg-blue-600/20 blur-[100px] rounded-full pointer-events-none" />
+            
+            <div className="relative z-10 md:w-3/5">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest text-slate-100 mb-6 border border-white/10">
+                <span className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_12px_rgba(74,222,128,0.8)] animate-pulse" />
+                Nueva Función Exclusiva
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black leading-[1.1] tracking-tight mb-5">
+                Nunca más le pierdas el rastro a tu envío
+              </h2>
+              <p className="text-slate-400 text-lg leading-relaxed mb-8 font-medium">
+                Olvídate de las odiosas llamadas perdidas y contestadoras. Ahora contamos con un <span className="text-white font-bold bg-white/10 px-2 py-0.5 rounded">Chat Interno Privado</span> directamente dentro de tu panel de rastreo.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-4 rounded-2xl shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center shrink-0 shadow-lg shadow-accent/20">
+                    <Clock className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-0.5">Te respondemos en</p>
+                    <p className="text-xl font-black text-white leading-none">Minutos</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-4 rounded-2xl shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-600/20">
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-0.5">Atención por</p>
+                    <p className="text-xl font-black text-white leading-none">Agentes Reales</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative z-10 w-full md:w-2/5 flex justify-center mt-6 md:mt-0">
+               <div className="bg-slate-800/80 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] w-full max-w-[320px] shadow-2xl relative rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
+                  {/* Window Controls */}
+                  <div className="flex gap-2 items-center mb-6 opacity-80 border-b border-white/5 pb-4">
+                     <div className="w-3 h-3 rounded-full bg-red-400/80" />
+                     <div className="w-3 h-3 rounded-full bg-amber-400/80" />
+                     <div className="w-3 h-3 rounded-full bg-green-400/80" />
+                     <span className="ml-auto text-[10px] font-black tracking-widest uppercase text-slate-400">Soporte en Vivo</span>
+                  </div>
+                  {/* Chat Bubbles */}
+                  <div className="space-y-5">
+                    <motion.div initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="bg-white text-slate-800 text-sm font-semibold p-4 rounded-2xl rounded-bl-sm shadow-sm relative">
+                      ¡Hola! Estoy rastreando el guía FRON-902, quisiera saber exactamente por dónde va. 🙏
+                    </motion.div>
+                    <motion.div initial={{ opacity: 0, x: 10 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 }} className="bg-accent text-white text-sm font-semibold p-4 rounded-2xl rounded-br-sm shadow-md text-right ml-8 relative pt-5">
+                      <span className="absolute top-2 left-4 text-[9px] text-white/50 tracking-widest uppercase font-black">Asesor Fronteras</span>
+                      ¡Hola Carlos! El camión ya entró a tu ciudad, lo estamos entregando en el próximo turno. 🚀
+                    </motion.div>
+                    <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: 1.2 }} className="text-right text-[11px] text-green-400 mt-2 font-black tracking-wide flex items-center justify-end gap-1.5">
+                      <CheckCircle2 className="w-3 h-3" /> Respondido al instante
+                    </motion.div>
+                  </div>
+               </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -539,9 +706,9 @@ export default function PublicTracking() {
       <section id="contacto" className="py-16 bg-white">
         <div className="max-w-5xl mx-auto px-4 grid md:grid-cols-3 gap-8">
           {[
-            { icon: <Phone className="w-5 h-5" />, title: "Teléfono", val: "+57 600 000 0000", sub: "Lun–Vie 7am–7pm" },
-            { icon: <Mail className="w-5 h-5" />, title: "Correo", val: "info@fronterasexpress.co", sub: "Respondemos en < 2h" },
-            { icon: <MapPin className="w-5 h-5" />, title: "Oficina principal", val: "Calle 100 #15-30, Bogotá", sub: "Colombia" },
+            { icon: <Phone className="w-5 h-5" />, title: "Teléfono", val: "312 384 9514", sub: "Lun–Vie 7am–10pm" },
+            { icon: <Mail className="w-5 h-5" />, title: "Correo", val: "fronterasexpressenvios@gmail.com", sub: "Respondemos en < 2h" },
+            { icon: <MapPin className="w-5 h-5" />, title: "Sede principal", val: "Calle 22c 68f-37 of. 144", sub: "Terminal de Salitre, Bogotá" },
           ].map((c, i) => (
             <div key={i} className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
