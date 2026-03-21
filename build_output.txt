@@ -1,0 +1,20 @@
+
+> fronteras-ui@0.0.0 build
+> tsc -b && vite build
+
+src/components/dashboard/alert-panel.tsx(3,23): error TS6133: 'AlertTriangle' is declared but its value is never read.
+src/components/dashboard/alert-panel.tsx(3,61): error TS6133: 'Clock' is declared but its value is never read.
+src/components/dashboard/alert-panel.tsx(3,68): error TS6133: 'TrendingDown' is declared but its value is never read.
+src/components/dashboard/stat-card-enhanced.tsx(97,20): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+src/components/ui/chart.tsx(117,7): error TS2339: Property 'payload' does not exist on type 'Omit<Omit<Props<ValueType, NameType>, PropertiesReadFromContext> & { active?: boolean | undefined; allowEscapeViewBox?: AllowInDimension | undefined; ... 24 more ...; wrapperStyle?: CSSProperties | undefined; } & ClassAttributes<...> & HTMLAttributes<...> & { ...; }, "ref">'.
+src/components/ui/chart.tsx(122,7): error TS2339: Property 'label' does not exist on type 'Omit<Omit<Props<ValueType, NameType>, PropertiesReadFromContext> & { active?: boolean | undefined; allowEscapeViewBox?: AllowInDimension | undefined; ... 24 more ...; wrapperStyle?: CSSProperties | undefined; } & ClassAttributes<...> & HTMLAttributes<...> & { ...; }, "ref">'.
+src/components/ui/chart.tsx(187,22): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/components/ui/chart.tsx(188,19): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/components/ui/chart.tsx(188,25): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/ui/chart.tsx(264,41): error TS2344: Type '"verticalAlign" | "payload"' does not satisfy the constraint '"string" | "style" | "filter" | "fill" | "values" | "slot" | "clipPath" | "mask" | "path" | "key" | "type" | "suppressHydrationWarning" | "className" | "id" | "lang" | "nonce" | ... 434 more ... | "onBBoxUpdate"'.
+  Type '"payload"' is not assignable to type '"string" | "style" | "filter" | "fill" | "values" | "slot" | "clipPath" | "mask" | "path" | "key" | "type" | "suppressHydrationWarning" | "className" | "id" | "lang" | "nonce" | ... 434 more ... | "onBBoxUpdate"'.
+src/components/ui/chart.tsx(275,19): error TS2339: Property 'length' does not exist on type '{}'.
+src/components/ui/chart.tsx(289,12): error TS2339: Property 'filter' does not exist on type '{}'.
+src/components/ui/chart.tsx(289,20): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/components/ui/chart.tsx(290,17): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/pages/dashboard.tsx(73,1): error TS6133: 'es' is declared but its value is never read.

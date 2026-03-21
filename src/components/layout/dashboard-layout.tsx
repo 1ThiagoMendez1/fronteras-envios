@@ -14,7 +14,8 @@ import {
   Truck,
   UserCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  UploadCloud
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -34,8 +35,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { href: "/clients", label: "Clientes", icon: UserCircle, roles: ["admin", "operator"] },
     { href: "/shipments", label: "Envíos", icon: Package, roles: ["admin", "operator", "client", "driver"] },
     { href: "/drivers", label: "Conductores", icon: Users, roles: ["admin", "operator"] },
+    { href: "/data-upload", label: "Archivos", icon: UploadCloud, roles: ["admin", "operator"] },
     { href: "/financial", label: "Financiero", icon: Wallet, roles: ["admin"] },
-    { href: "/daily-close", label: "Cierre Diario", icon: CalendarCheck, roles: ["admin", "operator"] },
+    { href: "/daily-close", label: "Cierre", icon: CalendarCheck, roles: ["admin", "operator"] },
   ]
 
   const filteredNavItems = navItems.filter(item => !user || (user?.role && item.roles.includes(user.role)))

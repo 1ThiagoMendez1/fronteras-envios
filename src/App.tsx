@@ -16,6 +16,7 @@ import Drivers from "@/pages/drivers"
 import Financial from "@/pages/financial"
 import DailyClosePage from "@/pages/daily-close"
 import ClientsPage from "@/pages/clients"
+import DataUploadPage from "@/pages/data-upload"
 import NotFound from "@/pages/not-found"
 
 const queryClient = new QueryClient()
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/drivers" component={Drivers} />
       <Route path="/clients" component={ClientsPage} />
       <Route path="/financial" component={Financial} />
+      <Route path="/data-upload" component={DataUploadPage} />
       <Route path="/daily-close" component={DailyClosePage} />
 
       {/* 404 */}
