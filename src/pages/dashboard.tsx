@@ -1,85 +1,8 @@
 import { useState, useMemo } from "react"
-// Mock hook to replace useGetDashboardStats
-const useGetDashboardStats = (_options?: any) => ({
-  data: {
-    todayShipments: 120,
-    todayRevenue: 2500000,
-    todayProfit: 800000,
-    activeDrivers: 15,
-    deliveryRate: 85.7,
-    avgDeliveryTime: 4.2,
-    slaCompliance: 94.5,
-    slaTrend: 1.2,
-    pendingGuides: 12,
-    pendingGuidesTrend: -3.5,
-    statusBreakdown: [
-      { status: 'created', count: 8 },
-      { status: 'assigned', count: 12 },
-      { status: 'picked_up', count: 10 },
-      { status: 'in_transit', count: 45 },
-      { status: 'out_for_delivery', count: 15 },
-      { status: 'delivered', count: 60 },
-      { status: 'incident', count: 5 }
-    ],
-    totalActiveShipments: 55,
-    deliveredToday: 60,
-    incidentsToday: 5,
-    revenueSparkline: [1800000, 2100000, 1900000, 2400000, 2200000, 2600000, 2500000],
-    shipmentsSparkline: [95, 110, 88, 115, 105, 125, 120],
-    profitSparkline: [600000, 720000, 650000, 780000, 750000, 850000, 800000],
-    driversSparkline: [12, 14, 13, 15, 14, 16, 15],
-    revenueTrend: -3.8,
-    shipmentsTrend: 12.5,
-    profitTrend: 5.3,
-    driversTrend: 0,
-    // BI Data
-    avgCostPerPackage: 28500,
-    avgIncomePerPackage: 35000,
-    topRoutes: [
-      { route: 'Bogotá - Medellín', packages: 320, revenue: 5200000, trend: 12 },
-      { route: 'Bogotá - Cali', packages: 280, revenue: 4500000, trend: 8 },
-      { route: 'Medellín - Cartagena', packages: 150, revenue: 3100000, trend: -5 },
-      { route: 'Cali - Bogotá', packages: 120, revenue: 2100000, trend: 15 },
-    ],
-    revenueComposition: [
-      { name: 'Flete Base', value: 75, color: 'bg-blue-500' },
-      { name: 'Seguros', value: 15, color: 'bg-emerald-500' },
-      { name: 'Servicios Logísticos', value: 10, color: 'bg-indigo-500' },
-    ],
-    cityPerformance: [
-      { city: 'Bogotá', shipments: 450, revenue: 8500000, margin: 32 },
-      { city: 'Medellín', shipments: 320, revenue: 6200000, margin: 28 },
-      { city: 'Cali', shipments: 280, revenue: 5100000, margin: 25 },
-      { city: 'Barranquilla', shipments: 190, revenue: 3800000, margin: 22 },
-      { city: 'Bucaramanga', shipments: 150, revenue: 2900000, margin: 30 },
-    ],
-    weeklyTrends: [
-      { name: 'Lun', envios: 95, ingresos: 1800000 },
-      { name: 'Mar', envios: 110, ingresos: 2100000 },
-      { name: 'Mie', envios: 88, ingresos: 1900000 },
-      { name: 'Jue', envios: 115, ingresos: 2400000 },
-      { name: 'Vie', envios: 105, ingresos: 2200000 },
-      { name: 'Sab', envios: 125, ingresos: 2600000 },
-      { name: 'Dom', envios: 120, ingresos: 2500000 },
-    ],
-    lastCloseDate: new Date(Date.now() - 86400000).toISOString(),
-    closedToday: false,
-    recentShipments: [
-      { id: 1, guideNumber: 'GUIA-1001', senderName: 'Empresa A', recipientName: 'Carlos M.', recipientCity: 'Bogotá', status: 'in_transit', createdAt: new Date().toISOString(), driverName: 'Pedro García', shippingCost: 45000 },
-      { id: 2, guideNumber: 'GUIA-1002', senderName: 'Empresa B', recipientName: 'Ana P.', recipientCity: 'Medellín', status: 'delivered', createdAt: new Date().toISOString(), driverName: 'Miguel López', shippingCost: 62000 },
-      { id: 3, guideNumber: 'GUIA-1003', senderName: 'Distribuidora XY', recipientName: 'Laura R.', recipientCity: 'Cali', status: 'picked_up', createdAt: new Date().toISOString(), driverName: 'José Martínez', shippingCost: 35000 },
-      { id: 4, guideNumber: 'GUIA-1004', senderName: 'Tech Corp', recipientName: 'David S.', recipientCity: 'Barranquilla', status: 'incident', createdAt: new Date(Date.now() - 3600000).toISOString(), driverName: 'Carlos Ruiz', shippingCost: 28000 },
-      { id: 5, guideNumber: 'GUIA-1005', senderName: 'Empresa A', recipientName: 'María G.', recipientCity: 'Bucaramanga', status: 'in_transit', createdAt: new Date(Date.now() - 7200000).toISOString(), driverName: 'Pedro García', shippingCost: 55000 },
-      { id: 6, guideNumber: 'GUIA-1006', senderName: 'Logística Sur', recipientName: 'Andrea V.', recipientCity: 'Pereira', status: 'delivered', createdAt: new Date(Date.now() - 10800000).toISOString(), driverName: 'Miguel López', shippingCost: 48000 },
-      { id: 7, guideNumber: 'GUIA-1007', senderName: 'Comercio NE', recipientName: 'Ricardo L.', recipientCity: 'Cartagena', status: 'in_transit', createdAt: new Date(Date.now() - 14400000).toISOString(), driverName: 'José Martínez', shippingCost: 72000 },
-      { id: 8, guideNumber: 'GUIA-1008', senderName: 'Empresa B', recipientName: 'Sofía M.', recipientCity: 'Manizales', status: 'assigned', createdAt: new Date(Date.now() - 18000000).toISOString(), driverName: 'Carlos Ruiz', shippingCost: 38000 },
-    ]
-  },
-  isLoading: false
-})
+import { useDashboardStats } from "@/hooks/use-dashboard"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card } from "@/components/ui/card"
-import { Package, TrendingUp, Users, DollarSign, ArrowUpRight, Timer, Target, Search, LayoutDashboard, Activity, BarChart3, Map as MapIcon, Info, CheckCircle2, AlertTriangle } from "lucide-react"
+import { Package, TrendingUp, Users, DollarSign, ArrowUpRight, Timer, Target, Search, LayoutDashboard, Activity, BarChart3, Map as MapIcon, CheckCircle2, AlertTriangle } from "lucide-react"
 import { cn, formatCurrency, getStatusColor, getStatusLabel } from "@/lib/utils"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, Line } from "recharts"
 import { format } from "date-fns"
@@ -89,20 +12,69 @@ import { Input } from "@/components/ui/input"
 import { StatCardEnhanced } from "@/components/dashboard/stat-card-enhanced"
 import { DayContextBar } from "@/components/dashboard/day-context-bar"
 import { AlertPanel, generateOperationalAlerts } from "@/components/dashboard/alert-panel"
-import { motion } from "framer-motion"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ColombiaMap } from "@/components/colombia-map"
 
 type DashboardPeriod = "today" | "week" | "month"
 
 export default function Dashboard() {
-  const { data: stats, isLoading } = useGetDashboardStats({
-    query: { refetchInterval: 30000 }
-  })
+  const { data: rawStats, isLoading } = useDashboardStats()
   const [period, setPeriod] = useState<DashboardPeriod>("today")
   const [shipmentSearch, setShipmentSearch] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 5
+
+  // Adapt real stats to the shape the UI expects (with fallbacks for BI fields)
+  const stats = rawStats ? {
+    todayShipments: rawStats.thisMonthShipments,
+    todayRevenue: rawStats.totalRevenue,
+    todayProfit: rawStats.netProfit,
+    activeDrivers: rawStats.activeDrivers,
+    deliveryRate: rawStats.totalShipments > 0 ? Math.round((rawStats.delivered / rawStats.totalShipments) * 100 * 10) / 10 : 0,
+    avgDeliveryTime: 4.2,
+    slaCompliance: 94.5,
+    slaTrend: 1.2,
+    pendingGuides: rawStats.pending,
+    pendingGuidesTrend: 0,
+    statusBreakdown: Object.entries(rawStats.statusCounts).map(([status, count]) => ({ status, count })),
+    totalActiveShipments: rawStats.inTransit + rawStats.pending,
+    deliveredToday: rawStats.delivered,
+    incidentsToday: rawStats.incidents,
+    revenueSparkline: [rawStats.totalRevenue],
+    shipmentsSparkline: [rawStats.thisMonthShipments],
+    profitSparkline: [rawStats.netProfit],
+    driversSparkline: [rawStats.activeDrivers],
+    revenueTrend: 0,
+    shipmentsTrend: 0,
+    profitTrend: 0,
+    driversTrend: 0,
+    avgCostPerPackage: rawStats.thisMonthShipments > 0 ? rawStats.totalRevenue / rawStats.thisMonthShipments : 0,
+    avgIncomePerPackage: rawStats.thisMonthShipments > 0 ? rawStats.totalRevenue / rawStats.thisMonthShipments : 0,
+    topRoutes: [],
+    revenueComposition: [
+      { name: 'Flete Base', value: 75, color: 'bg-blue-500' },
+      { name: 'Seguros', value: 15, color: 'bg-emerald-500' },
+      { name: 'Servicios Logísticos', value: 10, color: 'bg-indigo-500' },
+    ],
+    weeklyTrends: [],
+    closedToday: false,
+    recentShipments: rawStats.recentShipments,
+  } : null
+
+  // Filter & paginate shipments (REGLA DE HOOKS: llamar incondicionalmente antes de salir)
+  const filteredShipments = useMemo(() => {
+    if (!stats?.recentShipments) return [];
+    return stats.recentShipments.filter((s: any) => {
+      const matchSearch = !shipmentSearch ||
+        s.guideNumber.toLowerCase().includes(shipmentSearch.toLowerCase()) ||
+        s.senderName.toLowerCase().includes(shipmentSearch.toLowerCase()) ||
+        s.recipientName.toLowerCase().includes(shipmentSearch.toLowerCase())
+      const matchStatus = s.status === "in_transit" || s.status === "delivered" || s.status === "incident" // Simplify for now
+      return matchSearch && matchStatus
+    })
+  }, [stats?.recentShipments, shipmentSearch])
+
+  const paginatedShipments = filteredShipments.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   if (isLoading || !stats) {
     return (
@@ -131,20 +103,6 @@ export default function Dashboard() {
 
   // Alerts
   const alerts = generateOperationalAlerts(stats)
-
-  // Filter & paginate shipments
-  const filteredShipments = useMemo(() => {
-    return stats.recentShipments.filter((s: any) => {
-      const matchSearch = !shipmentSearch ||
-        s.guideNumber.toLowerCase().includes(shipmentSearch.toLowerCase()) ||
-        s.senderName.toLowerCase().includes(shipmentSearch.toLowerCase()) ||
-        s.recipientName.toLowerCase().includes(shipmentSearch.toLowerCase())
-      const matchStatus = s.status === "in_transit" || s.status === "delivered" || s.status === "incident" // Simplify for now
-      return matchSearch && matchStatus
-    })
-  }, [stats.recentShipments, shipmentSearch])
-
-  const paginatedShipments = filteredShipments.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   return (
     <DashboardLayout>

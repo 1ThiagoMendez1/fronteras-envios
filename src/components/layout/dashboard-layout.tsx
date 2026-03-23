@@ -26,21 +26,28 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [location] = useLocation()
-  const { user, logout } = useAuth()
+  const { profile, logout } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
 
+  const hasPermission = (perm: string) => {
+    if (profile?.role === 'admin') return true;
+    return profile?.permissions?.[perm] || false;
+  };
+
   const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "operator"] },
-    { href: "/clients", label: "Clientes", icon: UserCircle, roles: ["admin", "operator"] },
-    { href: "/shipments", label: "Envíos", icon: Package, roles: ["admin", "operator", "client", "driver"] },
-    { href: "/drivers", label: "Conductores", icon: Users, roles: ["admin", "operator"] },
-    { href: "/data-upload", label: "Archivos", icon: UploadCloud, roles: ["admin", "operator"] },
-    { href: "/financial", label: "Financiero", icon: Wallet, roles: ["admin"] },
-    { href: "/daily-close", label: "Cierre", icon: CalendarCheck, roles: ["admin", "operator"] },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, visible: hasPermission('view_dashboard') },
+    { href: "/clients", label: "Clientes", icon: UserCircle, visible: hasPermission('manage_clients') },
+    { href: "/shipments", label: "Envíos", icon: Package, visible: hasPermission('manage_shipments') },
+    { href: "/drivers", label: "Conductores", icon: Users, visible: hasPermission('manage_clients') },
+    { href: "/data-upload", label: "Archivos", icon: UploadCloud, visible: hasPermission('manage_shipments') },
+    { href: "/financial", label: "Financiero", icon: Wallet, visible: hasPermission('view_financial') },
+    { href: "/daily-close", label: "Cierre", icon: CalendarCheck, visible: hasPermission('view_financial') },
+    { href: "/users", label: "Usuarios", icon: Users, visible: profile?.role === "admin" },
   ]
 
-  const filteredNavItems = navItems.filter(item => !user || (user?.role && item.roles.includes(user.role)))
+  const filteredNavItems = navItems.filter(item => item.visible)
+  
 
   return (
     <div className="flex min-h-screen w-full bg-slate-50 dark:bg-slate-950">
@@ -117,17 +124,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {!isCollapsed && (
             <div className="flex items-center gap-3 px-2 py-3 rounded-xl bg-sidebar-accent/50 mb-4 overflow-hidden">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20 text-sidebar-primary font-bold">
-                {user?.name?.charAt(0).toUpperCase() || 'A'}
+                {profile?.name?.charAt(0).toUpperCase() || 'A'}
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="truncate text-sm font-semibold">{user?.name || "Administrador"}</span>
-                <span className="truncate text-xs text-sidebar-foreground/50 capitalize">{user?.role || "admin"}</span>
+                <span className="truncate text-sm font-semibold">{profile?.name || "Administrador"}</span>
+                <span className="truncate text-xs text-sidebar-foreground/50 capitalize">{profile?.role || "admin"}</span>
               </div>
             </div>
           )}
           {isCollapsed && (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20 text-sidebar-primary font-bold mb-4" title={user?.name || "Administrador"}>
-              {user?.name?.charAt(0).toUpperCase() || 'A'}
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20 text-sidebar-primary font-bold mb-4" title={profile?.name || "Administrador"}>
+              {profile?.name?.charAt(0).toUpperCase() || 'A'}
             </div>
           )}
           <Button 

@@ -3,7 +3,9 @@ import { useLocation, Link } from "wouter"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Truck, ArrowRight, ShieldCheck } from "lucide-react"
+import { Truck, UserPlus } from "lucide-react"
+import { supabase } from "@/lib/supabase"
+import { useToast } from "@/hooks/use-toast"
 import {
   Select,
   SelectContent,
@@ -12,17 +14,14 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { useAuth } from "@/hooks/use-auth"
-
-export type LoginRequestRole = "admin" | "operator" | "driver" | "client"
-
-export default function Login() {
+export default function Register() {
   const [, setLocation] = useLocation()
-  const { login } = useAuth()
+  const { toast } = useToast()
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [role, setRole] = useState<LoginRequestRole>("admin")
+  const [name, setName] = useState("")
+  const [role, setRole] = useState("admin")
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,42 +29,38 @@ export default function Login() {
     setIsLoading(true)
 
     try {
-      await login({ email, password })
-      setLocation("/dashboard")
-    } catch (error) {
-      console.error("Login failed:", error)
-      setIsLoading(false) // Ensured loading state is reset
-    }
-  }
+      // 1. Crear el usuario en auth de Supabase
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            role,
+          }
+        }
+      })
 
-  const demoCredentials: Record<
-    string,
-    { email: string; password: string; role: LoginRequestRole }
-  > = {
-    admin: { email: "admin@fronteras.com", password: "admin123", role: "admin" },
-    operator: {
-      email: "operator@fronteras.com",
-      password: "operador123",
-      role: "operator",
-    },
-    driver: {
-      email: "driver@fronteras.com",
-      password: "driver123",
-      role: "driver",
-    },
-    client: {
-      email: "cliente@fronteras.com",
-      password: "cliente123",
-      role: "client",
-    },
-  }
+      if (error) throw error
 
-  const fillDemo = (roleType: string) => {
-    const creds = demoCredentials[roleType]
-    if (creds) {
-      setEmail(creds.email)
-      setPassword(creds.password)
-      setRole(creds.role)
+      // NOTA: Si RLS no permite insertar perfiles, esto puede requerir un trigger en la base de datos
+      // o utilizar la Service Role Key en el backend, pero como es frontend, dependemos de que el usuario
+      // pueda ser insertado en `profiles` por ser el dueño de sí mismo o por auth hooks.
+      
+      toast({
+        title: "Registro exitoso",
+        description: "Tu cuenta ha sido creada. Ahora puedes iniciar sesión.",
+      })
+      setLocation("/login")
+    } catch (error: any) {
+      console.error("Registration failed:", error)
+      toast({
+        title: "Error al registrar",
+        description: error.message || "Ocurrió un error inesperado al registrar",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -86,14 +81,13 @@ export default function Login() {
 
         <div className="relative z-10 max-w-md">
           <h1 className="text-5xl font-display font-bold leading-tight mb-6">
-            Más que rápido,
+            Únete a la nueva era,
             <br />
-            <span className="text-accent">siempre a tiempo.</span>
+            <span className="text-accent">logística inteligente.</span>
           </h1>
 
           <p className="text-lg text-primary-foreground/80 leading-relaxed">
-            Plataforma logística integral para la gestión inteligente de
-            envíos, conductores y control financiero.
+            Crea tu cuenta de acceso maestro para empezar a gestionar operaciones.
           </p>
         </div>
 
@@ -103,8 +97,8 @@ export default function Login() {
       </div>
 
       {/* Right form */}
-      <div className="flex-1 flex flex-col justify-center items-center p-8 lg:p-12">
-        <div className="w-full max-w-md space-y-8">
+      <div className="flex-1 flex flex-col justify-center items-center p-8 lg:p-12 overflow-y-auto">
+        <div className="w-full max-w-md space-y-8 my-auto">
           <div className="text-center lg:text-left space-y-2">
             <div className="lg:hidden flex justify-center mb-6">
               <div className="bg-primary text-white p-3 rounded-2xl shadow-lg">
@@ -113,19 +107,31 @@ export default function Login() {
             </div>
 
             <h2 className="text-3xl font-display font-bold text-foreground">
-              Iniciar Sesión
+              Crear Cuenta
             </h2>
 
             <p className="text-muted-foreground">
-              Ingresa tus credenciales para acceder al sistema
+              Registra un nuevo usuario para acceder al sistema
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Correo Electrónico</Label>
+                <Label htmlFor="name">Nombre Completo</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Juan Pérez"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="h-12 bg-white rounded-xl"
+                />
+              </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="email">Correo Electrónico</Label>
                 <Input
                   id="email"
                   type="email"
@@ -139,28 +145,27 @@ export default function Login() {
 
               <div className="space-y-2">
                 <Label htmlFor="password">Contraseña</Label>
-
                 <Input
                   id="password"
                   type="password"
+                  placeholder="Mínimo 6 caracteres"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  minLength={6}
                   className="h-12 bg-white rounded-xl"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Rol de Acceso</Label>
-
+                <Label>Rol del Usuario</Label>
                 <Select
                   value={role}
-                  onValueChange={(value: LoginRequestRole) => setRole(value)}
+                  onValueChange={(value) => setRole(value)}
                 >
                   <SelectTrigger className="h-12 bg-white rounded-xl">
                     <SelectValue placeholder="Selecciona un rol" />
                   </SelectTrigger>
-
                   <SelectContent>
                     <SelectItem value="admin">Administrador</SelectItem>
                     <SelectItem value="operator">Operador</SelectItem>
@@ -177,63 +182,21 @@ export default function Login() {
               disabled={isLoading}
             >
               {isLoading ? (
-                "Ingresando..."
+                "Registrando..."
               ) : (
                 <>
-                  Ingresar al Sistema
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  <UserPlus className="mr-2 w-5 h-5" />
+                  Registrar Cuenta
                 </>
               )}
             </Button>
           </form>
 
-          {/* Demo */}
-          <div className="pt-8 border-t border-border/50">
-            <p className="text-xs text-center text-muted-foreground font-medium mb-4 flex items-center justify-center gap-2">
-              <ShieldCheck className="w-4 h-4" />
-              Accesos de Demostración
-            </p>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fillDemo("admin")}
-              >
-                Admin
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fillDemo("operator")}
-              >
-                Operador
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fillDemo("driver")}
-              >
-                Conductor
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fillDemo("client")}
-              >
-                Cliente
-              </Button>
-            </div>
-          </div>
-
           <div className="pt-6 border-t border-border/50 text-center">
             <p className="text-sm text-slate-600">
-              ¿No tienes cuenta en este entorno?{" "}
-              <Link href="/register" className="text-primary font-bold hover:underline">
-                Crea una cuenta nueva
+              ¿Ya tienes cuenta?{" "}
+              <Link href="/login" className="text-primary font-bold hover:underline">
+                Inicia sesión aquí
               </Link>
             </p>
           </div>

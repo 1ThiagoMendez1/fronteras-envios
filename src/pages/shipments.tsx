@@ -1,15 +1,5 @@
 import { useState } from "react"
-// Mock hook to replace useListShipments
-const useListShipments = (_options?: any) => ({
-  data: {
-    shipments: [
-      { id: 1, guideNumber: "GUIA-1001", senderName: "Empresa A", senderCity: "Bogota", recipientName: "Cliente B", recipientCity: "Medellin", shippingCost: 15000, driverPayment: 10000, branchOrigin: "Bogotá", status: "in_transit", createdAt: new Date().toISOString() },
-      { id: 2, guideNumber: "GUIA-1002", senderName: "Empresa C", senderCity: "Cali", recipientName: "Cliente D", recipientCity: "Bogota", shippingCost: 25000, driverPayment: 18000, branchOrigin: "Medellín", status: "delivered", createdAt: new Date().toISOString() }
-    ],
-    total: 2
-  },
-  isLoading: false
-})
+import { useListShipments } from "@/hooks/use-shipments"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,9 +18,8 @@ export default function Shipments() {
   const [search, setSearch] = useState("")
 
   const { data, isLoading } = useListShipments({
-    query: {
-      queryKey: ["/api/shipments", statusFilter !== "all" ? { status: statusFilter } : undefined]
-    }
+    status: statusFilter !== "all" ? statusFilter : undefined,
+    search: search || undefined,
   })
 
   // Local filtering for search (in real app, this would be server side)

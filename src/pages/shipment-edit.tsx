@@ -12,21 +12,8 @@ import { ArrowLeft, Package, User, MapPin, DollarSign, Loader2, Search } from "l
 import { useClients } from "@/hooks/use-clients"
 import { useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-// Mock hooks to replace useGetShipment and useListDrivers
-const useGetShipment = (_id: number, _options?: any) => ({
-  data: {
-    id: _id, guideNumber: `GUIA-${1000 + _id}`, senderName: "Empresa A", senderCity: "Bogota", senderPhone: "3001234567", senderAddress: "Calle Principal 123", senderDocument: "900123456", recipientName: "Cliente B", recipientCity: "Medellin", recipientPhone: "3109876543", recipientAddress: "Carrera 45 #67-89", weight: 5.5, declaredValue: 50000, shippingCost: 15000, driverPayment: 10000, status: "in_transit", createdAt: new Date().toISOString(), driverId: null, driverName: "Carlos Sanchez", observations: "Ninguna", branchOrigin: "Bogotá", history: [{ id: 1, status: "created", createdAt: new Date().toISOString(), note: "Creado" }]
-  },
-  isLoading: false
-})
-const useListDrivers = () => ({
-  data: [
-    { id: 1, name: "Carlos Sanchez", vehicleType: "Camión", city: "Bogota", isActive: true },
-    { id: 2, name: "Luisa Pinto", vehicleType: "Furgón", city: "Medellin", isActive: true }
-  ],
-  isLoading: false
-})
+import { useGetShipment } from "@/hooks/use-shipments"
+import { useListDrivers } from "@/hooks/use-drivers"
 
 const formSchema = z.object({
   senderDocument: z.string().min(5, "Requerido"),
@@ -54,7 +41,7 @@ export default function EditShipment() {
   const [, params] = useRoute("/shipments/:id/edit")
   const id = parseInt(params?.id || "0")
   
-  const { data: shipment, isLoading } = useGetShipment(id, { query: { enabled: !!id } })
+  const { data: shipment, isLoading } = useGetShipment(id)
   const updateMutation = useUpdateShipmentMutation(id)
   const { data: drivers } = useListDrivers()
   const { getClientByDocument, upsertClient } = useClients()

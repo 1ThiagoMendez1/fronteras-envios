@@ -1,43 +1,5 @@
+import { useDailyCloseList, useFinancialSummary, useDailyCloseShipments } from "@/hooks/use-financial"
 import { useState, useMemo } from "react"
-// Mock hooks
-const useListDailyCloses = () => ({
-  data: [
-    { id: 1, closeDate: new Date(Date.now() - 86400000).toISOString(), closedBy: 'Admin', totalShipments: 150, totalRevenue: 3000000, totalDriverPayments: 1800000, totalNetProfit: 1200000, deliveredCount: 135, incidentCount: 3, avgDeliveryTime: 3.8, notes: 'Día normal de operación', otherCosts: 180000 },
-    { id: 2, closeDate: new Date(Date.now() - 86400000 * 2).toISOString(), closedBy: 'Operador 1', totalShipments: 128, totalRevenue: 2700000, totalDriverPayments: 1600000, totalNetProfit: 1100000, deliveredCount: 115, incidentCount: 5, avgDeliveryTime: 4.1, notes: '', otherCosts: 150000 },
-    { id: 3, closeDate: new Date(Date.now() - 86400000 * 3).toISOString(), closedBy: 'Admin', totalShipments: 142, totalRevenue: 2900000, totalDriverPayments: 1750000, totalNetProfit: 1150000, deliveredCount: 130, incidentCount: 2, avgDeliveryTime: 3.5, notes: 'Se resolvieron 2 incidencias del día anterior', otherCosts: 165000 },
-    { id: 4, closeDate: new Date(Date.now() - 86400000 * 4).toISOString(), closedBy: 'Admin', totalShipments: 110, totalRevenue: 2200000, totalDriverPayments: 1350000, totalNetProfit: 850000, deliveredCount: 98, incidentCount: 4, avgDeliveryTime: 4.5, notes: 'Demoras por clima en vías principales', otherCosts: 120000 },
-    { id: 5, closeDate: new Date(Date.now() - 86400000 * 5).toISOString(), closedBy: 'Operador 1', totalShipments: 135, totalRevenue: 2800000, totalDriverPayments: 1700000, totalNetProfit: 1100000, deliveredCount: 125, incidentCount: 1, avgDeliveryTime: 3.2, notes: '', otherCosts: 155000 },
-  ],
-  isLoading: false
-})
-const usePreCloseData = () => ({
-  data: {
-    totalShipments: 120,
-    deliveredCount: 95,
-    inTransitCount: 18,
-    incidentCount: 5,
-    pendingAssignment: 2,
-    totalRevenue: 2500000,
-    totalDriverPayments: 1500000,
-    totalNetProfit: 1000000,
-    otherCosts: 200000,
-    unregisteredPayments: 3,
-    shipmentsWithoutCost: 1,
-    topClients: [
-      { name: 'Empresa A', revenue: 650000, margin: 42 },
-      { name: 'Distribuidora XY', revenue: 420000, margin: 35 },
-      { name: 'Tech Corp', revenue: 310000, margin: 38 }
-    ],
-    checks: [
-      { id: 'delivered', label: 'Envíos con estado final registrado', status: 'pass' as const, detail: '95 de 120 envíos finalizados' },
-      { id: 'transit', label: 'Envíos aún en tránsito', status: 'warn' as const, detail: '18 envíos siguen activos' },
-      { id: 'payments', label: 'Pagos a conductores registrados', status: 'warn' as const, detail: '3 pagos pendientes de registro' },
-      { id: 'costs', label: 'Todos los envíos tienen flete asignado', status: 'warn' as const, detail: '1 envío sin costo de flete' },
-      { id: 'incidents', label: 'Incidencias documentadas', status: 'pass' as const, detail: '5 incidencias con notas' },
-    ]
-  },
-  isLoading: false
-})
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card } from "@/components/ui/card"
@@ -55,8 +17,31 @@ import { Link } from "wouter"
 type WizardStep = 'idle' | 'pre-close' | 'confirm' | 'success'
 
 export default function DailyClosePage() {
-  const { data: closes, isLoading } = useListDailyCloses()
-  const { data: preCloseData } = usePreCloseData()
+  const { data: closes, isLoading } = useDailyCloseList()
+  const { data: summary } = useFinancialSummary({ 
+    startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+    endDate: new Date().toISOString().split('T')[0] + 'T23:59:59'
+  })
+
+  // Pre-calculate pre-close data from current summary
+  const preCloseData = useMemo(() => {
+    if (!summary) return null;
+    return {
+      totalShipments: summary.totalShipments,
+      deliveredCount: summary.deliveredShipments,
+      inTransitCount: summary.totalShipments - summary.deliveredShipments,
+      incidentCount: 0, // Would need history check
+      totalRevenue: summary.totalRevenue,
+      totalDriverPayments: summary.totalDriverPayments,
+      totalNetProfit: summary.netProfit,
+      otherCosts: summary.totalExpenses,
+      topClients: summary.profitabilityByCity.slice(0, 3).map(c => ({ name: c.city, revenue: c.revenue, margin: c.margin })),
+      checks: [
+        { id: 'delivered', label: 'Envíos con estado final registrado', status: (summary.deliveredShipments === summary.totalShipments ? 'pass' : 'warn') as any, detail: `${summary.deliveredShipments} de ${summary.totalShipments} envíos finalizados` },
+        { id: 'transit', label: 'Envíos aún en tránsito', status: (summary.deliveredShipments < summary.totalShipments ? 'warn' : 'pass') as any, detail: `${summary.totalShipments - summary.deliveredShipments} envíos siguen activos` },
+      ]
+    }
+  }, [summary])
   const createMutation = useCreateDailyCloseMutation()
   const [wizardStep, setWizardStep] = useState<WizardStep>('idle')
   const [expandedCloseId, setExpandedCloseId] = useState<number | null>(null)
@@ -74,11 +59,16 @@ export default function DailyClosePage() {
   }, [closes, historySearch])
 
   const handleCreateClose = async () => {
+    if (!preCloseData) return;
     await createMutation.mutateAsync({
-      data: {
-        closeDate: new Date().toISOString(),
-        notes: closeNotes || "Cierre automático del día"
-      }
+      closeDate: new Date().toISOString(),
+      branch: "Principal",
+      totalShipments: preCloseData.totalShipments,
+      totalRevenue: preCloseData.totalRevenue,
+      totalDriverPayments: preCloseData.totalDriverPayments,
+      netProfit: preCloseData.totalNetProfit,
+      cashCollected: preCloseData.totalRevenue,
+      notes: closeNotes || "Cierre automático del día"
     })
     setWizardStep('success')
   }
@@ -137,6 +127,49 @@ export default function DailyClosePage() {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold">{check.label}</p>
           <p className="text-xs mt-0.5 opacity-80">{check.detail}</p>
+        </div>
+      </div>
+    )
+  }
+  const ShipmentsBreakdown = ({ closeDate }: { closeDate: string }) => {
+    const { data: shipments, isLoading } = useDailyCloseShipments(closeDate)
+    
+    if (isLoading) return <div className="py-8 text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div></div>
+    if (!shipments || shipments.length === 0) return <div className="py-8 text-center text-slate-500">No hay envíos registrados para este día.</div>
+
+    return (
+      <div className="mt-6 space-y-4">
+        <h5 className="font-bold text-slate-800 flex items-center gap-2 px-1">
+          <Package className="w-5 h-5 text-primary" />
+          Desglose de Envíos del Día
+        </h5>
+        <div className="overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-sm">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-slate-50 text-slate-500 font-semibold text-[10px] uppercase tracking-wider">
+              <tr>
+                <th className="px-4 py-3">Guía</th>
+                <th className="px-4 py-3">Destino</th>
+                <th className="px-4 py-3 text-right">Flete (Ingreso)</th>
+                <th className="px-4 py-3 text-right">Pago Cond.</th>
+                <th className="px-4 py-3 text-right">Utilidad</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {shipments.map((s: any) => (
+                <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-4 py-3 font-bold text-slate-700">{s.guideNumber}</td>
+                  <td className="px-4 py-3 text-slate-600">{s.recipientName} ({s.recipientCity})</td>
+                  <td className="px-4 py-3 text-right font-medium text-emerald-600">{formatCurrency(s.shippingCost)}</td>
+                  <td className="px-4 py-3 text-right font-medium text-orange-600">{formatCurrency(s.driverPayment)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={cn("inline-block px-2 py-1 rounded-lg font-bold", s.profit >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700")}>
+                      {formatCurrency(s.profit)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     )
@@ -292,32 +325,34 @@ export default function DailyClosePage() {
                     <p className="text-sm text-muted-foreground mt-1">El cierre del día {format(new Date(), "d 'de' MMMM, yyyy", { locale: es })} ha sido registrado.</p>
                   </div>
 
-                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-left my-6 shadow-sm">
-                    <h5 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                       <TrendingUp className="w-4 h-4 text-emerald-500"/>
-                       Resumen Destacado de Hoy
-                    </h5>
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center text-sm border-b border-slate-200 pb-3">
-                           <span className="text-slate-500 font-medium">Costo Promedio Operativo</span>
-                           <span className="font-bold text-slate-800 bg-white px-2 py-1 rounded-md border border-slate-100">{formatCurrency(preCloseData.totalDriverPayments / preCloseData.totalShipments)} / envío</span>
-                        </div>
-                        <div>
-                           <span className="text-sm text-slate-500 font-medium block mb-3">Top Clientes del Día</span>
-                           <div className="space-y-2">
-                              {preCloseData.topClients?.map(c => (
-                                 <div key={c.name} className="flex justify-between items-center text-xs p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-slate-300 transition-colors">
-                                    <span className="font-bold text-slate-700">{c.name}</span>
-                                    <div className="flex gap-4">
-                                       <span className="text-slate-500">Ingresos: <span className="font-bold text-emerald-600">{formatCurrency(c.revenue)}</span></span>
-                                       <span className="text-slate-500">Margen: <span className="font-bold text-indigo-600">{c.margin}%</span></span>
-                                    </div>
-                                 </div>
-                              ))}
-                           </div>
-                        </div>
+                  {preCloseData && (
+                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-left my-6 shadow-sm">
+                      <h5 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                         <TrendingUp className="w-4 h-4 text-emerald-500"/>
+                         Resumen Destacado de Hoy
+                      </h5>
+                      <div className="space-y-4">
+                          <div className="flex justify-between items-center text-sm border-b border-slate-200 pb-3">
+                             <span className="text-slate-500 font-medium">Costo Promedio Operativo</span>
+                             <span className="font-bold text-slate-800 bg-white px-2 py-1 rounded-md border border-slate-100">{formatCurrency(preCloseData.totalDriverPayments / preCloseData.totalShipments)} / envío</span>
+                          </div>
+                          <div>
+                             <span className="text-sm text-slate-500 font-medium block mb-3">Top Clientes del Día</span>
+                             <div className="space-y-2">
+                                {preCloseData.topClients?.map(c => (
+                                   <div key={c.name} className="flex justify-between items-center text-xs p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-slate-300 transition-colors">
+                                      <span className="font-bold text-slate-700">{c.name}</span>
+                                      <div className="flex gap-4">
+                                         <span className="text-slate-500">Ingresos: <span className="font-bold text-emerald-600">{formatCurrency(c.revenue)}</span></span>
+                                         <span className="text-slate-500">Margen: <span className="font-bold text-indigo-600">{c.margin}%</span></span>
+                                      </div>
+                                   </div>
+                                ))}
+                             </div>
+                          </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="flex gap-3 pt-2">
                     <Button variant="outline" className="flex-1 h-10 rounded-xl text-sm font-semibold" onClick={resetWizard}><Download className="w-4 h-4 mr-2" /> Descargar CSV</Button>
@@ -372,7 +407,7 @@ export default function DailyClosePage() {
             <div className="space-y-3">
               {Array.from({ length: 3 }).map((_, i) => (<div key={i} className="h-24 bg-white rounded-2xl animate-pulse" />))}
             </div>
-          ) : filteredCloses.length === 0 ? (
+          ) : !closes || filteredCloses.length === 0 ? (
             <Card className="p-12 text-center text-slate-500 border-dashed rounded-2xl">
               <CalendarCheck className="w-10 h-10 mx-auto mb-3 text-slate-300" />
               <p className="font-medium">{historySearch ? 'No hay cierres que coincidan' : 'No hay cierres registrados aún'}</p>
@@ -457,6 +492,9 @@ export default function DailyClosePage() {
                                 <strong>Notas:</strong> {close.notes}
                               </div>
                             )}
+                            
+                            {/* New Shipments Breakdown Section */}
+                            <ShipmentsBreakdown closeDate={close.closeDate} />
                           </div>
                         </motion.div>
                       )}

@@ -1,22 +1,103 @@
 import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { createClient } from "@supabase/supabase-js";
 import { useToast } from "./use-toast";
+
+const FORCE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+function getAdminClient() {
+  return createClient(SUPABASE_URL, FORCE_SERVICE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
 
 export function useCreateDailyCloseMutation() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   return useMutation({
-    mutationFn: async (data: any) => {
-      await new Promise(r => setTimeout(r, 500));
+    mutationFn: async (payload: {
+      closeDate: string;
+      branch: string;
+      totalShipments: number;
+      totalRevenue: number;
+      totalDriverPayments: number;
+      netProfit: number;
+      cashCollected: number;
+      notes?: string;
+    }) => {
+      const adminClient = getAdminClient();
+      const { data, error } = await adminClient
+        .from("daily_close")
+        .upsert(
+          {
+            close_date: payload.closeDate,
+            branch: payload.branch,
+            total_shipments: payload.totalShipments,
+            total_revenue: payload.totalRevenue,
+            total_driver_payments: payload.totalDriverPayments,
+            net_profit: payload.netProfit,
+            cash_collected: payload.cashCollected,
+            notes: payload.notes ?? null,
+          },
+          { onConflict: "close_date,branch" }
+        )
+        .select()
+        .single();
+
+      if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/daily-close"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/financial/summary"] });
+      queryClient.invalidateQueries({ queryKey: ["daily-close"] });
+      queryClient.invalidateQueries({ queryKey: ["financial"] });
       toast({ title: "Cierre Exitoso", description: "El cierre del día se ha generado correctamente." });
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message || "No se pudo realizar el cierre", variant: "destructive" });
-    }
+    },
+  });
+}
+
+export function useCreateFinancialMovementMutation() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      type: "income" | "expense";
+      category: string;
+      amount: number;
+      description: string;
+      referenceId?: number;
+      referenceType?: string;
+      evidenceUrl?: string;
+      movementDate?: string;
+    }) => {
+      const adminClient = getAdminClient();
+      const { data, error } = await adminClient
+        .from("financial_movements")
+        .insert({
+          type: payload.type,
+          category: payload.category,
+          amount: payload.amount,
+          description: payload.description,
+          reference_id: payload.referenceId ?? null,
+          reference_type: payload.referenceType ?? null,
+          evidence_url: payload.evidenceUrl ?? null,
+          movement_date: payload.movementDate ?? new Date().toISOString().split("T")[0],
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["financial"] });
+      toast({ title: "Movimiento registrado", description: "El movimiento financiero se guardó correctamente." });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message || "No se pudo registrar el movimiento", variant: "destructive" });
+    },
   });
 }

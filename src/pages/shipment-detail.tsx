@@ -1,20 +1,8 @@
 import { useState, useRef } from "react"
 import { useRoute, Link } from "wouter"
 import SignatureCanvas from "react-signature-canvas"
-// Mock hooks to replace useGetShipment and useListDrivers
-const useGetShipment = (_id: number, _options?: any) => ({
-  data: {
-    id: _id, guideNumber: `GUIA-${1000 + _id}`, senderName: "Empresa A", senderCity: "Bogota", senderPhone: "3001234567", senderAddress: "Calle Principal 123", recipientName: "Cliente B", recipientCity: "Medellin", recipientPhone: "3109876543", recipientAddress: "Carrera 45 #67-89", weight: 5.5, declaredValue: 50000, shippingCost: 15000, driverPayment: 10000, branchOrigin: "Bogotá", status: "in_transit", createdAt: new Date().toISOString(), driverId: null, driverName: "Carlos Sanchez", driverSignature: null, observations: "Ninguna", history: [{ id: 1, status: "created", createdAt: new Date().toISOString(), note: "Creado" }]
-  },
-  isLoading: false
-})
-const useListDrivers = () => ({
-  data: [
-    { id: 1, name: "Carlos Sanchez", vehicleType: "Camión", city: "Bogota", isActive: true },
-    { id: 2, name: "Luisa Pinto", vehicleType: "Furgón", city: "Medellin", isActive: true }
-  ],
-  isLoading: false
-})
+import { useGetShipment } from "@/hooks/use-shipments"
+import { useListDrivers } from "@/hooks/use-drivers"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -33,8 +21,8 @@ export default function ShipmentDetail() {
   const [, params] = useRoute("/shipments/:id")
   const id = parseInt(params?.id || "0")
   
-  const { data: shipment, isLoading } = useGetShipment(id, { query: { enabled: !!id } })
-  const { data: drivers } = useListDrivers()
+  const { data: shipment, isLoading } = useGetShipment(id)
+  const { data: drivers } = useListDrivers({ onlyActive: true })
   
   const statusMutation = useUpdateShipmentStatusMutation(id)
   const assignMutation = useAssignDriverMutation(id)
@@ -63,8 +51,8 @@ export default function ShipmentDetail() {
   const handleStatusChange = async () => {
     if (!newStatus) return
     await statusMutation.mutateAsync({ 
-      id, 
-      data: { status: newStatus, note: statusNote }
+      status: newStatus,
+      notes: statusNote || undefined
     })
     setIsStatusDialogOpen(false)
     setNewStatus("")
@@ -86,8 +74,7 @@ export default function ShipmentDetail() {
     } catch(e) { console.error(e) }
     
     await assignMutation.mutateAsync({
-      id,
-      data: { driverId: parseInt(driverId), driverSignature: sig }
+      driverId: parseInt(driverId),
     })
     
     if (sig) setLocalSignature(sig)
@@ -438,7 +425,7 @@ export default function ShipmentDetail() {
               <h3 className="text-lg font-bold text-foreground mb-6">Historial del Envío</h3>
               
               <div className="relative pl-6 space-y-6 before:absolute before:inset-0 before:ml-[15px] before:h-full before:w-0.5 before:bg-slate-200">
-                {shipment.history?.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((item) => (
+                {(shipment.history as {id: number, status: string, notes: string | null, created_at: string}[])?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((item) => (
                   <div key={item.id} className="relative">
                     <div className="absolute -left-[35px] mt-1 w-5 h-5 rounded-full bg-white border-2 border-primary z-10"></div>
                     <div>

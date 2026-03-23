@@ -12,6 +12,9 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import { useListShipments } from "@/hooks/use-shipments"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
 
 const formSchema = z.object({
   document: z.string().min(5, "Requerido"),
@@ -38,12 +41,37 @@ export default function ClientsPage() {
     reset()
   }
 
-  // Mock shipments for history
-  const mockShipments = [
-    { id: 1, guide: "GUIA-4001", date: "16 Mar, 2024", status: "En Tránsito", dest: "Cali" },
-    { id: 2, guide: "GUIA-3995", date: "12 Mar, 2024", status: "Entregado", dest: "Medellín" },
-    { id: 3, guide: "GUIA-3910", date: "05 Mar, 2024", status: "Entregado", dest: "Bogotá" }
-  ]
+function ShipmentHistoryList({ document }: { document: string }) {
+  const { data, isLoading } = useListShipments({ senderDocument: document, pageSize: 5 })
+  
+  if (isLoading) return <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-16 bg-slate-50 animate-pulse rounded-xl" />)}</div>
+  
+  const shipments = data?.shipments || []
+  
+  if (shipments.length === 0) return <p className="text-sm text-center py-8 text-slate-400">No hay envíos registrados para este cliente.</p>
+
+  return (
+    <div className="space-y-3">
+      {shipments.map(s => (
+        <div key={s.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
+          <div>
+            <p className="font-bold text-primary">{s.guideNumber}</p>
+            <p className="text-xs text-slate-500">Destino: {s.recipientCity}</p>
+          </div>
+          <div className="text-right">
+            <p className={cn(
+              "text-xs font-bold px-2 py-1 rounded-full w-fit ml-auto border mb-1",
+              s.status === "delivered" ? "bg-green-50 text-green-700 border-green-200" : "bg-blue-50 text-blue-700 border-blue-200"
+            )}>
+              {s.status === "delivered" ? "Entregado" : s.status === "in_transit" ? "En Tránsito" : s.status}
+            </p>
+            <p className="text-xs text-slate-400">{format(new Date(s.createdAt), "dd MMM, yyyy", { locale: es })}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
   const filteredClients = clients.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -207,28 +235,10 @@ export default function ClientsPage() {
                   <Package className="w-4 h-4 text-slate-400" />
                   Últimos Envíos Registrados
                 </h4>
-                <div className="space-y-3">
-                  {mockShipments.map(s => (
-                    <div key={s.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
-                      <div>
-                        <p className="font-bold text-primary">{s.guide}</p>
-                        <p className="text-xs text-slate-500">Destino: {s.dest}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className={cn(
-                          "text-xs font-bold px-2 py-1 rounded-full w-fit ml-auto border mb-1",
-                          s.status === "Entregado" ? "bg-green-50 text-green-700 border-green-200" : "bg-blue-50 text-blue-700 border-blue-200"
-                        )}>
-                          {s.status}
-                        </p>
-                        <p className="text-xs text-slate-400">{s.date}</p>
-                      </div>
-                    </div>
-                  ))}
-                  <Button variant="ghost" className="w-full text-sm font-semibold text-primary mt-2">
-                    Ver todos los resultados
-                  </Button>
-                </div>
+                <ShipmentHistoryList document={selectedClient?.document || ""} />
+                <Button variant="ghost" className="w-full text-sm font-semibold text-primary mt-2">
+                  Ver todos los resultados
+                </Button>
               </div>
             </div>
           </DialogContent>

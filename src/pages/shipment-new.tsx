@@ -11,14 +11,7 @@ import { useCreateShipmentMutation } from "@/hooks/use-shipments-wrapper"
 import { ArrowLeft, Package, User, MapPin, DollarSign, Loader2, Search } from "lucide-react"
 import { Link } from "wouter"
 import { useClients } from "@/hooks/use-clients"
-// Mock hook to replace useListDrivers
-const useListDrivers = () => ({
-  data: [
-    { id: 1, name: "Carlos Sanchez", vehicleType: "Camión", city: "Bogota", isActive: true },
-    { id: 2, name: "Luisa Pinto", vehicleType: "Furgón", city: "Medellin", isActive: true }
-  ],
-  isLoading: false
-})
+import { useListDrivers } from "@/hooks/use-drivers"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 const formSchema = z.object({
   senderDocument: z.string().min(5, "Requerido"),
@@ -45,7 +38,7 @@ export default function NewShipment() {
   const [, setLocation] = useLocation()
   const createMutation = useCreateShipmentMutation()
   const { data: drivers } = useListDrivers()
-  const { getClientByDocument, upsertClient } = useClients()
+  const { clients, getClientByDocument, upsertClient } = useClients()
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema) as any,
@@ -107,6 +100,35 @@ export default function NewShipment() {
               </div>
               
               <div className="space-y-4 relative z-10">
+                <div className="space-y-2">
+                  <Label>Buscar Cliente Existente (Opcional)</Label>
+                  <Select onValueChange={(doc) => {
+                    const client = getClientByDocument(doc)
+                    if (client) {
+                      setValue("senderDocument", client.document)
+                      setValue("senderName", client.name)
+                      setValue("senderPhone", client.phone)
+                      setValue("senderCity", client.city)
+                      setValue("senderAddress", client.address)
+                    }
+                  }}>
+                    <SelectTrigger className="bg-white rounded-xl h-11 border-primary/20">
+                      <SelectValue placeholder="Seleccionar cliente guardado..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients?.map(c => (
+                        <SelectItem key={c.document} value={c.document}>{c.name} ({c.document})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="relative flex items-center gap-2 py-2">
+                  <div className="h-px bg-slate-100 flex-1"></div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest px-2">o ingresar manualmente</span>
+                  <div className="h-px bg-slate-100 flex-1"></div>
+                </div>
+
                 <div className="space-y-2">
                   <Label>Documento (CC/NIT)</Label>
                   <div className="relative">

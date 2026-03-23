@@ -1,12 +1,5 @@
 import { useState } from "react"
-// Mock hook to replace useListDrivers
-const useListDrivers = () => ({
-  data: [
-    { id: 1, name: "Carlos Sanchez", vehicleType: "truck", city: "Bogota", phone: "3001234567", isActive: true, ratePerDelivery: 10000 },
-    { id: 2, name: "Luisa Pinto", vehicleType: "van", city: "Medellin", phone: "3109876543", isActive: true, ratePerDelivery: 12000 }
-  ],
-  isLoading: false
-})
+import { useListDrivers } from "@/hooks/use-drivers"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

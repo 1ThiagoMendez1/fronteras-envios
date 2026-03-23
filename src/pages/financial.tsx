@@ -1,53 +1,4 @@
-// Mock hooks to replace useGetFinancialSummary and useListTransactions
-const useGetFinancialSummary = () => ({
-  data: {
-    totalRevenue: 5200000,
-    totalDriverPayments: 3100000,
-    totalNetProfit: 2100000,
-    totalOtherCosts: 350000,
-    pendingReceivables: 780000,
-    pendingPayables: 420000,
-    dailyData: [
-      { date: new Date(Date.now() - 86400000 * 6).toISOString(), revenue: 1200000, netProfit: 450000 },
-      { date: new Date(Date.now() - 86400000 * 5).toISOString(), revenue: 1500000, netProfit: 600000 },
-      { date: new Date(Date.now() - 86400000 * 4).toISOString(), revenue: 1800000, netProfit: 680000 },
-      { date: new Date(Date.now() - 86400000 * 3).toISOString(), revenue: 1350000, netProfit: 520000 },
-      { date: new Date(Date.now() - 86400000 * 2).toISOString(), revenue: 1500000, netProfit: 600000 },
-      { date: new Date(Date.now() - 86400000).toISOString(), revenue: 2000000, netProfit: 800000 },
-      { date: new Date().toISOString(), revenue: 1500000, netProfit: 600000 }
-    ],
-    // Expanded BI Data
-    profitabilityByCity: [
-      { city: 'Bogotá', revenue: 2100000, costs: 1300000, margin: 38 },
-      { city: 'Medellín', revenue: 1500000, costs: 1100000, margin: 26 },
-      { city: 'Cali', revenue: 950000, costs: 720000, margin: 24 },
-      { city: 'Barranquilla', revenue: 650000, costs: 520000, margin: 20 },
-    ],
-    profitabilityByClient: [
-      { client: 'Empresa A', shipments: 120, revenue: 1800000, margin: 35 },
-      { client: 'Distribuidora XY', shipments: 85, revenue: 1200000, margin: 28 },
-      { client: 'Tech Corp', shipments: 45, revenue: 950000, margin: 30 },
-    ],
-    segmentAnalysis: [
-      { segment: 'B2B Corporativo', revenue: 2600000, costs: 1400000, margin: 46 },
-      { segment: 'E-commerce B2C', revenue: 1600000, costs: 1100000, margin: 31 },
-      { segment: 'Mensajería Express', revenue: 1000000, costs: 600000, margin: 40 },
-    ]
-  },
-  isLoading: false
-})
-const useListTransactions = () => ({
-  data: [
-    { id: 1, createdAt: new Date().toISOString(), type: 'revenue', guideNumber: 'GUIA-1001', description: 'Pago de flete — Bogotá → Medellín', amount: 45000, status: 'confirmed', category: 'operativo' },
-    { id: 2, createdAt: new Date().toISOString(), type: 'driver_payment', guideNumber: 'GUIA-1001', description: 'Pago conductor Pedro García', amount: 28000, status: 'confirmed', category: 'logistica' },
-    { id: 3, createdAt: new Date(Date.now() - 3600000).toISOString(), type: 'revenue', guideNumber: 'GUIA-1002', description: 'Pago de flete — Cali → Bogotá', amount: 62000, status: 'confirmed', category: 'operativo' },
-    { id: 4, createdAt: new Date(Date.now() - 3600000).toISOString(), type: 'driver_payment', guideNumber: 'GUIA-1002', description: 'Pago conductor Miguel López', amount: 35000, status: 'pending', category: 'logistica' },
-    { id: 5, createdAt: new Date(Date.now() - 7200000).toISOString(), type: 'commission', guideNumber: 'GUIA-1003', description: 'Comisión por volumen — Empresa A', amount: 15000, status: 'confirmed', category: 'administrativo' },
-    { id: 6, createdAt: new Date(Date.now() - 10800000).toISOString(), type: 'revenue', guideNumber: 'GUIA-1004', description: 'Pago de flete — Barranquilla → Cartagena', amount: 38000, status: 'confirmed', category: 'operativo' },
-    { id: 7, createdAt: new Date(Date.now() - 14400000).toISOString(), type: 'driver_payment', guideNumber: 'GUIA-1004', description: 'Pago conductor Carlos Ruiz', amount: 22000, status: 'confirmed', category: 'logistica' },
-  ],
-  isLoading: false
-})
+import { useFinancialSummary, useFinancialMovements } from "@/hooks/use-financial"
 import { useState } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Button } from "@/components/ui/button"
@@ -62,8 +13,8 @@ import { es } from "date-fns/locale"
 import { motion } from "framer-motion"
 
 export default function Financial() {
-  const { data: summary, isLoading: loadingSummary } = useGetFinancialSummary()
-  const { data: transactions, isLoading: loadingTransactions } = useListTransactions()
+  const { data: summary, isLoading: loadingSummary } = useFinancialSummary()
+  const { data: transactions, isLoading: loadingTransactions } = useFinancialMovements()
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 8
@@ -82,9 +33,9 @@ export default function Financial() {
     )
   }
 
-  const filteredTransactions = transactions.filter(t =>
-    t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.guideNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTransactions = (transactions ?? []).filter(t =>
+    t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (t.guideNumber && t.guideNumber.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   const totalPages = Math.ceil(filteredTransactions.length / pageSize)
@@ -132,8 +83,8 @@ export default function Financial() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard title="Ingresos Totales" value={formatCurrency(summary.totalRevenue)} icon={DollarSign} color="blue" trend="+12.5%" />
               <StatCard title="Pagos Conductores" value={formatCurrency(summary.totalDriverPayments)} icon={CreditCard} color="indigo" trend="+5.2%" />
-              <StatCard title="Utilidad Neta" value={formatCurrency(summary.totalNetProfit)} icon={TrendingUp} color="emerald" trend="+18.3%" />
-              <StatCard title="Pendiente Cobro" value={formatCurrency(summary.pendingReceivables)} icon={Wallet} color="orange" trend="Alerta" isAlert />
+              <StatCard title="Utilidad Neta" value={formatCurrency(summary.finalProfit)} icon={TrendingUp} color="emerald" trend="+18.3%" />
+              <StatCard title="Gastos Extras" value={formatCurrency(summary.totalExpenses)} icon={Wallet} color="orange" trend="Alerta" isAlert />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -168,15 +119,15 @@ export default function Financial() {
                    <div className="space-y-5">
                      <div>
                        <div className="flex justify-between text-xs mb-1.5"><span className="text-slate-500 font-semibold">Pagos a Conductores</span> <span className="font-bold text-slate-800">{formatCurrency(summary.totalDriverPayments)}</span></div>
-                       <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-indigo-500 rounded-full" style={{width: `${(summary.totalDriverPayments/summary.totalRevenue)*100}%`}}></div></div>
+                       <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-indigo-500 rounded-full" style={{width: `${summary.totalRevenue > 0 ? (summary.totalDriverPayments/summary.totalRevenue)*100 : 0}%`}}></div></div>
                      </div>
                      <div>
-                       <div className="flex justify-between text-xs mb-1.5"><span className="text-slate-500 font-semibold">Costos Operativos/ Otros</span> <span className="font-bold text-slate-800">{formatCurrency(summary.totalOtherCosts)}</span></div>
-                       <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-orange-500 rounded-full" style={{width: `${(summary.totalOtherCosts/summary.totalRevenue)*100}%`}}></div></div>
+                       <div className="flex justify-between text-xs mb-1.5"><span className="text-slate-500 font-semibold">Costos Operativos/ Otros</span> <span className="font-bold text-slate-800">{formatCurrency(summary.totalExpenses)}</span></div>
+                       <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-orange-500 rounded-full" style={{width: `${summary.totalRevenue > 0 ? (summary.totalExpenses/summary.totalRevenue)*100 : 0}%`}}></div></div>
                      </div>
                      <div className="pt-5 mt-3 border-t border-slate-100">
-                       <div className="flex justify-between text-sm"><span className="text-slate-700 font-bold">Utilidad Neta</span> <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">{formatCurrency(summary.totalNetProfit)}</span></div>
-                       <div className="h-3 w-full bg-emerald-50 rounded-full mt-3 overflow-hidden border border-emerald-100"><div className="h-full bg-emerald-500 rounded-full" style={{width: `${(summary.totalNetProfit/summary.totalRevenue)*100}%`}}></div></div>
+                       <div className="flex justify-between text-sm"><span className="text-slate-700 font-bold">Utilidad Final</span> <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">{formatCurrency(summary.finalProfit)}</span></div>
+                       <div className="h-3 w-full bg-emerald-50 rounded-full mt-3 overflow-hidden border border-emerald-100"><div className="h-full bg-emerald-500 rounded-full" style={{width: `${summary.totalRevenue > 0 ? (summary.finalProfit/summary.totalRevenue)*100 : 0}%`}}></div></div>
                      </div>
                    </div>
                  </Card>
@@ -184,7 +135,7 @@ export default function Financial() {
             </div>
 
             <Card className="p-6 rounded-3xl shadow-sm border-slate-200 bg-white">
-               <h3 className="font-bold text-slate-900 mb-6 font-display">Rentabilidad por Segmento</h3>
+               <h3 className="font-bold text-slate-900 mb-6 font-display">Rentabilidad por Sede (Origen)</h3>
                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                  {summary.segmentAnalysis.map((seg: any) => (
                    <div key={seg.segment} className="p-5 border border-slate-100 rounded-2xl bg-gradient-to-br from-slate-50 to-white shadow-sm flex flex-col gap-2 relative overflow-hidden group hover:border-indigo-200 hover:shadow-md transition-all">
@@ -212,7 +163,7 @@ export default function Financial() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="p-6 rounded-3xl shadow-sm border-slate-200 bg-white">
                 <h3 className="font-bold text-slate-900 mb-6 font-display uppercase tracking-wider text-sm flex items-center gap-2">
-                  <PieChartIcon className="w-4 h-4 text-primary" /> Margen por Ciudad
+                  <PieChartIcon className="w-4 h-4 text-primary" /> Margen por Ciudad Destino
                 </h3>
                 <div className="space-y-6">
                   {summary.profitabilityByCity.map((city: any) => (
@@ -239,31 +190,10 @@ export default function Financial() {
 
               <Card className="p-6 rounded-3xl shadow-sm border-slate-200 bg-white">
                 <h3 className="font-bold text-slate-900 mb-6 font-display uppercase tracking-wider text-sm flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" /> Top Clientes por Rentabilidad
+                  <Users className="w-4 h-4 text-primary" /> Clientes con Mayor Volumen
                 </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-slate-400 text-[10px] uppercase font-bold border-b border-slate-100">
-                        <th className="text-left pb-3">Cliente</th>
-                        <th className="text-right pb-3">Envíos</th>
-                        <th className="text-right pb-3">Margen</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {summary.profitabilityByClient.map((client: any) => (
-                        <tr key={client.client} className="group">
-                          <td className="py-4 font-bold text-slate-700">{client.client}</td>
-                          <td className="py-4 text-right text-slate-500">{client.shipments}</td>
-                          <td className="py-4 text-right">
-                             <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold", client.margin > 32 ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600")}>
-                               {client.margin}%
-                             </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="overflow-x-auto text-center py-10 text-slate-400 italic">
+                   La rentabilidad por cliente se calcula automáticamente en base a los envíos del mes.
                 </div>
               </Card>
             </div>
@@ -302,27 +232,27 @@ export default function Financial() {
                   <tbody className="divide-y divide-slate-50">
                     {paginatedTransactions.map((tx: any) => (
                       <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4 text-slate-500 text-xs">{format(new Date(tx.createdAt), "dd/MM HH:mm")}</td>
+                        <td className="px-6 py-4 text-slate-500 text-xs">{format(new Date(tx.movementDate || tx.createdAt || new Date()), "dd/MM HH:mm")}</td>
                         <td className="px-6 py-4">
                           <span className={cn(
                             "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                            tx.type === 'revenue' ? "bg-emerald-50 text-emerald-600" : 
-                            tx.type === 'driver_payment' ? "bg-indigo-50 text-indigo-600" : "bg-slate-100 text-slate-600"
+                            tx.type === 'income' ? "bg-emerald-50 text-emerald-600" : 
+                            tx.type === 'expense' ? "bg-indigo-50 text-indigo-600" : "bg-slate-100 text-slate-600"
                           )}>
-                            {tx.type === 'revenue' ? 'Ingreso' : tx.type === 'driver_payment' ? 'Conductor' : 'Comisión'}
+                            {tx.type === 'income' ? 'Ingreso' : tx.type === 'expense' ? 'Egreso' : 'Otro'}
                           </span>
                         </td>
                         <td className="px-6 py-4 font-bold text-primary text-xs">{tx.guideNumber || '—'}</td>
                         <td className="px-6 py-4 text-slate-600 text-xs">{tx.description}</td>
-                        <td className={cn("px-6 py-4 text-right font-bold", tx.type === 'revenue' ? "text-emerald-600" : "text-slate-900")}>
-                          {tx.type === 'revenue' ? '+' : '-'}{formatCurrency(tx.amount)}
+                        <td className={cn("px-6 py-4 text-right font-bold", tx.type === 'income' ? "text-emerald-600" : "text-slate-900")}>
+                          {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                         </td>
                         <td className="px-6 py-4">
                           <span className={cn(
                             "w-2 h-2 rounded-full inline-block mr-2",
-                            tx.status === 'confirmed' ? "bg-emerald-500" : "bg-orange-500"
-                          )} title={tx.status} />
-                          <span className="text-xs text-slate-500 capitalize">{tx.status === 'confirmed' ? 'Confirmado' : 'Pendiente'}</span>
+                            "bg-emerald-500"
+                          )} />
+                          <span className="text-xs text-slate-500 capitalize">Confirmado</span>
                         </td>
                       </tr>
                     ))}
@@ -353,10 +283,10 @@ export default function Financial() {
                   <AlertCircle className="w-5 h-5" />
                   <h4 className="font-bold">Pendientes de Cobro</h4>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">{formatCurrency(summary.pendingReceivables)}</p>
-                <p className="text-xs text-slate-500 mt-1">12 guías con pago vencido o pendiente de validación.</p>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(0)}</p>
+                <p className="text-xs text-slate-500 mt-1">Vea el reporte detallado para gestionar cobros.</p>
                 <Button className="w-full mt-6 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold gap-2 shadow-lg shadow-orange-100">
-                  Ver Detalles <ArrowRight className="w-4 h-4" />
+                  Ver Detalles <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Card>
 
@@ -365,10 +295,10 @@ export default function Financial() {
                   <Receipt className="w-5 h-5" />
                   <h4 className="font-bold">Pendientes de Pago</h4>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">{formatCurrency(summary.pendingPayables)}</p>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(0)}</p>
                 <p className="text-xs text-slate-500 mt-1">Liquidaciones de conductores a procesar hoy.</p>
                 <Button className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold gap-2 shadow-lg shadow-indigo-100">
-                  Conciliar Ahora <ArrowRight className="w-4 h-4" />
+                  Conciliar Ahora <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Card>
 
