@@ -425,7 +425,7 @@ export default function ShipmentDetail() {
               <h3 className="text-lg font-bold text-foreground mb-6">Historial del Envío</h3>
               
               <div className="relative pl-6 space-y-6 before:absolute before:inset-0 before:ml-[15px] before:h-full before:w-0.5 before:bg-slate-200">
-                {(shipment.history as {id: number, status: string, notes: string | null, created_at: string}[])?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((item) => (
+                {(shipment.history as {id: number, status: string, notes: string | null, createdAt: string}[])?.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((item) => (
                   <div key={item.id} className="relative">
                     <div className="absolute -left-[35px] mt-1 w-5 h-5 rounded-full bg-white border-2 border-primary z-10"></div>
                     <div>
@@ -433,9 +433,9 @@ export default function ShipmentDetail() {
                       <p className="text-xs text-slate-500 mt-0.5">
                         {format(new Date(item.createdAt), "d MMM, HH:mm", { locale: es })}
                       </p>
-                      {item.note && (
+                      {item.notes && (
                         <p className="text-xs text-slate-600 mt-2 bg-slate-50 p-2 rounded border">
-                          {item.note}
+                          {item.notes}
                         </p>
                       )}
                     </div>

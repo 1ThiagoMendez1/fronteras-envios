@@ -270,6 +270,28 @@ export interface Database {
           movement_date?: string
         }
       }
+      chat_messages: {
+        Row: {
+          id: string
+          guide_number: string
+          text: string
+          sender: 'user' | 'agent'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          guide_number: string
+          text: string
+          sender: 'user' | 'agent'
+          created_at?: string
+        }
+        Update: {
+          guide_number?: string
+          text?: string
+          sender?: 'user' | 'agent'
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

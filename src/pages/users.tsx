@@ -31,7 +31,6 @@ import {
   ShieldAlert,
   Edit2,
   ShieldCheck,
-  Key,
   Activity,
   Lock,
   Users as UsersIcon

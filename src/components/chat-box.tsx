@@ -1,15 +1,9 @@
 import { useState, useRef, useEffect } from "react"
-import { Send, User, Bot, AlertCircle } from "lucide-react"
+import { Send, User, Bot, AlertCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-
-interface Message {
-  id: string
-  text: string
-  sender: "user" | "agent"
-  timestamp: Date
-}
+import { useChatMessages, useSendMessage } from "@/hooks/use-chat"
 
 interface ChatBoxProps {
   guideNumber: string
@@ -18,52 +12,52 @@ interface ChatBoxProps {
 }
 
 export function ChatBox({ guideNumber, isAdmin = false, className }: ChatBoxProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      text: isAdmin 
-        ? `Chat interno para soporte de la guía ${guideNumber}.`
-        : `¡Hola! Soy tu asistente virtual. ¿En qué te puedo ayudar con tu envío ${guideNumber}?`,
-      sender: "agent",
-      timestamp: new Date()
-    }
-  ])
   const [inputValue, setInputValue] = useState("")
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  const { data: messages, isLoading } = useChatMessages(guideNumber)
+  const sendMessage = useSendMessage()
+
+  // Always scroll to bottom when messages change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [messages])
+  }, [messages, isLoading])
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!inputValue.trim()) return
+    if (!inputValue.trim() || sendMessage.isPending) return
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text: inputValue.trim(),
-      sender: isAdmin ? "agent" : "user", // Support agents view it differently
-      timestamp: new Date()
-    }
+    const textToSend = inputValue.trim()
+    setInputValue("") // Optimistically clear input
 
-    setMessages((prev) => [...prev, newMessage])
-    setInputValue("")
-
-    // Simulate auto-reply if needed and not admin
-    if (!isAdmin) {
-      setTimeout(() => {
-        const replyMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text: "Un asesor humano te responderá en unos momentos.",
-          sender: "agent",
-          timestamp: new Date()
-        }
-        setMessages((prev) => [...prev, replyMessage])
-      }, 1000)
+    try {
+      await sendMessage.mutateAsync({
+        guideNumber,
+        text: textToSend,
+        sender: isAdmin ? "agent" : "user",
+      })
+    } catch (error) {
+       // Error is handled by the hook's toast
+       setInputValue(textToSend) // Restore input if failed
     }
   }
+
+  // Prepend default message based on view
+  const displayMessages = Array.isArray(messages) ? messages : []
+  
+  const defaultMessage = {
+    id: "default-msg",
+    guide_number: guideNumber,
+    text: isAdmin 
+      ? `Chat interno para soporte de la guía ${guideNumber}.`
+      : `¡Hola! Soy tu asistente. ¿En qué te puedo ayudar con tu envío ${guideNumber}?`,
+    sender: "agent" as const,
+    created_at: new Date().toISOString()
+  }
+
+  const allMessages = displayMessages.length === 0 ? [defaultMessage] : displayMessages
 
   return (
     <div className={cn("flex flex-col h-full bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden", className)}>
@@ -85,36 +79,42 @@ export function ChatBox({ guideNumber, isAdmin = false, className }: ChatBoxProp
         ref={scrollRef}
         className="flex-1 p-4 overflow-y-auto space-y-4 max-h-[400px] sm:max-h-full"
       >
-        {messages.map((msg) => {
-          const isOwnMessage = isAdmin ? msg.sender === "agent" : msg.sender === "user"
-          
-          return (
-            <div 
-              key={msg.id} 
-              className={cn(
-                "flex max-w-[85%] flex-col",
-                isOwnMessage ? "ml-auto" : "mr-auto"
-              )}
-            >
+        {isLoading ? (
+           <div className="flex h-full items-center justify-center">
+             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+           </div>
+        ) : (
+          allMessages.map((msg) => {
+            const isOwnMessage = isAdmin ? msg.sender === "agent" : msg.sender === "user"
+            
+            return (
               <div 
+                key={msg.id} 
                 className={cn(
-                  "px-4 py-2.5 rounded-2xl text-sm break-words",
-                  isOwnMessage 
-                    ? "bg-primary text-primary-foreground rounded-tr-sm" 
-                    : "bg-slate-100 text-slate-700 rounded-tl-sm"
+                  "flex max-w-[85%] flex-col",
+                  isOwnMessage ? "ml-auto" : "mr-auto"
                 )}
               >
-                {msg.text}
+                <div 
+                  className={cn(
+                    "px-4 py-2.5 rounded-2xl text-sm break-words",
+                    isOwnMessage 
+                      ? "bg-primary text-primary-foreground rounded-tr-sm" 
+                      : "bg-slate-100 text-slate-700 rounded-tl-sm"
+                  )}
+                >
+                  {msg.text}
+                </div>
+                <span className={cn(
+                  "text-[10px] text-slate-400 mt-1",
+                  isOwnMessage ? "text-right mr-1" : "ml-1"
+                )}>
+                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
               </div>
-              <span className={cn(
-                "text-[10px] text-slate-400 mt-1",
-                isOwnMessage ? "text-right mr-1" : "ml-1"
-              )}>
-                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-          )
-        })}
+            )
+          })
+        )}
       </div>
 
       {/* Input Area */}
@@ -125,14 +125,15 @@ export function ChatBox({ guideNumber, isAdmin = false, className }: ChatBoxProp
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Escribe un mensaje..."
             className="flex-1 rounded-xl bg-white border-slate-200 focus-visible:ring-primary/20 pr-10"
+            disabled={sendMessage.isPending || isLoading}
           />
           <Button 
             type="submit" 
             size="icon" 
             className="h-10 w-10 shrink-0 rounded-xl"
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() || sendMessage.isPending || isLoading}
           >
-            <Send className="w-4 h-4" />
+            {sendMessage.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </Button>
         </form>
       </div>
@@ -146,3 +147,4 @@ export function ChatBox({ guideNumber, isAdmin = false, className }: ChatBoxProp
     </div>
   )
 }
+
