@@ -163,7 +163,9 @@ export default function EditShipment() {
     try {
       upsertClient({
         document: data.senderDocument, name: data.senderName, phone: data.senderPhone,
-        city: data.senderCity, address: data.senderAddress
+        city: data.senderCity, address: data.senderAddress,
+        tipoCliente: "NATURAL", tipoIdentificacion: "CC", apellido: "", razonSocial: "",
+        email: "", departamento: "", categoria: "CLIENTE", responsableIva: "NO", regimen: "ORDINARIO"
       })
       await updateMutation.mutateAsync({ data })
       setLocation(`/shipments/${id}`)

@@ -114,6 +114,9 @@ export function useFinancialSummary(options: {
         profitabilityByCity,
         segmentAnalysis,
         dailyData,
+        pendingCollections: all.filter((s:any) => s.status !== "delivered").reduce((sum:number, s:any) => sum + Number(s.shipping_cost || 0), 0),
+        pendingPayments: all.filter((s:any) => s.status !== "delivered").reduce((sum:number, s:any) => sum + Number(s.driver_payment || 0), 0),
+        auditIssuesCount: all.filter((s:any) => s.status === "delivered" && (Number(s.driver_payment) === 0 || Number(s.shipping_cost) === 0)).length,
         movements: (movements ?? []).map(m => ({
           id: m.id,
           type: m.type,
@@ -225,8 +228,8 @@ export function useDailyCloseShipments(date: string) {
     queryKey: ["daily-close-shipments", date],
     queryFn: async () => {
       const adminClient = getAdminClient();
-      const startDate = `${date.split('T')[0]}T00:00:00`;
-      const endDate = `${date.split('T')[0]}T23:59:59`;
+      const startDate = `${date.split('T')[0]}T00:00:00-05:00`;
+      const endDate = `${date.split('T')[0]}T23:59:59-05:00`;
 
       const { data, error } = await adminClient
         .from("shipments")
@@ -253,3 +256,28 @@ export function useDailyCloseShipments(date: string) {
   });
 }
 
+export function useUnclosedDays() {
+  return useQuery({
+    queryKey: ["unclosed-days"],
+    queryFn: async () => {
+      const adminClient = getAdminClient();
+      const { data: shipments, error: sErr } = await adminClient.from("shipments").select("created_at");
+      if (sErr) throw sErr;
+      const { data: closes, error: cErr } = await adminClient.from("daily_close").select("close_date");
+      if (cErr) throw cErr;
+
+      const shipmentDays = Array.from(new Set(
+        (shipments || []).map((s: any) => s.created_at.split('T')[0])
+      ));
+      
+      const today = new Date().toISOString().split('T')[0];
+      
+      const unclosed = shipmentDays.filter(day => {
+         const hasClose = closes?.some((c: any) => c.close_date && c.close_date.startsWith(day));
+         return !hasClose && day < today;
+      }).sort((a,b) => b.localeCompare(a));
+      
+      return unclosed;
+    }
+  });
+}
