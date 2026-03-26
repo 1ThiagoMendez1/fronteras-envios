@@ -431,7 +431,7 @@ export default function ShipmentDetail() {
                     <div>
                       <p className="font-bold text-sm text-slate-900">{getStatusLabel(item.status)}</p>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        {format(new Date(item.created_at), "d MMM, HH:mm", { locale: es })}
+                        {(() => { try { return format(new Date(item.created_at), "d MMM, HH:mm", { locale: es }) } catch { return item.created_at ?? "—" } })()}
                       </p>
                       {item.notes && (
                         <p className="text-xs text-slate-600 mt-2 bg-slate-50 p-2 rounded border">
