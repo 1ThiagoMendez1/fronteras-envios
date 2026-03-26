@@ -113,6 +113,7 @@ function mapShipment(row: any) {
     observations: row.observations,
     status: row.status,
     driverId: row.driver_id,
+    driverSignature: row.driver_signature,
     branchOrigin: row.branch_origin,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

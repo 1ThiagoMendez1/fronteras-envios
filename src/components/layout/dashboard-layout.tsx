@@ -11,7 +11,6 @@ import {
   LogOut,
   Menu,
   X,
-  Truck,
   UserCircle,
   ChevronLeft,
   ChevronRight
@@ -68,16 +67,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           isCollapsed ? "justify-center px-0" : "justify-between"
         )}>
           {!isCollapsed && (
-            <Link href="/dashboard" className="flex items-center gap-3 font-display text-xl font-bold tracking-tight overflow-hidden">
-              <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm shrink-0">
-                <Truck className="h-5 w-5" />
-              </div>
-              <span className="truncate">FRONTERAS</span>
+            <Link href="/dashboard" className="flex items-center gap-3 font-display overflow-hidden">
+              <img src="/logo-mark.png" alt="Fronteras" className="h-9 w-auto object-contain drop-shadow-sm" />
+              <span className="text-xl font-bold tracking-tight text-primary translate-y-1.5">FRONTERAS</span>
             </Link>
           )}
           {isCollapsed && (
-            <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm shrink-0 cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
-              <Truck className="h-5 w-5" />
+            <div className="bg-white/10 p-1.5 rounded-lg shrink-0 cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
+              <img src="/logo-mark.png" alt="Icon" className="h-7 w-7 object-contain drop-shadow-sm" />
             </div>
           )}
           <div className="flex gap-2 shrink-0">
@@ -161,7 +158,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(true)}>
               <Menu className="h-5 w-5" />
             </Button>
-            <span className="font-display font-bold text-lg text-primary">FRONTERAS</span>
+            <div className="flex items-center gap-2">
+              <img src="/logo-mark.png" alt="Fronteras" className="h-8 w-auto object-contain drop-shadow-sm" />
+              <span className="font-display font-bold text-lg text-primary translate-y-1">FRONTERAS</span>
+            </div>
           </div>
         </header>
 

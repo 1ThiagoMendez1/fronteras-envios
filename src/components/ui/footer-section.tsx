@@ -2,7 +2,7 @@
 import React from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { FacebookIcon, InstagramIcon, LinkedinIcon, YoutubeIcon, Truck } from 'lucide-react';
+import { FacebookIcon, InstagramIcon, LinkedinIcon, YoutubeIcon } from 'lucide-react';
 
 interface FooterLink {
 	title: string;
@@ -62,10 +62,8 @@ export function Footer() {
 			<div className="grid w-full max-w-7xl mx-auto gap-8 xl:grid-cols-3 xl:gap-8">
 				<AnimatedContainer className="space-y-4">
 					<div className="flex items-center gap-2 font-display text-xl font-bold tracking-tight text-primary">
-            <div className="bg-primary text-white p-2 rounded-lg">
-              <Truck className="h-6 w-6" />
-            </div>
-            <span>FRONTERAS EXPRESS</span>
+            <img src="/logo-mark.png" alt="Fronteras Express" className="h-12 w-auto object-contain drop-shadow-sm" />
+            <span className="translate-y-1.5">FRONTERAS EXPRESS</span>
           </div>
 					<p className="text-muted-foreground mt-8 text-sm md:mt-0 max-w-xs">
 						Más que rápido, siempre a tiempo. Soluciones logísticas integrales para todo el país.

@@ -190,11 +190,15 @@ export function useAssignDriverMutation(id: number) {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (payload: { driverId: number }) => {
+    mutationFn: async (payload: { driverId: number; driverSignature?: string | null }) => {
       const adminClient = getAdminClient();
       const { error } = await adminClient
         .from("shipments")
-        .update({ driver_id: payload.driverId, status: "assigned" })
+        .update({ 
+          driver_id: payload.driverId, 
+          status: "assigned",
+          driver_signature: payload.driverSignature || null
+        })
         .eq("id", id);
       if (error) throw error;
 

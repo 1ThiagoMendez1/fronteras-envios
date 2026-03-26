@@ -252,12 +252,10 @@ export default function PublicTracking() {
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans">
 
       {/* NAV */}
-      <nav className="absolute top-0 inset-x-0 z-50 h-20 flex items-center justify-between px-6 md:px-10">
+      <nav className="absolute top-0 inset-x-0 z-50 h-24 flex items-center justify-between px-6 md:px-10">
         <div className="flex items-center gap-2.5 font-black text-xl tracking-tight text-white select-none">
-          <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-md">
-            <Truck className="w-5 h-5 text-primary" />
-          </div>
-          <span className="text-2xl">FRONTERAS<span className="text-accent font-black"> EXPRESS</span></span>
+          <img src="/logo-mark.png" alt="Fronteras" className="h-[5.5rem] w-auto object-contain drop-shadow-[0_2px_12px_rgba(255,255,255,0.3)]" />
+          <span className="text-3xl translate-y-2.5">FRONTERAS<span className="text-accent font-black"> EXPRESS</span></span>
         </div>
         <div className="flex items-center gap-5">
           <a href="#servicios" className="hidden md:block text-sm font-medium text-blue-100 hover:text-white transition-colors">Servicios</a>

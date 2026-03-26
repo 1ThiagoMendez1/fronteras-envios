@@ -3,7 +3,7 @@ import { useLocation, Link } from "wouter"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Truck, ArrowRight, ShieldCheck } from "lucide-react"
+import { ArrowRight, ShieldCheck } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -77,11 +77,9 @@ export default function Login() {
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-white/10 rounded-full blur-3xl z-0" />
         <div className="absolute bottom-20 -left-20 w-80 h-80 bg-accent/20 rounded-full blur-3xl z-0" />
 
-        <div className="relative z-10 flex items-center gap-3 font-display text-2xl font-bold tracking-tight">
-          <div className="bg-white text-primary p-2.5 rounded-xl shadow-lg">
-            <Truck className="h-6 w-6" />
-          </div>
-          <span>FRONTERAS EXPRESS</span>
+        <div className="relative z-10 flex items-center gap-3 font-display">
+          <img src="/logo-mark.png" alt="Fronteras Express" className="h-16 w-auto object-contain drop-shadow-lg" />
+          <span className="text-2xl font-bold tracking-tight translate-y-2">FRONTERAS EXPRESS</span>
         </div>
 
         <div className="relative z-10 max-w-md">
@@ -107,9 +105,7 @@ export default function Login() {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center lg:text-left space-y-2">
             <div className="lg:hidden flex justify-center mb-6">
-              <div className="bg-primary text-white p-3 rounded-2xl shadow-lg">
-                <Truck className="h-8 w-8" />
-              </div>
+              <img src="/logo-mark.png" alt="Fronteras" className="h-20 w-auto object-contain drop-shadow-md" />
             </div>
 
             <h2 className="text-3xl font-display font-bold text-foreground">

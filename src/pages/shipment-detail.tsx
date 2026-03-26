@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { QRCodeSVG } from "qrcode.react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ChatBox } from "@/components/chat-box"
+import { useToast } from "@/hooks/use-toast"
 
 export default function ShipmentDetail() {
   const [, params] = useRoute("/shipments/:id")
@@ -33,6 +34,7 @@ export default function ShipmentDetail() {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false)
   const [isSignatureDialogOpen, setIsSignatureDialogOpen] = useState(false)
   const sigCanvas = useRef<SignatureCanvas>(null)
+  const { toast } = useToast()
 
   // Local state for signature and driver display (mocking actual persistence hook)
   const [localSignature, setLocalSignature] = useState<string | null>(null)
@@ -66,22 +68,32 @@ export default function ShipmentDetail() {
   }
 
   const handleConfirmAssignment = async () => {
-    if (!driverId) return
-    let sig = null;
+    if (!driverId) return;
+    let sig: string | null = null;
+    
     try {
       if (sigCanvas.current && !sigCanvas.current.isEmpty()) {
-        sig = sigCanvas.current.getTrimmedCanvas().toDataURL("image/png")
+        // Fallback to getCanvas() to avoid getTrimmedCanvas() IndexSizeError crashes
+        sig = sigCanvas.current.getCanvas().toDataURL("image/png");
       }
-    } catch(e) { console.error(e) }
+    } catch(e) { 
+      console.error("Signature extraction error:", e);
+    }
+    
+    if (!sig) {
+      toast({ title: "Firma Requerida", description: "El conductor debe firmar en el recuadro antes de asignar.", variant: "destructive" });
+      return;
+    }
     
     await assignMutation.mutateAsync({
       driverId: parseInt(driverId),
-    })
+      driverSignature: sig,
+    });
     
-    if (sig) setLocalSignature(sig)
-    setLocalDriverId(driverId)
-    setIsSignatureDialogOpen(false)
-    setIsReassigning(false)
+    setLocalSignature(sig);
+    setLocalDriverId(driverId);
+    setIsSignatureDialogOpen(false);
+    setIsReassigning(false);
   }
 
   const clearSignature = () => {
@@ -378,7 +390,17 @@ export default function ShipmentDetail() {
                     </SelectContent>
                   </Select>
                   
-                  <Dialog open={isSignatureDialogOpen} onOpenChange={setIsSignatureDialogOpen}>
+                  <Dialog open={isSignatureDialogOpen} onOpenChange={(open) => {
+                    setIsSignatureDialogOpen(open);
+                    if (open) {
+                      setTimeout(() => {
+                        if (sigCanvas.current) {
+                           // Standard clear will often force a re-render/resize internally
+                           sigCanvas.current.clear();
+                        }
+                      }, 200);
+                    }
+                  }}>
                     <DialogTrigger asChild>
                       <Button 
                         className="h-12 px-6 rounded-xl bg-slate-900" 
