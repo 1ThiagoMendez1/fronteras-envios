@@ -37,6 +37,9 @@ export default function ShipmentDetail() {
   // Local state for signature and driver display (mocking actual persistence hook)
   const [localSignature, setLocalSignature] = useState<string | null>(null)
   const [localDriverId, setLocalDriverId] = useState<string | null>(null)
+  const [isReassigning, setIsReassigning] = useState(false)
+  
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState(false)
 
   if (isLoading || !shipment) {
     return (
@@ -80,6 +83,7 @@ export default function ShipmentDetail() {
     if (sig) setLocalSignature(sig)
     setLocalDriverId(driverId)
     setIsSignatureDialogOpen(false)
+    setIsReassigning(false)
   }
 
   const clearSignature = () => {
@@ -171,9 +175,12 @@ export default function ShipmentDetail() {
   // Generate QR URL based on current origin
   const trackingUrl = `${window.location.origin}/?guide=${shipment.guideNumber}`
 
-  const effectiveDriverId = localDriverId || shipment.driverId;
+  const effectiveDriverId = isReassigning ? null : (localDriverId || shipment.driverId);
   const driverObj = effectiveDriverId ? drivers?.find(d => d.id.toString() === effectiveDriverId.toString()) : null;
   const effectiveDriverName = driverObj ? driverObj.name : shipment.driverName;
+
+  const sortedHistory = (shipment.history as {id: number, status: string, notes: string | null, created_at: string}[])?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) || []
+  const displayHistory = isHistoryExpanded ? sortedHistory : sortedHistory.slice(0, 3)
 
   return (
     <DashboardLayout>
@@ -349,7 +356,7 @@ export default function ShipmentDetail() {
                       <Button size="sm" variant="secondary" onClick={handlePrintActa} className="h-9 font-medium bg-slate-200 hover:bg-slate-300 text-slate-700">
                         <Printer className="w-4 h-4 mr-2" /> Acta
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => { setLocalDriverId(null); setLocalSignature(null); }} className="h-9">Reasignar</Button>
+                      <Button variant="outline" size="sm" onClick={() => { setIsReassigning(true); setLocalDriverId(null); setLocalSignature(null); }} className="h-9">Reasignar</Button>
                     </div>
                   </div>
                   
@@ -425,7 +432,7 @@ export default function ShipmentDetail() {
               <h3 className="text-lg font-bold text-foreground mb-6">Historial del Envío</h3>
               
               <div className="relative pl-6 space-y-6 before:absolute before:inset-0 before:ml-[15px] before:h-full before:w-0.5 before:bg-slate-200">
-                {(shipment.history as {id: number, status: string, notes: string | null, created_at: string}[])?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((item) => (
+                {displayHistory.map((item) => (
                   <div key={item.id} className="relative">
                     <div className="absolute -left-[35px] mt-1 w-5 h-5 rounded-full bg-white border-2 border-primary z-10"></div>
                     <div>
@@ -442,10 +449,16 @@ export default function ShipmentDetail() {
                   </div>
                 ))}
               </div>
+              
+              {sortedHistory.length > 3 && (
+                <Button variant="ghost" className="w-full mt-6 text-xs font-semibold text-slate-600 hover:text-slate-900" onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}>
+                  {isHistoryExpanded ? "Ocultar historial" : "Ver historial completo"}
+                </Button>
+              )}
             </Card>
 
-            <div className="mt-6 h-[500px]">
-              <ChatBox guideNumber={shipment.guideNumber} isAdmin={true} className="h-full" />
+            <div className="mt-6 h-[500px] min-h-[350px] max-h-[800px] w-full resize-y overflow-hidden border border-slate-100 rounded-2xl relative shadow-sm">
+              <ChatBox guideNumber={shipment.guideNumber} isAdmin={true} className="h-full w-full absolute inset-0 rounded-none border-none shadow-none" />
             </div>
           </div>
         </div>

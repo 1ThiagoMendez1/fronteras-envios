@@ -123,6 +123,7 @@ function mapShipment(row: any) {
       city: row.drivers.city,
       phone: row.drivers.phone
     } : null,
+    comentarios: row.comentarios ? (typeof row.comentarios === "string" ? JSON.parse(row.comentarios) : row.comentarios) : [],
     history: (row.shipment_history ?? []).map((h: any) => ({
       id: h.id,
       status: h.status,

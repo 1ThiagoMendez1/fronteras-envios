@@ -3,12 +3,15 @@ import { Send, User, Bot, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { useGetShipmentByGuide } from "@/hooks/use-shipments"
+import { useAddShipmentChatMutation } from "@/hooks/use-shipments-wrapper"
 
-interface Message {
+export interface Message {
   id: string
   text: string
   sender: "user" | "agent"
-  timestamp: Date
+  timestamp: string
+  isRead?: boolean
 }
 
 interface ChatBoxProps {
@@ -18,52 +21,98 @@ interface ChatBoxProps {
 }
 
 export function ChatBox({ guideNumber, isAdmin = false, className }: ChatBoxProps) {
-  const [messages, setMessages] = useState<Message[]>([
+  const { data: shipment, isLoading } = useGetShipmentByGuide(guideNumber)
+  const addChatMutation = useAddShipmentChatMutation(shipment?.id || 0)
+
+  const defaultMessages: Message[] = [
     {
       id: "1",
       text: isAdmin 
         ? `Chat interno para soporte de la guía ${guideNumber}.`
         : `¡Hola! Soy tu asistente virtual. ¿En qué te puedo ayudar con tu envío ${guideNumber}?`,
       sender: "agent",
-      timestamp: new Date()
+      timestamp: new Date().toISOString()
     }
-  ])
+  ]
+
+  const dbMessages: Message[] = Array.isArray(shipment?.comentarios) ? shipment.comentarios : []
+  const allMessages = [...defaultMessages, ...dbMessages]
+
   const [inputValue, setInputValue] = useState("")
   const scrollRef = useRef<HTMLDivElement>(null)
+  
+  // Optimistic UI updates
+  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([])
 
+  useEffect(() => {
+    setOptimisticMessages([])
+  }, [shipment?.comentarios])
+
+  const hasUnreadMessages = isAdmin && dbMessages.some(m => m.sender === "user" && !m.isRead)
+
+  const markAsRead = async () => {
+    if (!isAdmin || !shipment?.id || !Array.isArray(shipment.comentarios)) return
+    
+    const updatedComentarios = shipment.comentarios.map((msg: Message) => 
+      msg.sender === "user" && !msg.isRead ? { ...msg, isRead: true } : msg
+    )
+    
+    try {
+      await addChatMutation.mutateAsync({ mensajes: updatedComentarios })
+    } catch(e) { console.error(e) }
+  }
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [messages])
+  }, [allMessages, optimisticMessages])
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!inputValue.trim()) return
+    if (!inputValue.trim() || !shipment) return
 
     const newMessage: Message = {
       id: Date.now().toString(),
       text: inputValue.trim(),
-      sender: isAdmin ? "agent" : "user", // Support agents view it differently
-      timestamp: new Date()
+      sender: isAdmin ? "agent" : "user",
+      timestamp: new Date().toISOString(),
+      isRead: isAdmin ? true : false
     }
 
-    setMessages((prev) => [...prev, newMessage])
     setInputValue("")
+    setOptimisticMessages(prev => [...prev, newMessage])
 
-    // Simulate auto-reply if needed and not admin
-    if (!isAdmin) {
-      setTimeout(() => {
-        const replyMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text: "Un asesor humano te responderá en unos momentos.",
-          sender: "agent",
-          timestamp: new Date()
+    // If admin replies, automatically mark all previous user messages as read
+    let finalDbMessages = dbMessages
+    if (isAdmin && hasUnreadMessages) {
+      finalDbMessages = finalDbMessages.map(m => (m.sender === "user" && !m.isRead) ? { ...m, isRead: true } : m)
+    }
+
+    const updatedMessages = [...finalDbMessages, newMessage]
+
+    try {
+      if (shipment.id) {
+        await addChatMutation.mutateAsync({ mensajes: updatedMessages })
+        
+        if (!isAdmin) {
+          setTimeout(async () => {
+            const replyMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              text: "Un asesor humano te responderá en unos momentos.",
+              sender: "agent",
+              timestamp: new Date().toISOString()
+            }
+            await addChatMutation.mutateAsync({ mensajes: [...updatedMessages, replyMessage] })
+          }, 1000)
         }
-        setMessages((prev) => [...prev, replyMessage])
-      }, 1000)
+      }
+    } catch (e) {
+      console.error(e)
+      setOptimisticMessages(prev => prev.filter(m => m.id !== newMessage.id))
     }
   }
+
+  const displayMessages = [...allMessages, ...optimisticMessages]
 
   return (
     <div className={cn("flex flex-col h-full bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden", className)}>
@@ -81,11 +130,28 @@ export function ChatBox({ guideNumber, isAdmin = false, className }: ChatBoxProp
       </div>
 
       {/* Messages Area */}
+      {hasUnreadMessages && (
+        <div className="bg-blue-50/80 px-4 py-2 flex items-center justify-between border-b border-blue-100">
+          <p className="text-xs text-blue-700 flex items-center gap-1 font-medium"><AlertCircle className="w-3.5 h-3.5"/> Nuevos mensajes del cliente</p>
+          <Button size="sm" variant="outline" className="h-6 text-[10px] bg-white text-blue-700 border-blue-200 hover:bg-blue-100" onClick={markAsRead} disabled={addChatMutation.isPending}>
+            Marcar como leído
+          </Button>
+        </div>
+      )}
       <div 
         ref={scrollRef}
         className="flex-1 p-4 overflow-y-auto space-y-4 max-h-[400px] sm:max-h-full"
       >
-        {messages.map((msg) => {
+        {isLoading && (
+          <div className="flex justify-center p-4">
+            <div className="animate-pulse flex space-x-2">
+              <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+            </div>
+          </div>
+        )}
+        {!isLoading && displayMessages.map((msg) => {
           const isOwnMessage = isAdmin ? msg.sender === "agent" : msg.sender === "user"
           
           return (
@@ -110,7 +176,7 @@ export function ChatBox({ guideNumber, isAdmin = false, className }: ChatBoxProp
                 "text-[10px] text-slate-400 mt-1",
                 isOwnMessage ? "text-right mr-1" : "ml-1"
               )}>
-                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
           )
@@ -125,12 +191,13 @@ export function ChatBox({ guideNumber, isAdmin = false, className }: ChatBoxProp
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Escribe un mensaje..."
             className="flex-1 rounded-xl bg-white border-slate-200 focus-visible:ring-primary/20 pr-10"
+            disabled={isLoading || addChatMutation.isPending && optimisticMessages.length === 0}
           />
           <Button 
             type="submit" 
             size="icon" 
             className="h-10 w-10 shrink-0 rounded-xl"
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() || isLoading}
           >
             <Send className="w-4 h-4" />
           </Button>

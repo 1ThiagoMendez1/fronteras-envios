@@ -214,3 +214,30 @@ export function useAssignDriverMutation(id: number) {
     },
   });
 }
+
+// ─── Add Chat Message ──────────────────────────────────────────────────────────
+export function useAddShipmentChatMutation(id: number) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (payload: { mensajes: any[] }) => {
+      const adminClient = getAdminClient();
+      const { data: result, error } = await adminClient
+        .from("shipments")
+        .update({ comentarios: payload.mensajes })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      queryClient.invalidateQueries({ queryKey: ["shipments", id] });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message || "Error al enviar mensaje", variant: "destructive" });
+    },
+  });
+}
