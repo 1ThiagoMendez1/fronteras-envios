@@ -2,7 +2,7 @@ import { useState, useRef } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { UploadCloud, FileSpreadsheet, CheckCircle2, AlertCircle, RefreshCw, ChevronRight, XCircle, Database, TrendingDown, DollarSign } from "lucide-react"
+import { UploadCloud, FileSpreadsheet, CheckCircle2, AlertCircle, RefreshCw, ChevronRight, XCircle, Database, DollarSign } from "lucide-react"
 import { cn, formatCurrency } from "@/lib/utils"
 import { motion } from "framer-motion"
 
@@ -74,17 +74,9 @@ export default function DataUploadPage() {
     negativeMarginGuides: 15
   }
 
-  const errorDetails = [
-    { row: 145, guide: "GUIA-8001", issue: "Guía no encontrada en el sistema", type: "error" },
-    { row: 302, guide: "GUIA-8154", issue: "Diferencia de flete cobrado vs reportado", type: "warning" },
-    { row: 512, guide: "GUIA-8290", issue: "Diferencia de flete cobrado vs reportado", type: "warning" },
-    { row: 890, guide: "GUIA-8802", issue: "Estado actual difiere del reporte (Entregado vs En Tránsito)", type: "error" },
-    { row: 1105, guide: "GUIA-9051", issue: "Ciudad destino no coincide", type: "error" }
-  ]
-
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-5xl mx-auto">
+      <div className="space-y-6">
         {/* Header Banner */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
           className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 text-white p-8 rounded-3xl relative overflow-hidden shadow-xl"

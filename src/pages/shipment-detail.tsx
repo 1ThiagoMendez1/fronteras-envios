@@ -177,7 +177,7 @@ export default function ShipmentDetail() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-6xl mx-auto pb-20 no-print">
+      <div className="space-y-6 pb-20 no-print">
         
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -431,11 +431,11 @@ export default function ShipmentDetail() {
                     <div>
                       <p className="font-bold text-sm text-slate-900">{getStatusLabel(item.status)}</p>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        {format(new Date(item.createdAt), "d MMM, HH:mm", { locale: es })}
+                        {format(new Date(item.created_at), "d MMM, HH:mm", { locale: es })}
                       </p>
-                      {item.note && (
+                      {item.notes && (
                         <p className="text-xs text-slate-600 mt-2 bg-slate-50 p-2 rounded border">
-                          {item.note}
+                          {item.notes}
                         </p>
                       )}
                     </div>

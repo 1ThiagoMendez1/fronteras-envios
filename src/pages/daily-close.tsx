@@ -177,7 +177,7 @@ export default function DailyClosePage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-5xl mx-auto">
+      <div className="space-y-6">
         {/* Header Banner */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-primary text-white p-7 rounded-3xl relative overflow-hidden shadow-xl shadow-primary/20"
