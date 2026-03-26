@@ -40,6 +40,7 @@ export default function ShipmentDetail() {
   const [localSignature, setLocalSignature] = useState<string | null>(null)
   const [localDriverId, setLocalDriverId] = useState<string | null>(null)
   const [isReassigning, setIsReassigning] = useState(false)
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState(false)
 
   if (isLoading || !shipment) {
     return (
@@ -90,10 +91,10 @@ export default function ShipmentDetail() {
       driverSignature: sig,
     });
     
-    setLocalSignature(sig);
-    setLocalDriverId(driverId);
-    setIsSignatureDialogOpen(false);
-    setIsReassigning(false);
+    if (sig) setLocalSignature(sig)
+    setLocalDriverId(driverId)
+    setIsSignatureDialogOpen(false)
+    setIsReassigning(false)
   }
 
   const clearSignature = () => {
@@ -189,6 +190,9 @@ export default function ShipmentDetail() {
   const driverObj = effectiveDriverId ? drivers?.find(d => d.id.toString() === effectiveDriverId.toString()) : null;
   const effectiveDriverName = driverObj ? driverObj.name : shipment.driverName;
 
+  const sortedHistory = (shipment.history as {id: number, status: string, notes: string | null, created_at: string}[])?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) || []
+  const displayHistory = isHistoryExpanded ? sortedHistory : sortedHistory.slice(0, 3)
+
   return (
     <DashboardLayout>
       <div className="space-y-6 pb-20 no-print">
@@ -266,13 +270,13 @@ export default function ShipmentDetail() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
           
           {/* Left Column (Details) */}
-          <div className="col-span-1 lg:col-span-2 space-y-6">
+          <div className="flex-1 w-full space-y-6 min-w-[300px]">
             {/* Origin & Destination Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="p-6 rounded-2xl shadow-sm border-border/50">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Card className="flex-1 p-6 rounded-2xl shadow-sm border-border/50 resize overflow-auto min-h-[150px] min-w-[250px] max-w-full">
                 <div className="flex items-center gap-2 mb-4 text-slate-500">
                   <MapPin className="w-5 h-5" />
                   <h3 className="font-semibold uppercase tracking-wider text-xs">Origen / Remitente</h3>
@@ -285,7 +289,7 @@ export default function ShipmentDetail() {
                 </div>
               </Card>
 
-              <Card className="p-6 rounded-2xl shadow-sm border-border/50 bg-blue-50/30 border-blue-100">
+              <Card className="flex-1 p-6 rounded-2xl shadow-sm border-border/50 bg-blue-50/30 border-blue-100 resize overflow-auto min-h-[150px] min-w-[250px] max-w-full">
                 <div className="flex items-center gap-2 mb-4 text-blue-600">
                   <MapPin className="w-5 h-5" />
                   <h3 className="font-semibold uppercase tracking-wider text-xs">Destino / Destinatario</h3>
@@ -300,7 +304,7 @@ export default function ShipmentDetail() {
             </div>
 
             {/* Financial Details */}
-            <Card className="p-6 rounded-2xl shadow-sm border-border/50">
+            <Card className="p-6 rounded-2xl shadow-sm border-border/50 resize overflow-auto min-h-[150px] max-w-full">
               <h3 className="text-lg font-bold text-foreground mb-4">Detalles del Paquete</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div>
@@ -329,7 +333,7 @@ export default function ShipmentDetail() {
             </Card>
 
             {/* Profit Margin Info */}
-            <Card className="p-6 rounded-2xl shadow-sm border-border/50 bg-green-50/50 border-green-100 mt-4">
+            <Card className="p-6 rounded-2xl shadow-sm border-border/50 bg-green-50/50 border-green-100 mt-4 resize overflow-auto min-h-[100px] max-w-full">
                <div className="flex items-center justify-between">
                  <div>
                    <p className="text-sm font-bold text-green-800 uppercase tracking-widest mb-1">Margen de Ganancia (Sede {shipment.branchOrigin})</p>
@@ -342,7 +346,7 @@ export default function ShipmentDetail() {
             </Card>
 
             {/* Driver Assignment */}
-            <Card className="p-6 rounded-2xl shadow-sm border-border/50">
+            <Card className="p-6 rounded-2xl shadow-sm border-border/50 resize overflow-auto min-h-[150px] max-w-full">
               <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                 <Truck className="w-5 h-5 text-primary" /> Asignación de Conductor
               </h3>
@@ -448,13 +452,22 @@ export default function ShipmentDetail() {
             </Card>
           </div>
 
-          {/* Right Column (Timeline) */}
-          <div className="col-span-1">
-            <Card className="p-6 rounded-2xl shadow-sm border-border/50 sticky top-24">
-              <h3 className="text-lg font-bold text-foreground mb-6">Historial del Envío</h3>
+          {/* Right Column (Timeline & Chat) */}
+          <div 
+            className="w-full lg:w-[450px] shrink-0 resize-x overflow-hidden min-w-[300px] max-w-full lg:max-w-[60vw] pl-2 pb-2" 
+            style={{ direction: 'rtl' }}
+          >
+            <div style={{ direction: 'ltr' }} className="flex flex-col gap-6 h-full w-full pr-1">
               
-              <div className="relative pl-6 space-y-6 before:absolute before:inset-0 before:ml-[15px] before:h-full before:w-0.5 before:bg-slate-200">
-                {(shipment.history as {id: number, status: string, notes: string | null, createdAt: string}[])?.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((item) => (
+              <div className="h-[500px] min-h-[350px] max-h-[800px] w-full resize overflow-hidden border border-slate-100 rounded-2xl relative shadow-sm">
+                <ChatBox guideNumber={shipment.guideNumber} isAdmin={true} className="h-full w-full absolute inset-0 rounded-none border-none shadow-none" />
+              </div>
+
+              <Card className="p-6 rounded-2xl shadow-sm border-border/50 h-[350px] min-h-[250px] resize overflow-hidden flex flex-col">
+                  <h3 className="text-lg font-bold text-foreground mb-4 shrink-0">Historial del Envío</h3>
+                  
+                  <div className="relative pl-6 space-y-6 before:absolute before:inset-0 before:ml-[15px] before:h-full before:w-0.5 before:bg-slate-200 flex-1 overflow-y-auto pr-2">
+                {displayHistory.map((item) => (
                   <div key={item.id} className="relative">
                     <div className="absolute -left-[35px] mt-1 w-5 h-5 rounded-full bg-white border-2 border-primary z-10"></div>
                     <div>
@@ -471,10 +484,14 @@ export default function ShipmentDetail() {
                   </div>
                 ))}
               </div>
+              
+              {sortedHistory.length > 3 && (
+                <Button variant="ghost" className="w-full mt-4 shrink-0 text-xs font-semibold text-slate-600 hover:text-slate-900" onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}>
+                  {isHistoryExpanded ? "Ocultar historial" : "Ver historial completo"}
+                </Button>
+              )}
             </Card>
-
-            <div className="mt-6 h-[500px]">
-              <ChatBox guideNumber={shipment.guideNumber} isAdmin={true} className="h-full" />
+            
             </div>
           </div>
         </div>

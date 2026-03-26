@@ -136,6 +136,7 @@ export interface Database {
           created_by: string | null
           created_at: string
           updated_at: string
+          comentarios: Json | null
         }
         Insert: {
           id?: number
@@ -160,6 +161,7 @@ export interface Database {
           created_by?: string | null
           created_at?: string
           updated_at?: string
+          comentarios?: Json | null
         }
         Update: {
           sender_document?: string | null
@@ -180,6 +182,7 @@ export interface Database {
           driver_id?: number | null
           branch_origin?: string
           updated_at?: string
+          comentarios?: Json | null
         }
       }
       shipment_history: {

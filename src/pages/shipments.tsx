@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card"
 import { formatCurrency, getStatusColor, getStatusLabel, cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { Plus, Search, Filter, ChevronRight, Pencil } from "lucide-react"
+import { Plus, Search, Filter, ChevronRight, Pencil, MessageSquareDot } from "lucide-react"
 import { Link } from "wouter"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useLocation } from "wouter"
@@ -16,6 +16,7 @@ export default function Shipments() {
   const [, setLocation] = useLocation()
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [search, setSearch] = useState("")
+  const [unreadOnly, setUnreadOnly] = useState(false)
 
   const { data, isLoading } = useListShipments({
     status: statusFilter !== "all" ? statusFilter : undefined,
@@ -23,12 +24,15 @@ export default function Shipments() {
   })
 
   // Local filtering for search (in real app, this would be server side)
-  const filteredShipments = data?.shipments.filter(s => 
-    search ? s.guideNumber.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredShipments = data?.shipments.filter(s => {
+    const matchesSearch = search ? s.guideNumber.toLowerCase().includes(search.toLowerCase()) || 
              s.senderName.toLowerCase().includes(search.toLowerCase()) ||
              s.recipientName.toLowerCase().includes(search.toLowerCase()) 
            : true
-  ) || []
+    const hasUnread = s.comentarios?.some((m: any) => m.sender === "user" && !m.isRead)
+    const matchesUnread = unreadOnly ? hasUnread : true
+    return matchesSearch && matchesUnread
+  }) || []
 
   return (
     <DashboardLayout>
@@ -54,7 +58,16 @@ export default function Shipments() {
             />
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto">
-            <Filter className="w-5 h-5 text-muted-foreground" />
+            <Button
+              variant={unreadOnly ? "default" : "outline"}
+              className={cn("h-12 rounded-xl flex-shrink-0 transition-colors", unreadOnly ? "bg-red-500 hover:bg-red-600 border-red-500" : "bg-white border-slate-200")}
+              onClick={() => setUnreadOnly(!unreadOnly)}
+              title="Filtrar mensajes sin leer"
+            >
+              <MessageSquareDot className="w-5 h-5 sm:mr-2" />
+              <span className="hidden sm:inline">Sin Leer</span>
+            </Button>
+            <Filter className="w-5 h-5 text-muted-foreground mr-1 ml-2" />
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-[200px] h-12 rounded-xl bg-white border-slate-200">
                 <SelectValue placeholder="Estado" />
@@ -102,12 +115,23 @@ export default function Shipments() {
                     </td>
                   </tr>
                 ) : (
-                  filteredShipments.map((shipment: any) => (
+                  filteredShipments.map((shipment: any) => {
+                    const hasUnreadChat = shipment.comentarios?.some((msg: any) => msg.sender === "user" && !msg.isRead)
+                    
+                    return (
                     <tr key={shipment.id} className="hover:bg-slate-50 transition-colors group">
                       <td className="px-6 py-4">
-                        <Link href={`/shipments/${shipment.id}`} className="font-bold text-primary hover:underline">
-                          {shipment.guideNumber}
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link href={`/shipments/${shipment.id}`} className="font-bold text-primary hover:underline">
+                            {shipment.guideNumber}
+                          </Link>
+                          {hasUnreadChat && (
+                             <div className="relative flex h-3 w-3 flex-shrink-0" title="Nuevo mensaje">
+                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                               <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                             </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="font-semibold text-slate-800">{shipment.senderName}</div>
@@ -145,8 +169,9 @@ export default function Shipments() {
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
+                  )
+                })
+              )}
               </tbody>
             </table>
           </div>
