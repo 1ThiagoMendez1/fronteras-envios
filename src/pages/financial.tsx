@@ -13,8 +13,29 @@ import { es } from "date-fns/locale"
 import { motion } from "framer-motion"
 
 export default function Financial() {
-  const { data: summary, isLoading: loadingSummary } = useFinancialSummary()
-  const { data: transactions, isLoading: loadingTransactions } = useFinancialMovements()
+  const [period, setPeriod] = useState<"today" | "week" | "month" | "all">("month")
+
+  // Function to calculate dates based on string period
+  const getPeriodDates = () => {
+    if (period === "all") return {}
+    const now = new Date()
+    let startDate
+    if (period === "today") {
+      now.setHours(0,0,0,0)
+      startDate = now.toISOString()
+    } else if (period === "week") {
+      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)))
+      startOfWeek.setHours(0,0,0,0)
+      startDate = startOfWeek.toISOString()
+    } else {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      startDate = startOfMonth.toISOString()
+    }
+    return { startDate }
+  }
+
+  const { data: summary, isLoading: loadingSummary } = useFinancialSummary(getPeriodDates())
+  const { data: transactions, isLoading: loadingTransactions } = useFinancialMovements(getPeriodDates())
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 8
@@ -44,8 +65,6 @@ export default function Financial() {
     currentPage * pageSize
   )
 
-  // Layout metrics
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -55,7 +74,23 @@ export default function Financial() {
             <h1 className="text-3xl font-display font-bold text-slate-900">Gestión Financiera</h1>
             <p className="text-slate-500 mt-1">Control integral de ingresos, egresos y rentabilidad logística.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex items-center bg-white rounded-xl border border-slate-200 shadow-sm p-1 gap-0.5">
+              {(["today", "week", "month", "all"] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={cn(
+                    "px-4 py-2 text-sm font-semibold rounded-lg transition-all",
+                    period === p
+                      ? "bg-primary text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  )}
+                >
+                  {p === "today" ? "Hoy" : p === "week" ? "Semana" : p === "month" ? "Mes" : "Todo"}
+                </button>
+              ))}
+            </div>
             <Button variant="outline" className="rounded-xl border-slate-200 bg-white shadow-sm text-xs font-bold gap-2">
               <Download className="w-4 h-4" /> Exportar Reporte
             </Button>
@@ -283,8 +318,8 @@ export default function Financial() {
                   <AlertCircle className="w-5 h-5" />
                   <h4 className="font-bold">Pendientes de Cobro</h4>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">{formatCurrency(0)}</p>
-                <p className="text-xs text-slate-500 mt-1">Vea el reporte detallado para gestionar cobros.</p>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(summary.pendingCollections)}</p>
+                <p className="text-xs text-slate-500 mt-1">Guías activas (no entregadas) que representan fletes por cobrar.</p>
                 <Button className="w-full mt-6 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold gap-2 shadow-lg shadow-orange-100">
                   Ver Detalles <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -295,8 +330,8 @@ export default function Financial() {
                   <Receipt className="w-5 h-5" />
                   <h4 className="font-bold">Pendientes de Pago</h4>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">{formatCurrency(0)}</p>
-                <p className="text-xs text-slate-500 mt-1">Liquidaciones de conductores a procesar hoy.</p>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(summary.pendingPayments)}</p>
+                <p className="text-xs text-slate-500 mt-1">Liquidaciones de conductores de guías aún en curso.</p>
                 <Button className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold gap-2 shadow-lg shadow-indigo-100">
                   Conciliar Ahora <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -308,13 +343,22 @@ export default function Financial() {
                   <h4 className="font-bold">Check de Auditoría</h4>
                 </div>
                 <div className="space-y-3">
-                  <AuditItem label="Guías vs Manifiestos" status="success" />
+                  <AuditItem label="Revisión de Costos en Guías" status={summary.auditIssuesCount > 0 ? "error" : "success"} />
                   <AuditItem label="Pagos Recibidos vs Reportes" status="warning" />
                   <AuditItem label="Liquidaciones Conductor" status="success" />
                 </div>
-                <div className="mt-6 p-3 bg-blue-50 rounded-xl flex gap-3 border border-blue-100">
-                   <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                   <p className="text-[10px] text-blue-800 leading-tight">La auditoría automática detectó 3 inconsistencias menores en los reportes de ayer.</p>
+                <div className={cn("mt-6 p-3 rounded-xl flex gap-3 border", summary.auditIssuesCount > 0 ? "bg-rose-50 border-rose-100" : "bg-emerald-50 border-emerald-100")}>
+                   {summary.auditIssuesCount > 0 ? (
+                      <>
+                        <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-rose-800 leading-tight">La auditoría detectó <strong>{summary.auditIssuesCount} guías entregadas</strong> con flete o pago a conductor en $0. Revise las tarifas.</p>
+                      </>
+                   ) : (
+                      <>
+                        <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-emerald-800 leading-tight">No se detectaron inconsistencias de costos en las guías entregadas.</p>
+                      </>
+                   )}
                 </div>
               </Card>
             </div>

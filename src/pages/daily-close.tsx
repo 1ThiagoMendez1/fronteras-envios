@@ -1,4 +1,4 @@
-import { useDailyCloseList, useFinancialSummary, useDailyCloseShipments } from "@/hooks/use-financial"
+import { useDailyCloseList, useFinancialSummary, useDailyCloseShipments, useUnclosedDays } from "@/hooks/use-financial"
 import { useState, useMemo } from "react"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
@@ -18,9 +18,11 @@ type WizardStep = 'idle' | 'pre-close' | 'confirm' | 'success'
 
 export default function DailyClosePage() {
   const { data: closes, isLoading } = useDailyCloseList()
+  const { data: unclosedDays } = useUnclosedDays()
+  const [targetCloseDate, setTargetCloseDate] = useState(new Date().toISOString().split('T')[0])
   const { data: summary } = useFinancialSummary({ 
-    startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-    endDate: new Date().toISOString().split('T')[0] + 'T23:59:59'
+    startDate: targetCloseDate + 'T00:00:00-05:00',
+    endDate: targetCloseDate + 'T23:59:59-05:00'
   })
 
   // Pre-calculate pre-close data from current summary
@@ -61,14 +63,14 @@ export default function DailyClosePage() {
   const handleCreateClose = async () => {
     if (!preCloseData) return;
     await createMutation.mutateAsync({
-      closeDate: new Date().toISOString(),
+      closeDate: new Date(targetCloseDate + 'T12:00:00').toISOString(),
       branch: "Principal",
       totalShipments: preCloseData.totalShipments,
       totalRevenue: preCloseData.totalRevenue,
       totalDriverPayments: preCloseData.totalDriverPayments,
       netProfit: preCloseData.totalNetProfit,
       cashCollected: preCloseData.totalRevenue,
-      notes: closeNotes || "Cierre automático del día"
+      notes: closeNotes || `Cierre correspondiente al día ${targetCloseDate}`
     })
     setWizardStep('success')
   }
@@ -201,11 +203,39 @@ export default function DailyClosePage() {
                 </Button>
               </Link>
             </div>
-            <Button className="bg-white text-primary hover:bg-slate-100 rounded-xl h-12 px-6 font-bold text-base shadow-lg" onClick={() => setWizardStep('pre-close')} disabled={wizardStep !== 'idle'}>
-              <Lock className="w-5 h-5 mr-2" /> Realizar Cierre Hoy
+            <Button className="bg-white text-primary hover:bg-slate-100 rounded-xl h-12 px-6 font-bold text-base shadow-lg" onClick={() => { setTargetCloseDate(new Date().toISOString().split('T')[0]); setWizardStep('pre-close'); }} disabled={wizardStep !== 'idle'}>
+              <Lock className="w-5 h-5 mr-2" /> Cierre Hoy
             </Button>
           </div>
         </motion.div>
+
+        {unclosedDays && unclosedDays.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-8 h-8 shrink-0 text-amber-500" />
+              <div>
+                <p className="font-bold text-sm">Hay {unclosedDays.length} días anteriores con actividad sin cerrar.</p>
+                <p className="text-xs mt-0.5 opacity-90">Seleccione los días pendientes para contabilizar sus datos históricos.</p>
+              </div>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <select 
+                title="Seleccionar Cierre"
+                className="text-xs p-2.5 rounded-xl border border-amber-300 bg-white shadow-sm font-semibold text-slate-700"
+                value={targetCloseDate}
+                onChange={(e) => setTargetCloseDate(e.target.value)}
+              >
+                <option value={new Date().toISOString().split('T')[0]}>Hoy ({format(new Date(), "dd/MM")})</option>
+                {unclosedDays.map((d: string) => (
+                  <option key={d} value={d}>{format(new Date(d + 'T12:00:00'), "EEEE dd/MM", { locale: es })}</option>
+                ))}
+              </select>
+               <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-5 shadow-sm" onClick={() => setWizardStep('pre-close')}>
+                 Revisar y Cerrar
+               </Button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Wizard Dialog */}
         <Dialog open={wizardStep !== 'idle'} onOpenChange={(open) => { if (!open) resetWizard() }}>
@@ -428,7 +458,7 @@ export default function DailyClosePage() {
                       <div className="flex items-center gap-4">
                         <div className="bg-primary/10 p-3 rounded-xl text-primary"><CalendarCheck className="w-6 h-6" /></div>
                         <div>
-                          <h4 className="font-bold text-base text-slate-900 capitalize">{format(new Date(close.closeDate), "EEEE, d 'de' MMMM", { locale: es })}</h4>
+                          <h4 className="font-bold text-base text-slate-900 capitalize">{format(new Date(close.closeDate), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}</h4>
                           <div className="flex items-center gap-3 mt-1">
                             <span className="text-xs text-slate-500">por {close.closedBy}</span>
                             {revenueDeltaPct !== 0 && (

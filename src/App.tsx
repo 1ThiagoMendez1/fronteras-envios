@@ -18,7 +18,6 @@ import Financial from "@/pages/financial"
 import DailyClosePage from "@/pages/daily-close"
 import ClientsPage from "@/pages/clients"
 import UsersPage from "@/pages/users"
-import DataUploadPage from "@/pages/data-upload"
 import NotFound from "@/pages/not-found"
 
 import { Redirect } from "wouter"
@@ -66,7 +65,6 @@ function Router() {
       <ProtectedRoute path="/drivers" component={Drivers} />
       <ProtectedRoute path="/clients" component={ClientsPage} />
       <ProtectedRoute path="/financial" component={Financial} />
-      <ProtectedRoute path="/data-upload" component={DataUploadPage} />
       <ProtectedRoute path="/daily-close" component={DailyClosePage} />
       <ProtectedRoute path="/users" component={UsersPage} />
 

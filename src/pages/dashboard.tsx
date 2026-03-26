@@ -18,47 +18,23 @@ import { ColombiaMap } from "@/components/colombia-map"
 type DashboardPeriod = "today" | "week" | "month"
 
 export default function Dashboard() {
-  const { data: rawStats, isLoading } = useDashboardStats()
   const [period, setPeriod] = useState<DashboardPeriod>("today")
+  const { data: rawStats, isLoading } = useDashboardStats(period)
   const [shipmentSearch, setShipmentSearch] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 5
 
-  // Adapt real stats to the shape the UI expects (with fallbacks for BI fields)
+  // Use the new BI metrics from the hook directly
   const stats = rawStats ? {
-    todayShipments: rawStats.thisMonthShipments,
+    ...rawStats,
+    todayShipments: rawStats.totalShipments, // map conceptually for UI
     todayRevenue: rawStats.totalRevenue,
     todayProfit: rawStats.netProfit,
-    activeDrivers: rawStats.activeDrivers,
-    deliveryRate: rawStats.totalShipments > 0 ? Math.round((rawStats.delivered / rawStats.totalShipments) * 100 * 10) / 10 : 0,
-    avgDeliveryTime: 4.2,
-    slaCompliance: 94.5,
-    slaTrend: 1.2,
     pendingGuides: rawStats.pending,
-    pendingGuidesTrend: 0,
     statusBreakdown: Object.entries(rawStats.statusCounts).map(([status, count]) => ({ status, count })),
     totalActiveShipments: rawStats.inTransit + rawStats.pending,
     deliveredToday: rawStats.delivered,
     incidentsToday: rawStats.incidents,
-    revenueSparkline: [rawStats.totalRevenue],
-    shipmentsSparkline: [rawStats.thisMonthShipments],
-    profitSparkline: [rawStats.netProfit],
-    driversSparkline: [rawStats.activeDrivers],
-    revenueTrend: 0,
-    shipmentsTrend: 0,
-    profitTrend: 0,
-    driversTrend: 0,
-    avgCostPerPackage: rawStats.thisMonthShipments > 0 ? rawStats.totalRevenue / rawStats.thisMonthShipments : 0,
-    avgIncomePerPackage: rawStats.thisMonthShipments > 0 ? rawStats.totalRevenue / rawStats.thisMonthShipments : 0,
-    topRoutes: [],
-    revenueComposition: [
-      { name: 'Flete Base', value: 75, color: 'bg-blue-500' },
-      { name: 'Seguros', value: 15, color: 'bg-emerald-500' },
-      { name: 'Servicios Logísticos', value: 10, color: 'bg-indigo-500' },
-    ],
-    weeklyTrends: [],
-    closedToday: false,
-    recentShipments: rawStats.recentShipments,
   } : null
 
   // Filter & paginate shipments (REGLA DE HOOKS: llamar incondicionalmente antes de salir)

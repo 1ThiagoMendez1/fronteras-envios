@@ -14,8 +14,7 @@ import {
   Truck,
   UserCircle,
   ChevronLeft,
-  ChevronRight,
-  UploadCloud
+  ChevronRight
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -40,7 +39,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { href: "/clients", label: "Clientes", icon: UserCircle, visible: hasPermission('manage_clients') },
     { href: "/shipments", label: "Envíos", icon: Package, visible: hasPermission('manage_shipments') },
     { href: "/drivers", label: "Conductores", icon: Users, visible: hasPermission('manage_clients') },
-    { href: "/data-upload", label: "Archivos", icon: UploadCloud, visible: hasPermission('manage_shipments') },
     { href: "/financial", label: "Financiero", icon: Wallet, visible: hasPermission('view_financial') },
     { href: "/daily-close", label: "Cierre", icon: CalendarCheck, visible: hasPermission('view_financial') },
     { href: "/users", label: "Usuarios", icon: Users, visible: profile?.role === "admin" },
