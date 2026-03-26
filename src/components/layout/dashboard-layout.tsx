@@ -59,14 +59,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — always fixed, never pushes content */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out lg:static",
+        "fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-        isCollapsed ? "w-20" : "w-72"
+        isCollapsed ? "w-[72px]" : "w-[260px]"
       )}>
         <div className={cn(
-          "flex h-16 shrink-0 items-center px-6 bg-sidebar-primary text-sidebar-primary-foreground border-b border-sidebar-border/20",
+          "flex h-16 shrink-0 items-center px-5 bg-sidebar-primary text-sidebar-primary-foreground border-b border-sidebar-border/20",
           isCollapsed ? "justify-center px-0" : "justify-between"
         )}>
           {!isCollapsed && (
@@ -92,14 +92,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </div>
 
-        <div className={cn("flex flex-1 flex-col overflow-y-auto py-6", isCollapsed ? "px-2" : "px-4")}>
+        <div className={cn("flex flex-1 flex-col overflow-y-auto py-5", isCollapsed ? "px-2" : "px-3")}>
           <nav className="flex-1 space-y-1">
             {filteredNavItems.map((item) => {
               const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href))
               return (
                 <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
                   <div className={cn(
-                    "flex items-center rounded-xl py-3.5 text-sm font-medium transition-all duration-200",
+                    "flex items-center rounded-xl py-3 text-sm font-medium transition-all duration-200",
                     isCollapsed ? "justify-center px-0" : "gap-3 px-4",
                     isActive 
                       ? "bg-sidebar-primary/10 text-sidebar-primary font-semibold shadow-sm" 
@@ -123,7 +123,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className={cn("p-4 mt-auto border-t border-sidebar-border", isCollapsed && "p-2 flex flex-col items-center")}>
           {!isCollapsed && (
             <div className="flex items-center gap-3 px-2 py-3 rounded-xl bg-sidebar-accent/50 mb-4 overflow-hidden">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20 text-sidebar-primary font-bold">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20 text-sidebar-primary font-bold text-sm">
                 {profile?.name?.charAt(0).toUpperCase() || 'A'}
               </div>
               <div className="flex flex-col min-w-0">
@@ -133,7 +133,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           )}
           {isCollapsed && (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20 text-sidebar-primary font-bold mb-4" title={profile?.name || "Administrador"}>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20 text-sidebar-primary font-bold text-sm mb-4" title={profile?.name || "Administrador"}>
               {profile?.name?.charAt(0).toUpperCase() || 'A'}
             </div>
           )}
@@ -152,9 +152,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top Header */}
+      {/* Main Content — offset by sidebar width so sidebar doesn't overlap */}
+      <div className={cn(
+        "flex flex-1 flex-col min-h-screen transition-all duration-300",
+        isCollapsed ? "lg:ml-[72px]" : "lg:ml-[260px]"
+      )}>
+        {/* Mobile top header */}
         <header className="flex h-16 shrink-0 items-center justify-between border-b bg-white/50 backdrop-blur-md px-6 shadow-sm z-30 lg:hidden">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(true)}>
@@ -164,9 +167,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </header>
 
-        {/* Main Area */}
+        {/* Main scrollable area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl">
+          <div className="w-full">
             {children}
           </div>
         </main>

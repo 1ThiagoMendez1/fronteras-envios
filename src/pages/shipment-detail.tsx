@@ -37,6 +37,7 @@ export default function ShipmentDetail() {
   // Local state for signature and driver display (mocking actual persistence hook)
   const [localSignature, setLocalSignature] = useState<string | null>(null)
   const [localDriverId, setLocalDriverId] = useState<string | null>(null)
+  const [isReassigning, setIsReassigning] = useState(false)
 
   if (isLoading || !shipment) {
     return (
@@ -80,6 +81,7 @@ export default function ShipmentDetail() {
     if (sig) setLocalSignature(sig)
     setLocalDriverId(driverId)
     setIsSignatureDialogOpen(false)
+    setIsReassigning(false)
   }
 
   const clearSignature = () => {
@@ -171,13 +173,13 @@ export default function ShipmentDetail() {
   // Generate QR URL based on current origin
   const trackingUrl = `${window.location.origin}/?guide=${shipment.guideNumber}`
 
-  const effectiveDriverId = localDriverId || shipment.driverId;
+  const effectiveDriverId = isReassigning ? null : (localDriverId || shipment.driverId);
   const driverObj = effectiveDriverId ? drivers?.find(d => d.id.toString() === effectiveDriverId.toString()) : null;
   const effectiveDriverName = driverObj ? driverObj.name : shipment.driverName;
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-6xl mx-auto pb-20 no-print">
+      <div className="space-y-6 pb-20 no-print">
         
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -349,7 +351,7 @@ export default function ShipmentDetail() {
                       <Button size="sm" variant="secondary" onClick={handlePrintActa} className="h-9 font-medium bg-slate-200 hover:bg-slate-300 text-slate-700">
                         <Printer className="w-4 h-4 mr-2" /> Acta
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => { setLocalDriverId(null); setLocalSignature(null); }} className="h-9">Reasignar</Button>
+                      <Button variant="outline" size="sm" onClick={() => { setIsReassigning(true); setLocalDriverId(null); setLocalSignature(null); }} className="h-9">Reasignar</Button>
                     </div>
                   </div>
                   
@@ -414,6 +416,11 @@ export default function ShipmentDetail() {
                       </div>
                     </DialogContent>
                   </Dialog>
+                  {isReassigning && shipment.driverId && (
+                    <Button variant="ghost" onClick={() => setIsReassigning(false)} className="h-12 px-4 rounded-xl text-slate-500">
+                      Cancelar
+                    </Button>
+                  )}
                 </div>
               )}
             </Card>
@@ -431,7 +438,7 @@ export default function ShipmentDetail() {
                     <div>
                       <p className="font-bold text-sm text-slate-900">{getStatusLabel(item.status)}</p>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        {format(new Date(item.createdAt), "d MMM, HH:mm", { locale: es })}
+                        {(() => { try { return format(new Date(item.createdAt), "d MMM, HH:mm", { locale: es }) } catch { return item.createdAt ?? "—" } })()}
                       </p>
                       {item.notes && (
                         <p className="text-xs text-slate-600 mt-2 bg-slate-50 p-2 rounded border">
