@@ -223,7 +223,7 @@ function TrackingResult({ tracking }: { tracking: any }) {
     </div>
 
         {/* Right Col - Chat */}
-        <div className="lg:col-span-1 h-[600px] lg:h-auto">
+        <div className="lg:col-span-1 h-[600px] lg:h-[700px] lg:sticky lg:top-6 lg:self-start">
           <ChatBox guideNumber={tracking.guideNumber} className="h-full border-primary/20 shadow-xl" />
         </div>
       </div>
