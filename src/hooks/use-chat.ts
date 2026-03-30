@@ -24,25 +24,27 @@ function getAdminClient() {
 export function useChatMessages(guideNumber: string) {
   const queryClient = useQueryClient()
 
-  // Fetch initial messages
+  // Fetch initial messages from shipments.comentarios
   const query = useQuery({
     queryKey: ["chat_messages", guideNumber],
     queryFn: async () => {
       const adminClient = getAdminClient()
       const { data, error } = await adminClient
-        .from("chat_messages" as any)
-        .select("*")
+        .from("shipments")
+        .select("comentarios")
         .eq("guide_number", guideNumber)
-        .order("created_at", { ascending: true })
+        .single()
 
-      if (error) throw error
-      return data as ChatMessage[]
+      if (error && error.code !== 'PGRST116') throw error // PGRST116 is no rows
+      
+      const comentarios = data?.comentarios as ChatMessage[] | null
+      return comentarios || []
     },
     enabled: !!guideNumber,
-    refetchInterval: 3000, // Polling de respaldo cada 3 segundos por si Realtime falla
+    refetchInterval: 5000, // Backup Polling 
   })
 
-  // Set up real-time subscription
+  // Set up real-time subscription for shipments updates
   useEffect(() => {
     if (!guideNumber) return
 
@@ -51,19 +53,16 @@ export function useChatMessages(guideNumber: string) {
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "UPDATE",
           schema: "public",
-          table: "chat_messages",
+          table: "shipments",
           filter: `guide_number=eq.${guideNumber}`,
         },
         (payload) => {
-          const newMessage = payload.new as ChatMessage
-          queryClient.setQueryData<ChatMessage[]>(["chat_messages", guideNumber], (oldData) => {
-            if (!oldData) return [newMessage]
-            // Avoid duplicates just in case
-            if (oldData.some(msg => msg.id === newMessage.id)) return oldData
-            return [...oldData, newMessage]
-          })
+          const newComentarios = (payload.new as any).comentarios as ChatMessage[] | null
+          if (newComentarios) {
+            queryClient.setQueryData<ChatMessage[]>(["chat_messages", guideNumber], newComentarios)
+          }
         }
       )
       .subscribe()
@@ -83,19 +82,37 @@ export function useSendMessage() {
   return useMutation({
     mutationFn: async (payload: { guideNumber: string; text: string; sender: "user" | "agent" }) => {
       const adminClient = getAdminClient()
-      const { data, error } = await adminClient
-        .from("chat_messages" as any)
-        // @ts-ignore
-        .insert({
-          guide_number: payload.guideNumber,
-          text: payload.text,
-          sender: payload.sender,
-        })
-        .select()
+      
+      // 1. Get current comments
+      const { data: current, error: fetchError } = await adminClient
+        .from("shipments")
+        .select("comentarios")
+        .eq("guide_number", payload.guideNumber)
         .single()
+        
+      if (fetchError) throw fetchError
 
-      if (error) throw error
-      return data as ChatMessage
+      const existing = (current?.comentarios as ChatMessage[]) || []
+      
+      const newMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        guide_number: payload.guideNumber,
+        text: payload.text,
+        sender: payload.sender,
+        created_at: new Date().toISOString()
+      }
+      
+      const updatedComentarios = [...existing, newMessage]
+
+      // 2. Update the shipments table with the new array
+      const { error: updateError } = await adminClient
+        .from("shipments")
+        .update({ comentarios: updatedComentarios as any })
+        .eq("guide_number", payload.guideNumber)
+
+      if (updateError) throw updateError
+      
+      return newMessage
     },
     onError: (error: any) => {
       console.error("Error sending message:", error)
@@ -106,8 +123,7 @@ export function useSendMessage() {
       })
     },
     onSuccess: (newMessage, variables) => {
-      // Inmediatamente actualizamos el caché local para que el mensaje aparezca de inmediato
-      // sin tener que esperar a los webhooks/refresh de Supabase.
+      // Optimistic update
       queryClient.setQueryData<ChatMessage[]>(["chat_messages", variables.guideNumber], (oldData) => {
         if (!oldData) return [newMessage]
         if (oldData.some(msg => msg.id === newMessage.id)) return oldData

@@ -349,6 +349,3 @@ function StatCard({ title, value, icon: Icon, color, trend, isAlert }: any) {
   )
 }
 
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(" ")
-}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { useUsers, UserProfile } from "@/hooks/use-users"
+import { useUsers, type UserProfile } from "@/hooks/use-users"
 import {
   Table,
   TableBody,
