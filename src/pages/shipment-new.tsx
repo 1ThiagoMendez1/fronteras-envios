@@ -16,6 +16,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useRef, useEffect } from "react"
 import { cn } from "@/lib/utils"
 
+const COVERAGE_CITIES = [
+  "Aguazul", "Apartadó", "Barranquilla", "Bogotá", "Bucaramanga", "Cali", 
+  "Carepa", "Cartagena", "Chigorodó", "Cúcuta", "Ipiales", "Istmina", 
+  "La Hormiga", "Maicao", "Medellín", "Mocoa", "Montería", "Necoclí", 
+  "Pasto", "Popayán", "Puerto Asís", "Quibdó", "Riohacha", "Santa Marta", 
+  "Sincelejo", "Tadó", "Turbo", "Yopal"
+].sort((a,b) => a.localeCompare(b));
+
 const formSchema = z.object({
   senderDocument: z.string().min(5, "Requerido"),
   senderName: z.string().min(2, "Requerido"),
@@ -33,6 +41,7 @@ const formSchema = z.object({
   observations: z.string().optional(),
   driverId: z.coerce.number().optional(),
   branchOrigin: z.string().min(2, "Requerido").default("Bogotá"),
+  paymentMethod: z.string().default("Efectivo"),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -84,7 +93,7 @@ function ClientSearchCombobox({ clients, onSelect }: {
       </div>
 
       {open && filtered.length > 0 && (
-        <div className="absolute z-50 top-full mt-1 w-full bg-white border border-border/50 rounded-xl shadow-2xl overflow-hidden">
+        <div className="absolute z-50 top-full mt-1 w-full max-h-[300px] overflow-y-auto bg-white border border-border/50 rounded-xl shadow-2xl py-1">
           {filtered.map(c => (
             <button
               key={c.id ?? c.document}
@@ -108,6 +117,58 @@ function ClientSearchCombobox({ clients, onSelect }: {
   )
 }
 
+function CitySearchCombobox({ value, onChange }: { value: string, onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const [q, setQ] = useState(value || "")
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { setQ(value || "") }, [value])
+
+  const filtered = COVERAGE_CITIES.filter(c => c.toLowerCase().includes(q.toLowerCase()))
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
+
+  return (
+    <div className="relative" ref={ref}>
+      <Input
+        value={q}
+        onChange={e => {
+          setQ(e.target.value)
+          onChange(e.target.value)
+          setOpen(true)
+        }}
+        onFocus={() => setOpen(true)}
+        placeholder="Buscar o escribir (Ej. Bogotá)"
+        className="h-11 rounded-xl bg-slate-50"
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute z-50 top-full mt-1 w-full max-h-[200px] overflow-y-auto bg-white border border-border/50 rounded-xl shadow-2xl py-1">
+          {filtered.map(c => (
+             <button
+              key={c}
+              type="button"
+              className="w-full px-4 py-2 hover:bg-slate-50 text-left text-sm text-slate-700"
+              onClick={() => {
+                setQ(c)
+                onChange(c)
+                setOpen(false)
+              }}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function NewShipment() {
   const [, setLocation] = useLocation()
   const createMutation = useCreateShipmentMutation()
@@ -123,6 +184,7 @@ export default function NewShipment() {
       shippingCost: 0,
       driverPayment: 0,
       branchOrigin: "Bogotá",
+      paymentMethod: "Efectivo",
     }
   })
 
@@ -235,7 +297,11 @@ export default function NewShipment() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Ciudad Destino</Label>
-                  <Input {...register("recipientCity")} className="h-11 rounded-xl bg-slate-50" />
+                  <CitySearchCombobox
+                    value={watch("recipientCity")}
+                    onChange={(v) => setValue("recipientCity", v, { shouldValidate: true })}
+                  />
+                  {errors.recipientCity && <p className="text-red-500 text-xs">{errors.recipientCity.message}</p>}
                 </div>
                 <div className="col-span-2 space-y-1.5">
                   <Label>Dirección</Label>
@@ -292,11 +358,11 @@ export default function NewShipment() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-5">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mt-5">
               <div className="space-y-1.5">
                 <Label>Asignar Conductor</Label>
                 <Select onValueChange={(v) => setValue("driverId", parseInt(v))}>
-                  <SelectTrigger className="h-11 rounded-xl bg-slate-50"><SelectValue placeholder="Seleccionar conductor..." /></SelectTrigger>
+                  <SelectTrigger className="h-11 rounded-xl bg-slate-50"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                   <SelectContent>
                     {drivers?.filter(d => d.isActive).map(d => (
                       <SelectItem key={d.id} value={d.id.toString()}>{d.name} · {d.vehicleType} · {d.city}</SelectItem>
@@ -311,14 +377,25 @@ export default function NewShipment() {
                   <SelectContent>
                     <SelectItem value="Bogotá">Sede Bogotá</SelectItem>
                     <SelectItem value="Medellín">Sede Medellín</SelectItem>
-                    <SelectItem value="Cali">Sede Cali</SelectItem>
-                    <SelectItem value="Barranquilla">Sede Barranquilla</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Método de Pago</Label>
+                <Select defaultValue="Efectivo" onValueChange={(v) => setValue("paymentMethod", v)}>
+                  <SelectTrigger className="h-11 rounded-xl bg-slate-50"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Efectivo">Efectivo 💵</SelectItem>
+                    <SelectItem value="Nequi">Nequi 📱</SelectItem>
+                    <SelectItem value="DaviPlata">DaviPlata 📱</SelectItem>
+                    <SelectItem value="Transferencia">Transferencia 🏦</SelectItem>
+                    <SelectItem value="Tarjeta">Tarjeta 💳</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>Observaciones</Label>
-                <Input {...register("observations")} placeholder="Notas para la entrega..." className="h-11 rounded-xl bg-slate-50" />
+                <Input {...register("observations")} placeholder="Notas..." className="h-11 rounded-xl bg-slate-50" />
               </div>
             </div>
           </Card>

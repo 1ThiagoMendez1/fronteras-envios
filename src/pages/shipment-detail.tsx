@@ -6,7 +6,7 @@ import { useListDrivers } from "@/hooks/use-drivers"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { formatCurrency, getStatusColor, getStatusLabel, cn } from "@/lib/utils"
+import { formatCurrency, getStatusColor, getStatusLabel, cn, formatGuide } from "@/lib/utils"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { ArrowLeft, Printer, Truck, MapPin, Building, Phone } from "lucide-react"
@@ -135,7 +135,7 @@ export default function ShipmentDetail() {
         <body>
           <div class="header">
             <h1 class="title">ACTA DE ENTREGA A CONDUCTOR TERCERIZADO</h1>
-            <p class="subtitle">Fronteras Express - <strong>Guía ${shipment.guideNumber}</strong></p>
+            <p class="subtitle">Fronteras Express - <strong>Guía ${formatGuide(shipment.guideNumber)}</strong></p>
             <p class="subtitle">Fecha de Asignación: ${new Date().toLocaleDateString('es-CO')} - Sede de Origen: ${shipment.branchOrigin}</p>
           </div>
           
@@ -157,7 +157,7 @@ export default function ShipmentDetail() {
           </div>
           
           <p style="margin-top: 30px; line-height: 1.8; color: #334155; font-size: 15px; text-align: justify;">
-            Yo, <strong>${effectiveDriverName}</strong>, con vehículo tipo <strong>${driverInfo?.vehicleType || 'N/A'}</strong>, certifico formalmente que he recibido los paquetes correspondientes a la guía <strong>${shipment.guideNumber}</strong> en perfectas condiciones por parte de Fronteras Express. Me comprometo responsablemente a realizar el traslado y la entrega de la mercancía en <strong>${shipment.recipientCity}</strong>, asumiendo toda la responsabilidad civil, contractual y comercial sobre el estado de la mercancía hasta su destino final según lo estipulado.
+            Yo, <strong>${effectiveDriverName}</strong>, con vehículo tipo <strong>${driverInfo?.vehicleType || 'N/A'}</strong>, certifico formalmente que he recibido los paquetes correspondientes a la guía <strong>${formatGuide(shipment.guideNumber)}</strong> en perfectas condiciones por parte de Fronteras Express. Me comprometo responsablemente a realizar el traslado y la entrega de la mercancía en <strong>${shipment.recipientCity}</strong>, asumiendo toda la responsabilidad civil, contractual y comercial sobre el estado de la mercancía hasta su destino final según lo estipulado.
           </p>
           
           <div class="signature-box">
@@ -190,7 +190,7 @@ export default function ShipmentDetail() {
   const driverObj = effectiveDriverId ? drivers?.find(d => d.id.toString() === effectiveDriverId.toString()) : null;
   const effectiveDriverName = driverObj ? driverObj.name : shipment.driverName;
 
-  const sortedHistory = (shipment.history as {id: number, status: string, notes: string | null, created_at: string}[])?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) || []
+  const sortedHistory = (shipment.history as {id: number, status: string, notes: string | null, createdAt: string}[])?.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || []
   const displayHistory = isHistoryExpanded ? sortedHistory : sortedHistory.slice(0, 3)
 
   return (
@@ -207,7 +207,7 @@ export default function ShipmentDetail() {
             </Link>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-display font-bold text-foreground">Guía {shipment.guideNumber}</h1>
+                <h1 className="text-3xl font-display font-bold text-foreground">Guía {formatGuide(shipment.guideNumber)}</h1>
                 <span className={cn("px-3 py-1 rounded-full text-xs font-bold border", getStatusColor(shipment.status))}>
                   {getStatusLabel(shipment.status)}
                 </span>
@@ -466,10 +466,10 @@ export default function ShipmentDetail() {
               <Card className="p-6 rounded-2xl shadow-sm border-border/50 h-[350px] min-h-[250px] resize overflow-hidden flex flex-col">
                   <h3 className="text-lg font-bold text-foreground mb-4 shrink-0">Historial del Envío</h3>
                   
-                  <div className="relative pl-6 space-y-6 before:absolute before:inset-0 before:ml-[15px] before:h-full before:w-0.5 before:bg-slate-200 flex-1 overflow-y-auto pr-2">
+                  <div className="relative pl-10 space-y-6 before:absolute before:inset-0 before:ml-[19px] before:h-full before:w-0.5 before:bg-slate-200 flex-1 overflow-y-auto pr-2">
                 {displayHistory.map((item) => (
                   <div key={item.id} className="relative">
-                    <div className="absolute -left-[35px] mt-1 w-5 h-5 rounded-full bg-white border-2 border-primary z-10"></div>
+                    <div className="absolute -left-[30px] mt-1 w-5 h-5 rounded-full bg-white border-2 border-primary z-10"></div>
                     <div>
                       <p className="font-bold text-sm text-slate-900">{getStatusLabel(item.status)}</p>
                       <p className="text-xs text-slate-500 mt-0.5">
@@ -505,7 +505,7 @@ export default function ShipmentDetail() {
             <span>FRONTERAS EXPRESS</span>
           </div>
           <div className="text-right">
-            <h2 className="text-3xl font-bold uppercase tracking-widest">{shipment.guideNumber}</h2>
+            <h2 className="text-3xl font-bold uppercase tracking-widest">{formatGuide(shipment.guideNumber)}</h2>
             <p className="text-sm font-medium">Guía de Transporte de Carga</p>
           </div>
         </div>

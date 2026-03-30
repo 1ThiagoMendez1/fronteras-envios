@@ -4,7 +4,7 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
-import { formatCurrency, getStatusColor, getStatusLabel, cn } from "@/lib/utils"
+import { formatCurrency, getStatusColor, getStatusLabel, cn, formatGuide } from "@/lib/utils"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { Plus, Search, Filter, ChevronRight, Pencil, MessageSquareDot } from "lucide-react"
@@ -17,10 +17,13 @@ export default function Shipments() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [search, setSearch] = useState("")
   const [unreadOnly, setUnreadOnly] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
 
   const { data, isLoading } = useListShipments({
     status: statusFilter !== "all" ? statusFilter : undefined,
     search: search || undefined,
+    page: currentPage,
+    pageSize: 50
   })
 
   // Local filtering for search (in real app, this would be server side)
@@ -53,7 +56,7 @@ export default function Shipments() {
             <Input 
               placeholder="Buscar por guía, remitente o destinatario..." 
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
               className="pl-10 h-12 rounded-xl bg-white border-slate-200"
             />
           </div>
@@ -68,7 +71,7 @@ export default function Shipments() {
               <span className="hidden sm:inline">Sin Leer</span>
             </Button>
             <Filter className="w-5 h-5 text-muted-foreground mr-1 ml-2" />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
               <SelectTrigger className="w-full md:w-[200px] h-12 rounded-xl bg-white border-slate-200">
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
@@ -123,7 +126,7 @@ export default function Shipments() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <Link href={`/shipments/${shipment.id}`} className="font-bold text-primary hover:underline">
-                            {shipment.guideNumber}
+                            {formatGuide(shipment.guideNumber)}
                           </Link>
                           {hasUnreadChat && (
                              <div className="relative flex h-3 w-3 flex-shrink-0" title="Nuevo mensaje">
@@ -175,11 +178,18 @@ export default function Shipments() {
               </tbody>
             </table>
           </div>
-          {data && (
-             <div className="p-4 border-t border-slate-100 text-sm text-slate-500 flex justify-between items-center bg-slate-50/50">
-               <span>Mostrando {filteredShipments.length} de {data.total} envíos</span>
-             </div>
-          )}
+          <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50/50">
+            <span className="text-sm text-slate-500">
+              Mostrando {filteredShipments.length} de {data?.total || 0} envíos
+            </span>
+            {data && data.total > 50 && (
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="rounded-xl h-9" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Anterior</Button>
+                <div className="text-sm font-semibold px-3 py-1 bg-white border border-slate-200 text-slate-700 rounded-lg">Página {currentPage} de {Math.ceil(data.total / 50)}</div>
+                <Button variant="outline" size="sm" className="rounded-xl h-9" onClick={() => setCurrentPage(p => Math.ceil(data.total / 50) > p ? p + 1 : p)} disabled={currentPage >= Math.ceil(data.total / 50)}>Siguiente</Button>
+              </div>
+            )}
+          </div>
         </Card>
       </div>
     </DashboardLayout>

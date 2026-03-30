@@ -106,6 +106,7 @@ function mapShipment(row: any) {
     recipientPhone: row.recipient_phone,
     recipientAddress: row.recipient_address,
     recipientCity: row.recipient_city,
+    paymentMethod: row.payment_method || 'Efectivo',
     weight: Number(row.weight || 0),
     declaredValue: Number(row.declared_value || 0),
     shippingCost: Number(row.shipping_cost || 0),
@@ -125,12 +126,34 @@ function mapShipment(row: any) {
       phone: row.drivers.phone
     } : null,
     comentarios: row.comentarios ? (typeof row.comentarios === "string" ? JSON.parse(row.comentarios) : row.comentarios) : [],
-    history: (row.shipment_history ?? []).map((h: any) => ({
-      id: h.id,
+    history: deduplicateHistory(row.shipment_history ?? []).map((h: any) => ({
+      id: h.id || h.id_temp, // use original id mapped
       status: h.status,
       notes: h.notes,
       changedBy: h.changed_by,
       createdAt: h.created_at
     })),
   };
+}
+
+function deduplicateHistory(history: any[]) {
+  if (!history || history.length === 0) return [];
+  const sorted = [...history].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  const result: any[] = [];
+  
+  for (const h of sorted) {
+    const last = result[result.length - 1];
+    if (last && last.status === h.status) {
+      if (!last.notes && h.notes) {
+        last.notes = h.notes;
+      } else if (last.notes && h.notes && last.notes !== h.notes) {
+        last.notes += " / " + h.notes;
+      }
+      // Keep the newest timestamp for the same status event
+      last.created_at = h.created_at;
+    } else {
+      result.push({ ...h });
+    }
+  }
+  return result;
 }

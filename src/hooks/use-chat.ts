@@ -39,6 +39,7 @@ export function useChatMessages(guideNumber: string) {
       return data as ChatMessage[]
     },
     enabled: !!guideNumber,
+    refetchInterval: 3000, // Polling de respaldo cada 3 segundos por si Realtime falla
   })
 
   // Set up real-time subscription
@@ -76,6 +77,7 @@ export function useChatMessages(guideNumber: string) {
 }
 
 export function useSendMessage() {
+  const queryClient = useQueryClient()
   const { toast } = useToast()
 
   return useMutation({
@@ -101,6 +103,15 @@ export function useSendMessage() {
         title: "Error",
         description: error.message || "No se pudo enviar el mensaje. Intenta de nuevo.",
         variant: "destructive",
+      })
+    },
+    onSuccess: (newMessage, variables) => {
+      // Inmediatamente actualizamos el caché local para que el mensaje aparezca de inmediato
+      // sin tener que esperar a los webhooks/refresh de Supabase.
+      queryClient.setQueryData<ChatMessage[]>(["chat_messages", variables.guideNumber], (oldData) => {
+        if (!oldData) return [newMessage]
+        if (oldData.some(msg => msg.id === newMessage.id)) return oldData
+        return [...oldData, newMessage]
       })
     },
   })

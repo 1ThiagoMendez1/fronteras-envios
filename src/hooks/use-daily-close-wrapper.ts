@@ -73,6 +73,7 @@ export function useCreateFinancialMovementMutation() {
       referenceType?: string;
       evidenceUrl?: string;
       movementDate?: string;
+      branch?: string;
     }) => {
       const adminClient = getAdminClient();
       const { data, error } = await adminClient
@@ -85,6 +86,7 @@ export function useCreateFinancialMovementMutation() {
           reference_id: payload.referenceId ?? null,
           reference_type: payload.referenceType ?? null,
           evidence_url: payload.evidenceUrl ?? null,
+          branch: payload.branch ?? 'Bogotá',
           movement_date: payload.movementDate ?? new Date().toISOString().split("T")[0],
         })
         .select()

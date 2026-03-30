@@ -21,26 +21,10 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   }
 }
 
-// Mock hook to replace useTrackShipment
-const useTrackShipment = (guideNumber: string, _options?: any) => ({
-  data: guideNumber.length > 5 ? {
-    id: 1,
-    guideNumber,
-    senderCity: "Bogota",
-    recipientCity: "Medellin",
-    recipientName: "Cliente Demo",
-    status: "in_transit",
-    history: [
-      { id: 1, status: "created", createdAt: new Date(Date.now() - 86400000).toISOString(), note: "Paquete recibido en origen" },
-      { id: 2, status: "in_transit", createdAt: new Date().toISOString(), note: "Saliendo de la ciudad hacia centro de distribución" }
-    ]
-  } : null,
-  isLoading: false,
-  error: guideNumber && guideNumber.length <= 5 ? new Error("Not found") : null
-})
 import { format } from "date-fns"
+import { useGetShipmentByGuide } from "@/hooks/use-shipments"
 import { es } from "date-fns/locale"
-import { getStatusColor, getStatusLabel, cn } from "@/lib/utils"
+import { getStatusColor, getStatusLabel, cn, formatGuide } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChatBox } from "@/components/chat-box"
 import { ColombiaMap } from "@/components/colombia-map"
@@ -136,7 +120,7 @@ function TrackingResult({ tracking }: { tracking: any }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
           <div>
             <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-1">Número de Guía</p>
-            <h2 className="text-2xl font-bold tracking-tight">{tracking.guideNumber}</h2>
+            <h2 className="text-2xl font-bold tracking-tight">{formatGuide(tracking.guideNumber)}</h2>
           </div>
           <div className={cn("px-5 py-2 rounded-full font-bold text-sm border-2 flex items-center gap-2 self-start sm:self-auto", getStatusColor(tracking.status))}>
             {getStatusIcon(tracking.status)}
@@ -211,8 +195,8 @@ function TrackingResult({ tracking }: { tracking: any }) {
                       {format(new Date(event.createdAt), "d 'de' MMMM yyyy, HH:mm", { locale: es })}
                     </time>
                   </div>
-                  {event.note && (
-                    <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">{event.note}</p>
+                  {(event.notes || event.note) && (
+                    <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">{event.notes || event.note}</p>
                   )}
                 </div>
               </motion.div>
@@ -234,16 +218,27 @@ function TrackingResult({ tracking }: { tracking: any }) {
 export default function PublicTracking() {
   const [guideInput, setGuideInput] = useState("")
   const [searchGuide, setSearchGuide] = useState("")
+  const [minLoading, setMinLoading] = useState(false)
   const resultsRef = useRef<HTMLDivElement>(null)
 
-  const { data: tracking, isLoading, error } = useTrackShipment(searchGuide, {
-    query: { enabled: !!searchGuide, retry: false }
-  })
+  const { data: tracking, isLoading, error } = useGetShipmentByGuide(searchGuide)
+
+  const showLoading = isLoading || minLoading;
+  const showError = error && !showLoading;
+  const showTracking = tracking && !showLoading;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    if (guideInput.trim()) {
-      setSearchGuide(guideInput.trim().toUpperCase())
+    let input = guideInput.trim().toUpperCase()
+    if (input) {
+      // Extraemos solo el número, eliminando textos de guía si el usuario los escribió
+      const numbers = input.replace(/\D/g, '')
+      input = numbers || input
+      
+      setMinLoading(true)
+      setSearchGuide(input)
+      setGuideInput(input)
+      setTimeout(() => setMinLoading(false), 2500)
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100)
     }
   }
@@ -319,7 +314,7 @@ export default function PublicTracking() {
               <Input
                 value={guideInput}
                 onChange={(e) => setGuideInput(e.target.value)}
-                placeholder="Ej. FRON-102938"
+                placeholder="Ej. 102938"
                 className="w-full h-[60px] pl-14 pr-4 rounded-2xl text-base font-semibold bg-white/95 backdrop-blur-md border-0 shadow-2xl shadow-black/30 focus-visible:ring-4 focus-visible:ring-accent/50 placeholder:text-slate-400"
               />
             </div>
@@ -338,7 +333,7 @@ export default function PublicTracking() {
             transition={{ delay: 0.6 }}
             className="text-blue-300/60 text-xs mt-4"
           >
-            Formato: FRON-XXXXXX · Sin costo · Sin registro
+            Solo ingresa el número · Sin costo · Sin registro
           </motion.p>
         </div>
 
@@ -358,25 +353,66 @@ export default function PublicTracking() {
       {/* RESULTS */}
       <div ref={resultsRef} className="w-full max-w-4xl mx-auto px-4 py-10">
         <AnimatePresence mode="wait">
-          {isLoading && (
-            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-16">
-              <div className="relative w-16 h-16 mx-auto">
-                <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
-                <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+          {showLoading && (
+            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-16 flex flex-col items-center">
+              <div className="relative w-64 h-32 mx-auto flex items-center justify-center overflow-hidden border border-slate-100 rounded-3xl bg-slate-50 shadow-inner">
+                {/* Background road */}
+                <div className="absolute bottom-6 w-full h-[3px] overflow-hidden flex items-center">
+                  <motion.div 
+                    animate={{ x: ["0%", "-50%"] }}
+                    transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                    className="w-[200%] h-full flex" 
+                  >
+                     <div className="w-full h-full border-b-[4px] border-dashed border-slate-300" />
+                     <div className="w-full h-full border-b-[4px] border-dashed border-slate-300" />
+                  </motion.div>
+                </div>
+                
+                <motion.div 
+                  animate={{ y: [0, -3, 0], rotate: [0, -1, 0] }}
+                  transition={{ duration: 0.4, repeat: Infinity, ease: "easeInOut" }}
+                  className="relative z-10 flex items-center -mt-4 text-primary"
+                >
+                  <div className="relative">
+                    <Truck className="w-16 h-16 fill-primary/10 drop-shadow-xl relative z-10 bg-white rounded-xl p-1 shadow-sm border border-primary/10" strokeWidth={1.5} />
+                    <motion.div
+                      animate={{ y: [0, -4, 0] }}
+                      transition={{ duration: 0.5, repeat: Infinity, ease: "easeInOut", delay: 0.1 }}
+                      className="absolute top-2 left-1 z-20"
+                    >
+                       <Package className="w-6 h-6 text-accent drop-shadow-lg" />
+                    </motion.div>
+                  </div>
+                  
+                  {/* Speed lines on the left side of truck */}
+                  <div className="absolute top-1/2 -left-12 -translate-y-1/2 flex flex-col gap-2 opacity-80 z-0">
+                    <motion.div animate={{ x: [0, -20], opacity: [1, 0] }} transition={{ duration: 0.6, repeat: Infinity }} className="h-1 w-6 bg-slate-300 rounded-full ml-auto" />
+                    <motion.div animate={{ x: [0, -30], opacity: [1, 0] }} transition={{ duration: 0.5, repeat: Infinity, delay: 0.2 }} className="h-1 w-10 bg-slate-300 rounded-full ml-auto" />
+                    <motion.div animate={{ x: [0, -15], opacity: [1, 0] }} transition={{ duration: 0.4, repeat: Infinity, delay: 0.1 }} className="h-1 w-4 bg-slate-300 rounded-full ml-auto" />
+                  </div>
+                </motion.div>
               </div>
-              <p className="mt-5 text-muted-foreground font-medium">Buscando tu envío...</p>
+              
+              <motion.div
+                animate={{ opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="mt-6 text-center"
+              >
+                <h3 className="text-xl font-black text-slate-800 tracking-tight">Localizando envío...</h3>
+                <p className="text-xs font-bold text-accent uppercase tracking-widest mt-1">Conectando sistema</p>
+              </motion.div>
             </motion.div>
           )}
-          {error && !isLoading && (
+          {showError && (
             <motion.div key="error" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md mx-auto text-center bg-white rounded-2xl shadow-xl border border-red-100 p-10">
               <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
                 <Package className="w-8 h-8 text-red-400" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-2">Envío no encontrado</h3>
-              <p className="text-slate-500 text-sm">Verifica el número de guía e intenta nuevamente. Recuerda incluir el prefijo FRON-.</p>
+              <p className="text-slate-500 text-sm">Verifica el número de guía e intenta nuevamente. Recuerda incluir solo el número o el prefijo completo.</p>
             </motion.div>
           )}
-          {tracking && !isLoading && (
+          {showTracking && (
             <TrackingResult key={searchGuide} tracking={tracking} />
           )}
         </AnimatePresence>
@@ -625,7 +661,7 @@ export default function PublicTracking() {
                   {/* Chat Bubbles */}
                   <div className="space-y-5">
                     <motion.div initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="bg-white text-slate-800 text-sm font-semibold p-4 rounded-2xl rounded-bl-sm shadow-sm relative">
-                      ¡Hola! Estoy rastreando el guía FRON-902, quisiera saber exactamente por dónde va. 🙏
+                      ¡Hola! Estoy rastreando la guía 902, quisiera saber exactamente por dónde va. 🙏
                     </motion.div>
                     <motion.div initial={{ opacity: 0, x: 10 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 }} className="bg-accent text-white text-sm font-semibold p-4 rounded-2xl rounded-br-sm shadow-md text-right ml-8 relative pt-5">
                       <span className="absolute top-2 left-4 text-[9px] text-white/50 tracking-widest uppercase font-black">Asesor Fronteras</span>

@@ -14,9 +14,9 @@ function getAdminClient() {
 export function useFinancialSummary(options: {
   startDate?: string;
   endDate?: string;
-} = {}) {
+} = {}, branch: string = "Todas las Sedes") {
   return useQuery({
-    queryKey: ["financial", "summary", options],
+    queryKey: ["financial", "summary", options, branch],
     queryFn: async () => {
       const adminClient = getAdminClient();
       let query = adminClient
@@ -25,20 +25,27 @@ export function useFinancialSummary(options: {
 
       if (options.startDate) query = query.gte("created_at", options.startDate);
       if (options.endDate) query = query.lte("created_at", options.endDate);
+      if (branch !== "Todas las Sedes") query = query.eq("branch_origin", branch);
 
       const { data: shipments, error: sErr } = await query;
       if (sErr) throw sErr;
 
-      const { data: movements, error: mErr } = await adminClient
+      let mQuery = adminClient
         .from("financial_movements")
         .select("*")
         .order("movement_date", { ascending: false });
+      if (branch !== "Todas las Sedes") mQuery = mQuery.eq("branch", branch);
+
+      const { data: movements, error: mErr } = await mQuery;
       if (mErr) throw mErr;
 
-      const { data: closes, error: cErr } = await adminClient
+      let cQuery = adminClient
         .from("daily_close")
         .select("*")
         .order("close_date", { ascending: false });
+      if (branch !== "Todas las Sedes") cQuery = cQuery.eq("branch", branch);
+
+      const { data: closes, error: cErr } = await cQuery;
       if (cErr) throw cErr;
 
       const all = shipments ?? [];
@@ -158,9 +165,9 @@ export function useFinancialMovements(options: {
   type?: "income" | "expense";
   startDate?: string;
   endDate?: string;
-} = {}) {
+} = {}, branch: string = "Todas las Sedes") {
   return useQuery({
-    queryKey: ["financial", "movements", options],
+    queryKey: ["financial", "movements", options, branch],
     queryFn: async () => {
       const adminClient = getAdminClient();
       let query = adminClient
@@ -171,6 +178,7 @@ export function useFinancialMovements(options: {
       if (options.type) query = query.eq("type", options.type);
       if (options.startDate) query = query.gte("movement_date", options.startDate);
       if (options.endDate) query = query.lte("movement_date", options.endDate);
+      if (branch !== "Todas las Sedes") query = query.eq("branch", branch);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -191,15 +199,21 @@ export function useFinancialMovements(options: {
 }
 
 // ─── Daily Close List ─────────────────────────────────────────────────────────
-export function useDailyCloseList() {
+export function useDailyCloseList(branch: string = "Todas las Sedes") {
   return useQuery({
-    queryKey: ["daily-close"],
+    queryKey: ["daily-close", branch],
     queryFn: async () => {
       const adminClient = getAdminClient();
-      const { data, error } = await adminClient
+      let query = adminClient
         .from("daily_close")
         .select("*")
         .order("close_date", { ascending: false });
+      
+      if (branch !== "Todas las Sedes") {
+        query = query.eq("branch", branch);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return (data ?? []).map(c => ({
         id: c.id,
@@ -223,20 +237,26 @@ export function useDailyCloseList() {
   });
 }
 
-export function useDailyCloseShipments(date: string) {
+export function useDailyCloseShipments(date: string, branch: string = "Todas las Sedes") {
   return useQuery({
-    queryKey: ["daily-close-shipments", date],
+    queryKey: ["daily-close-shipments", date, branch],
     queryFn: async () => {
       const adminClient = getAdminClient();
       const startDate = `${date.split('T')[0]}T00:00:00-05:00`;
       const endDate = `${date.split('T')[0]}T23:59:59-05:00`;
 
-      const { data, error } = await adminClient
+      let query = adminClient
         .from("shipments")
         .select("*")
         .gte("created_at", startDate)
         .lte("created_at", endDate)
         .order("created_at", { ascending: false });
+
+      if (branch !== "Todas las Sedes") {
+        query = query.eq("branch_origin", branch);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return (data ?? []).map((s: any) => ({
@@ -256,14 +276,19 @@ export function useDailyCloseShipments(date: string) {
   });
 }
 
-export function useUnclosedDays() {
+export function useUnclosedDays(branch: string = "Todas las Sedes") {
   return useQuery({
-    queryKey: ["unclosed-days"],
+    queryKey: ["unclosed-days", branch],
     queryFn: async () => {
       const adminClient = getAdminClient();
-      const { data: shipments, error: sErr } = await adminClient.from("shipments").select("created_at");
+      let sQuery = adminClient.from("shipments").select("created_at");
+      if (branch !== "Todas las Sedes") sQuery = sQuery.eq("branch_origin", branch);
+      const { data: shipments, error: sErr } = await sQuery;
       if (sErr) throw sErr;
-      const { data: closes, error: cErr } = await adminClient.from("daily_close").select("close_date");
+      
+      let cQuery = adminClient.from("daily_close").select("close_date, branch");
+      if (branch !== "Todas las Sedes") cQuery = cQuery.eq("branch", branch);
+      const { data: closes, error: cErr } = await cQuery;
       if (cErr) throw cErr;
 
       const shipmentDays = Array.from(new Set(

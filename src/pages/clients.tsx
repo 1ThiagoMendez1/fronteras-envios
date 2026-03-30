@@ -577,6 +577,10 @@ export default function ClientsPage() {
   const [isBulkOpen,       setIsBulkOpen]       = useState(false)
   const [selectedIds,      setSelectedIds]      = useState<Set<number>>(new Set())
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 50
+
   const sharedFormProps = {
     tipoClienteOpts, tipoIdOpts, ivaOpts, regimenOpts, categoriaOpts,
     addTipoCliente, addTipoId, addIva, addRegimen, addCategoria,
@@ -598,16 +602,20 @@ export default function ClientsPage() {
     )
   })
 
-  const allFilteredIds     = filteredClients.map(c => c.id)
-  const allSelected        = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedIds.has(id))
-  const someSelected       = allFilteredIds.some(id => selectedIds.has(id)) && !allSelected
-  const selectedCount      = [...selectedIds].filter(id => allFilteredIds.includes(id)).length
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredClients.length / pageSize)
+  const paginatedClients = filteredClients.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  const currentPageIds     = paginatedClients.map(c => c.id)
+  const allSelected        = currentPageIds.length > 0 && currentPageIds.every(id => selectedIds.has(id))
+  const someSelected       = currentPageIds.some(id => selectedIds.has(id)) && !allSelected
+  const selectedCount      = selectedIds.size
 
   const toggleAll = () => {
     if (allSelected) {
-      setSelectedIds(prev => { const n = new Set(prev); allFilteredIds.forEach(id => n.delete(id)); return n })
+      setSelectedIds(prev => { const n = new Set(prev); currentPageIds.forEach(id => n.delete(id)); return n })
     } else {
-      setSelectedIds(prev => new Set([...prev, ...allFilteredIds]))
+      setSelectedIds(prev => new Set([...prev, ...currentPageIds]))
     }
   }
 
@@ -616,7 +624,7 @@ export default function ClientsPage() {
   }
 
   const handleBulkDelete = async () => {
-    const ids = [...selectedIds].filter(id => allFilteredIds.includes(id))
+    const ids = Array.from(selectedIds)
     await Promise.all(ids.map(id => deleteClient(id)))
     setSelectedIds(new Set())
     setBulkDeleteOpen(false)
@@ -697,7 +705,10 @@ export default function ClientsPage() {
                 placeholder="Buscar por nombre, razón social, documento..."
                 className="pl-9 h-11 bg-slate-50/50 rounded-xl"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value)
+                  setCurrentPage(1)
+                }}
               />
             </div>
             <p className="text-sm text-slate-400 shrink-0">
@@ -729,12 +740,12 @@ export default function ClientsPage() {
                   <th className="px-3 py-3 whitespace-nowrap">Ciudad</th>
                   <th className="px-3 py-3 whitespace-nowrap">Dirección</th>
                   <th className="px-3 py-3 whitespace-nowrap">Categoría</th>
-                  <th className="px-3 py-3 whitespace-nowrap text-center">Env. Mes</th>
+                  <th className="px-3 py-3 whitespace-nowrap text-center">Envíos Totales</th>
                   <th className="px-3 py-3 whitespace-nowrap text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredClients.map((client) => (
+                {paginatedClients.map((client) => (
                   <tr key={client.id}
                     className="hover:bg-slate-50/60 transition-colors"
                   >
@@ -799,7 +810,7 @@ export default function ClientsPage() {
                         onClick={() => setViewClient(client)}
                       >
                         <Package className="w-3.5 h-3.5" />
-                        <span className="text-xs">{client.totalShipmentsThisMonth}</span>
+                        <span className="text-xs">{client.totalShipments}</span>
                       </div>
                     </td>
                     <td className="px-3 py-3">
@@ -832,6 +843,20 @@ export default function ClientsPage() {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-5 border-t border-slate-100 pt-5">
+              <span className="text-sm text-slate-500">
+                Mostrando <span className="font-bold text-slate-700">{((currentPage - 1) * pageSize) + 1}</span> a <span className="font-bold text-slate-700">{Math.min(currentPage * pageSize, filteredClients.length)}</span> de <span className="font-bold text-slate-700">{filteredClients.length}</span> clientes
+              </span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="rounded-xl h-9" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Anterior</Button>
+                <div className="text-sm font-semibold px-3 py-1 bg-slate-100 text-slate-700 rounded-lg">Página {currentPage} de {totalPages}</div>
+                <Button variant="outline" size="sm" className="rounded-xl h-9" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Siguiente</Button>
+              </div>
+            </div>
+          )}
         </Card>
 
         {/* Edit Dialog */}

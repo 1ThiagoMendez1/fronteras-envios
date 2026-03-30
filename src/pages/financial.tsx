@@ -5,15 +5,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, cn } from "@/lib/utils"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
-import { TrendingUp, DollarSign, CreditCard, Wallet, AlertCircle, Search, Receipt, Download, LayoutDashboard, ShieldCheck, PieChart as PieChartIcon, ArrowRight, History, Info, ChevronLeft, ChevronRight, Users, Briefcase } from "lucide-react"
+import { TrendingUp, DollarSign, CreditCard, Wallet, AlertCircle, Search, Receipt, Download, LayoutDashboard, ShieldCheck, PieChart as PieChartIcon, ArrowRight, History, ChevronLeft, ChevronRight, Users, Briefcase } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { motion } from "framer-motion"
 
 export default function Financial() {
   const [period, setPeriod] = useState<"today" | "week" | "month" | "all">("month")
+  const [branch, setBranch] = useState("Todas las Sedes")
 
   // Function to calculate dates based on string period
   const getPeriodDates = () => {
@@ -34,8 +35,8 @@ export default function Financial() {
     return { startDate }
   }
 
-  const { data: summary, isLoading: loadingSummary } = useFinancialSummary(getPeriodDates())
-  const { data: transactions, isLoading: loadingTransactions } = useFinancialMovements(getPeriodDates())
+  const { data: summary, isLoading: loadingSummary } = useFinancialSummary(getPeriodDates(), branch)
+  const { data: transactions, isLoading: loadingTransactions } = useFinancialMovements(getPeriodDates(), branch)
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 8
@@ -75,6 +76,13 @@ export default function Financial() {
             <p className="text-slate-500 mt-1">Control integral de ingresos, egresos y rentabilidad logística.</p>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex items-center bg-white rounded-xl border border-border/50 shadow-sm p-1 gap-0.5">
+              <select value={branch} onChange={(e) => setBranch(e.target.value)} className="px-3 py-1.5 text-sm font-semibold text-slate-700 rounded-lg bg-transparent border-none outline-none cursor-pointer focus:ring-0">
+                <option value="Todas las Sedes">Todas las Sedes</option>
+                <option value="Bogotá">Sede Bogotá</option>
+                <option value="Medellín">Sede Medellín</option>
+              </select>
+            </div>
             <div className="flex items-center bg-white rounded-xl border border-slate-200 shadow-sm p-1 gap-0.5">
               {(["today", "week", "month", "all"] as const).map((p) => (
                 <button

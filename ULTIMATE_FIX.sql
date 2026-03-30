@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS public.drivers (
 CREATE SEQUENCE IF NOT EXISTS shipment_guide_seq START WITH 1001;
 CREATE TABLE IF NOT EXISTS public.shipments (
   id                 SERIAL PRIMARY KEY,
-  guide_number       TEXT NOT NULL UNIQUE DEFAULT ('GUIA-' || nextval('shipment_guide_seq')),
+  guide_number       TEXT NOT NULL UNIQUE DEFAULT (nextval('shipment_guide_seq')::TEXT),
   sender_document    TEXT,
   sender_name        TEXT NOT NULL,
   sender_phone       TEXT NOT NULL,
@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS public.shipments (
   recipient_phone    TEXT NOT NULL,
   recipient_address  TEXT NOT NULL,
   recipient_city     TEXT NOT NULL,
+  payment_method     TEXT NOT NULL DEFAULT 'Efectivo',
   weight             NUMERIC(8,2) NOT NULL DEFAULT 1,
   declared_value     NUMERIC(14,2) NOT NULL DEFAULT 0,
   shipping_cost      NUMERIC(14,2) NOT NULL DEFAULT 0,

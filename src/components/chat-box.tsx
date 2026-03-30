@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react"
 import { Send, User, Bot, AlertCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
+import { cn, formatGuide } from "@/lib/utils"
 import { useChatMessages, useSendMessage } from "@/hooks/use-chat"
 
 interface ChatBoxProps {
@@ -51,8 +51,8 @@ export function ChatBox({ guideNumber, isAdmin = false, className }: ChatBoxProp
     id: "default-msg",
     guide_number: guideNumber,
     text: isAdmin 
-      ? `Chat interno para soporte de la guía ${guideNumber}.`
-      : `¡Hola! Soy tu asistente. ¿En qué te puedo ayudar con tu envío ${guideNumber}?`,
+      ? `Chat interno para soporte de la guía ${formatGuide(guideNumber)}.`
+      : `¡Hola! Soy tu asistente. ¿En qué te puedo ayudar con tu envío ${formatGuide(guideNumber)}?`,
     sender: "agent" as const,
     created_at: new Date().toISOString()
   }
@@ -70,7 +70,7 @@ export function ChatBox({ guideNumber, isAdmin = false, className }: ChatBoxProp
           <h3 className="font-bold text-slate-900 text-sm leading-none">
             {isAdmin ? "Chat con Cliente" : "Soporte en línea"}
           </h3>
-          <p className="text-xs text-slate-500 mt-1">Guía: {guideNumber}</p>
+          <p className="text-xs text-slate-500 mt-1">{formatGuide(guideNumber)}</p>
         </div>
       </div>
 

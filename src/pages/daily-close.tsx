@@ -17,13 +17,14 @@ import { Link } from "wouter"
 type WizardStep = 'idle' | 'pre-close' | 'confirm' | 'success'
 
 export default function DailyClosePage() {
-  const { data: closes, isLoading } = useDailyCloseList()
-  const { data: unclosedDays } = useUnclosedDays()
+  const [branch, setBranch] = useState("Todas las Sedes")
+  const { data: closes, isLoading } = useDailyCloseList(branch)
+  const { data: unclosedDays } = useUnclosedDays(branch)
   const [targetCloseDate, setTargetCloseDate] = useState(new Date().toISOString().split('T')[0])
   const { data: summary } = useFinancialSummary({ 
     startDate: targetCloseDate + 'T00:00:00-05:00',
     endDate: targetCloseDate + 'T23:59:59-05:00'
-  })
+  }, branch)
 
   // Pre-calculate pre-close data from current summary
   const preCloseData = useMemo(() => {
@@ -62,9 +63,13 @@ export default function DailyClosePage() {
 
   const handleCreateClose = async () => {
     if (!preCloseData) return;
+    if (branch === "Todas las Sedes") {
+      alert("Debe seleccionar una sede específica para hacer el cierre.");
+      return;
+    }
     await createMutation.mutateAsync({
       closeDate: new Date(targetCloseDate + 'T12:00:00').toISOString(),
-      branch: "Principal",
+      branch: branch,
       totalShipments: preCloseData.totalShipments,
       totalRevenue: preCloseData.totalRevenue,
       totalDriverPayments: preCloseData.totalDriverPayments,
@@ -133,8 +138,8 @@ export default function DailyClosePage() {
       </div>
     )
   }
-  const ShipmentsBreakdown = ({ closeDate }: { closeDate: string }) => {
-    const { data: shipments, isLoading } = useDailyCloseShipments(closeDate)
+  const ShipmentsBreakdown = ({ closeDate, closeBranch }: { closeDate: string, closeBranch: string }) => {
+    const { data: shipments, isLoading } = useDailyCloseShipments(closeDate, closeBranch)
     
     if (isLoading) return <div className="py-8 text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div></div>
     if (!shipments || shipments.length === 0) return <div className="py-8 text-center text-slate-500">No hay envíos registrados para este día.</div>
@@ -203,9 +208,25 @@ export default function DailyClosePage() {
                 </Button>
               </Link>
             </div>
-            <Button className="bg-white text-primary hover:bg-slate-100 rounded-xl h-12 px-6 font-bold text-base shadow-lg" onClick={() => { setTargetCloseDate(new Date().toISOString().split('T')[0]); setWizardStep('pre-close'); }} disabled={wizardStep !== 'idle'}>
-              <Lock className="w-5 h-5 mr-2" /> Cierre Hoy
-            </Button>
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <select 
+                value={branch} 
+                onChange={(e) => setBranch(e.target.value)} 
+                className="px-3 py-2 text-sm font-semibold text-slate-700 rounded-lg bg-white border border-slate-200 outline-none cursor-pointer focus:ring-1 focus:ring-primary shadow-sm h-12 w-full sm:w-auto"
+              >
+                <option value="Todas las Sedes">Todas las Sedes</option>
+                <option value="Bogotá">Sede Bogotá</option>
+                <option value="Medellín">Sede Medellín</option>
+              </select>
+              <Button 
+                className="bg-white text-primary hover:bg-slate-100 rounded-xl h-12 px-6 font-bold text-base shadow-lg w-full sm:w-auto" 
+                onClick={() => { setTargetCloseDate(new Date().toISOString().split('T')[0]); setWizardStep('pre-close'); }} 
+                disabled={wizardStep !== 'idle' || branch === 'Todas las Sedes'}
+                title={branch === 'Todas las Sedes' ? "Seleccione una sede para cerrar" : "Cerrar día para esta sede"}
+              >
+                <Lock className="w-5 h-5 mr-2" /> Cierre Hoy
+              </Button>
+            </div>
           </div>
         </motion.div>
 
@@ -317,6 +338,7 @@ export default function DailyClosePage() {
                   <div className="bg-slate-50 rounded-xl p-4 space-y-3">
                     <h4 className="text-sm font-bold text-foreground">Resumen del Cierre</h4>
                     <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex justify-between"><span className="text-slate-500">Sede</span><span className={cn("font-bold text-xs px-2 py-0.5 rounded-full uppercase", branch === "Medellín" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700")}>{branch}</span></div>
                       <div className="flex justify-between"><span className="text-slate-500">Envíos totales</span><span className="font-bold">{preCloseData.totalShipments}</span></div>
                       <div className="flex justify-between"><span className="text-slate-500">Entregados</span><span className="font-bold text-emerald-600">{preCloseData.deliveredCount}</span></div>
                       <div className="flex justify-between"><span className="text-slate-500">Ingresos brutos</span><span className="font-bold text-emerald-600">{formatCurrency(preCloseData.totalRevenue)}</span></div>
@@ -458,7 +480,12 @@ export default function DailyClosePage() {
                       <div className="flex items-center gap-4">
                         <div className="bg-primary/10 p-3 rounded-xl text-primary"><CalendarCheck className="w-6 h-6" /></div>
                         <div>
-                          <h4 className="font-bold text-base text-slate-900 capitalize">{format(new Date(close.closeDate), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-base text-slate-900 capitalize">{format(new Date(close.closeDate), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}</h4>
+                            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide", close.branch === "Medellín" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700")}>
+                              {close.branch || "Bogotá"}
+                            </span>
+                          </div>
                           <div className="flex items-center gap-3 mt-1">
                             <span className="text-xs text-slate-500">por {close.closedBy}</span>
                             {revenueDeltaPct !== 0 && (
@@ -524,7 +551,7 @@ export default function DailyClosePage() {
                             )}
                             
                             {/* New Shipments Breakdown Section */}
-                            <ShipmentsBreakdown closeDate={close.closeDate} />
+                            <ShipmentsBreakdown closeDate={close.closeDate} closeBranch={close.branch} />
                           </div>
                         </motion.div>
                       )}

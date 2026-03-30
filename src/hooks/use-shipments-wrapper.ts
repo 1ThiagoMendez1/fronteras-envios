@@ -28,6 +28,7 @@ export function useCreateShipmentMutation() {
         recipientPhone: string;
         recipientAddress: string;
         recipientCity: string;
+        paymentMethod?: string;
         weight?: number;
         declaredValue?: number;
         shippingCost?: number;
@@ -51,6 +52,7 @@ export function useCreateShipmentMutation() {
           recipient_phone: d.recipientPhone,
           recipient_address: d.recipientAddress,
           recipient_city: d.recipientCity,
+          payment_method: d.paymentMethod ?? 'Efectivo',
           weight: d.weight ?? 1,
           declared_value: d.declaredValue ?? 0,
           shipping_cost: d.shippingCost ?? 0,
@@ -91,7 +93,8 @@ export function useCreateShipmentMutation() {
           recorded_by: 'Sistema',
           movement_date: new Date().toISOString(),
           reference_type: 'shipment',
-          reference_id: result.id
+          reference_id: result.id,
+          branch: d.branchOrigin ?? "Bogotá"
         });
       }
 
@@ -130,6 +133,7 @@ export function useUpdateShipmentMutation(id: number) {
           recipient_phone: d.recipientPhone,
           recipient_address: d.recipientAddress,
           recipient_city: d.recipientCity,
+          payment_method: d.paymentMethod,
           weight: d.weight,
           declared_value: d.declaredValue,
           shipping_cost: d.shippingCost,
@@ -148,6 +152,9 @@ export function useUpdateShipmentMutation(id: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
       queryClient.invalidateQueries({ queryKey: ["shipments", id] });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["financial"] });
       toast({ title: "Éxito", description: "Envío actualizado correctamente" });
     },
     onError: (err: any) => {

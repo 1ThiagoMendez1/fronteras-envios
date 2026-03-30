@@ -12,7 +12,6 @@ import {
   Menu,
   X,
   UserCircle,
-  ChevronLeft,
   ChevronRight
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -26,7 +25,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [location] = useLocation()
   const { profile, logout } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(true)
 
   const hasPermission = (perm: string) => {
     if (profile?.role === 'admin') return true;
@@ -62,6 +61,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         isCollapsed ? "w-[72px]" : "w-[260px]"
       )}>
+        {/* Toggle Button placed outside the sidebar */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className={cn(
+            "absolute -right-3.5 top-6 z-[60] hidden lg:flex h-7 w-7 items-center justify-center rounded-full bg-primary text-white shadow-md border-2 border-slate-50 hover:bg-primary/90 transition-transform",
+            !isCollapsed && "rotate-180"
+          )}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+
         <div className={cn(
           "flex h-16 shrink-0 items-center px-5 bg-sidebar-primary text-sidebar-primary-foreground border-b border-sidebar-border/20",
           isCollapsed ? "justify-center px-0" : "justify-between"
@@ -69,7 +79,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {!isCollapsed && (
             <Link href="/dashboard" className="flex items-center gap-3 font-display overflow-hidden">
               <img src="/logo-mark.png" alt="Fronteras" className="h-9 w-auto object-contain drop-shadow-sm" />
-              <span className="text-xl font-bold tracking-tight text-primary translate-y-1.5">FRONTERAS</span>
+              <span className="text-xl font-bold tracking-tight text-white translate-y-1.5">FRONTERAS</span>
             </Link>
           )}
           {isCollapsed && (
@@ -78,9 +88,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           )}
           <div className="flex gap-2 shrink-0">
-            <Button variant="ghost" size="icon" className="hidden lg:flex text-white hover:bg-white/20 shrink-0" onClick={() => setIsCollapsed(!isCollapsed)}>
-              {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
-            </Button>
             <Button variant="ghost" size="icon" className="lg:hidden text-white hover:bg-white/20 shrink-0" onClick={() => setIsMobileMenuOpen(false)}>
               <X className="h-5 w-5" />
             </Button>

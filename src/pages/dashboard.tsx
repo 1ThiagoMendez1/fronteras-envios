@@ -19,7 +19,8 @@ type DashboardPeriod = "today" | "week" | "month"
 
 export default function Dashboard() {
   const [period, setPeriod] = useState<DashboardPeriod>("today")
-  const { data: rawStats, isLoading } = useDashboardStats(period)
+  const [branch, setBranch] = useState("Todas las Sedes")
+  const { data: rawStats, isLoading } = useDashboardStats(period, branch)
   const [shipmentSearch, setShipmentSearch] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 5
@@ -92,7 +93,14 @@ export default function Dashboard() {
             <h1 className="text-3xl font-display font-bold text-foreground">Panel de Control</h1>
             <p className="text-muted-foreground mt-1">Visión estratégica y operativa del negocio.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex items-center bg-white rounded-xl border border-border/50 shadow-sm p-1 gap-0.5">
+              <select value={branch} onChange={(e) => setBranch(e.target.value)} className="px-3 py-1.5 text-sm font-semibold text-slate-700 rounded-lg bg-transparent border-none outline-none cursor-pointer focus:ring-0">
+                <option value="Todas las Sedes">Todas las Sedes</option>
+                <option value="Bogotá">Sede Bogotá</option>
+                <option value="Medellín">Sede Medellín</option>
+              </select>
+            </div>
             <div className="flex items-center bg-white rounded-xl border border-border/50 shadow-sm p-1 gap-0.5">
               {(["today", "week", "month"] as DashboardPeriod[]).map((p) => (
                 <button

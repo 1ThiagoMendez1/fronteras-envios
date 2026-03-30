@@ -57,7 +57,7 @@ CREATE SEQUENCE IF NOT EXISTS shipment_guide_seq START WITH 1001;
 
 CREATE TABLE IF NOT EXISTS public.shipments (
   id                 SERIAL PRIMARY KEY,
-  guide_number       TEXT NOT NULL UNIQUE DEFAULT ('GUIA-' || nextval('shipment_guide_seq')),
+  guide_number       TEXT NOT NULL UNIQUE DEFAULT (nextval('shipment_guide_seq')::TEXT),
   sender_document    TEXT,
   sender_name        TEXT NOT NULL,
   sender_phone       TEXT NOT NULL,
@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS public.shipments (
   recipient_phone    TEXT NOT NULL,
   recipient_address  TEXT NOT NULL,
   recipient_city     TEXT NOT NULL,
+  payment_method     TEXT NOT NULL DEFAULT 'Efectivo',
   weight             NUMERIC(8,2) NOT NULL DEFAULT 1,
   declared_value     NUMERIC(14,2) NOT NULL DEFAULT 0,
   shipping_cost      NUMERIC(14,2) NOT NULL DEFAULT 0,
@@ -122,6 +123,7 @@ CREATE TABLE IF NOT EXISTS public.financial_movements (
   reference_id    INTEGER,
   reference_type  TEXT,
   evidence_url    TEXT,
+  branch          TEXT NOT NULL DEFAULT 'Bogotá',
   recorded_by     UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   movement_date   DATE NOT NULL DEFAULT CURRENT_DATE,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()

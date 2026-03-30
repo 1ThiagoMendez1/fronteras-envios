@@ -40,3 +40,8 @@ export function getStatusLabel(status: string) {
     default: return status
   }
 }
+
+export function formatGuide(guideNumber: string | number) {
+  if (!guideNumber) return '';
+  return String(guideNumber).replace('FRON-', '').replace('GUIA-', '');
+}

@@ -35,10 +35,10 @@ export interface Client {
   departamento:       string | null;
   city:               string;
   address:            string;
-  totalShipmentsThisMonth: number;
+  totalShipments: number;
 }
 
-export type ClientInput = Omit<Client, "id" | "totalShipmentsThisMonth">;
+export type ClientInput = Omit<Client, "id" | "totalShipments">;
 
 function mapRow(c: Record<string, unknown>): Client {
   return {
@@ -57,7 +57,7 @@ function mapRow(c: Record<string, unknown>): Client {
     departamento:            (c.departamento as string)        ?? null,
     city:                    c.city as string,
     address:                 c.address as string,
-    totalShipmentsThisMonth: Number(c.total_shipments || 0),
+    totalShipments:          Number(c.total_shipments || 0),
   };
 }
 
