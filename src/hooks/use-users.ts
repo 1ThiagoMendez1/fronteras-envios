@@ -6,7 +6,7 @@ export interface UserProfile {
   id: string
   email: string
   name: string
-  role: "admin" | "operator" | "driver" | "client"
+  role: string
   is_active: boolean
   permissions: Record<string, boolean>
   last_login?: string
