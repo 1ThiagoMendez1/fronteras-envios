@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/utils"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
-import { TrendingUp, DollarSign, CreditCard, Wallet, AlertCircle, Search, Receipt, Download, LayoutDashboard, ShieldCheck, PieChart as PieChartIcon, ArrowRight, History, Info, ChevronLeft, ChevronRight, Users, Briefcase } from "lucide-react"
+import { TrendingUp, DollarSign, CreditCard, Wallet, AlertCircle, Search, Download, LayoutDashboard, PieChart as PieChartIcon, History, ChevronLeft, ChevronRight, Users, Briefcase } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { motion } from "framer-motion"
@@ -107,9 +107,6 @@ export default function Financial() {
             </TabsTrigger>
             <TabsTrigger value="transacciones" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white transition-all gap-2">
               <History className="w-4 h-4" /> Transacciones
-            </TabsTrigger>
-            <TabsTrigger value="auditoria" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white transition-all gap-2">
-              <ShieldCheck className="w-4 h-4" /> Auditoría y Control
             </TabsTrigger>
           </TabsList>
 
@@ -310,59 +307,6 @@ export default function Financial() {
                </div>
             </Card>
           </TabsContent>
-
-          <TabsContent value="auditoria" className="outline-none">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="p-6 rounded-3xl border-slate-200 bg-white shadow-sm border-l-4 border-l-orange-500">
-                <div className="flex items-center gap-3 mb-4 text-orange-600">
-                  <AlertCircle className="w-5 h-5" />
-                  <h4 className="font-bold">Pendientes de Cobro</h4>
-                </div>
-                <p className="text-2xl font-bold text-slate-900">{formatCurrency(summary.pendingCollections)}</p>
-                <p className="text-xs text-slate-500 mt-1">Guías activas (no entregadas) que representan fletes por cobrar.</p>
-                <Button className="w-full mt-6 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold gap-2 shadow-lg shadow-orange-100">
-                  Ver Detalles <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Card>
-
-              <Card className="p-6 rounded-3xl border-slate-200 bg-white shadow-sm border-l-4 border-l-indigo-500">
-                <div className="flex items-center gap-3 mb-4 text-indigo-600">
-                  <Receipt className="w-5 h-5" />
-                  <h4 className="font-bold">Pendientes de Pago</h4>
-                </div>
-                <p className="text-2xl font-bold text-slate-900">{formatCurrency(summary.pendingPayments)}</p>
-                <p className="text-xs text-slate-500 mt-1">Liquidaciones de conductores de guías aún en curso.</p>
-                <Button className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold gap-2 shadow-lg shadow-indigo-100">
-                  Conciliar Ahora <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Card>
-
-              <Card className="p-6 rounded-3xl border-slate-200 bg-white shadow-sm relative overflow-hidden bg-gradient-to-br from-slate-50 to-white">
-                <div className="flex items-center gap-3 mb-4 text-slate-600">
-                  <ShieldCheck className="w-5 h-5" />
-                  <h4 className="font-bold">Check de Auditoría</h4>
-                </div>
-                <div className="space-y-3">
-                  <AuditItem label="Revisión de Costos en Guías" status={summary.auditIssuesCount > 0 ? "error" : "success"} />
-                  <AuditItem label="Pagos Recibidos vs Reportes" status="warning" />
-                  <AuditItem label="Liquidaciones Conductor" status="success" />
-                </div>
-                <div className={cn("mt-6 p-3 rounded-xl flex gap-3 border", summary.auditIssuesCount > 0 ? "bg-rose-50 border-rose-100" : "bg-emerald-50 border-emerald-100")}>
-                   {summary.auditIssuesCount > 0 ? (
-                      <>
-                        <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-rose-800 leading-tight">La auditoría detectó <strong>{summary.auditIssuesCount} guías entregadas</strong> con flete o pago a conductor en $0. Revise las tarifas.</p>
-                      </>
-                   ) : (
-                      <>
-                        <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-emerald-800 leading-tight">No se detectaron inconsistencias de costos en las guías entregadas.</p>
-                      </>
-                   )}
-                </div>
-              </Card>
-            </div>
-          </TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
@@ -394,19 +338,6 @@ function StatCard({ title, value, icon: Icon, color, trend, isAlert }: any) {
         <p className="text-xs font-medium text-slate-500 mt-1">{title}</p>
       </div>
     </Card>
-  )
-}
-
-function AuditItem({ label, status }: { label: string, status: 'success' | 'warning' | 'error' }) {
-  return (
-    <div className="flex items-center justify-between text-[11px]">
-      <span className="text-slate-600">{label}</span>
-      <span className={cn(
-        "px-2 py-0.5 rounded-full font-bold uppercase text-[9px]",
-        status === 'success' ? "bg-emerald-50 text-emerald-600" : 
-        status === 'warning' ? "bg-orange-50 text-orange-600" : "bg-rose-50 text-rose-600"
-      )}>{status === 'success' ? 'OK' : status === 'warning' ? 'Revisar' : 'Error'}</span>
-    </div>
   )
 }
 
