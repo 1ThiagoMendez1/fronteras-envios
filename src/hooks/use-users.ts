@@ -8,6 +8,7 @@ export interface UserProfile {
   name: string
   role: string
   is_active: boolean
+  branch?: string
   permissions: Record<string, boolean>
   last_login?: string
   created_at: string
@@ -42,6 +43,7 @@ export function useUsers() {
         name: u.user_metadata?.name || 'Sin Nombre',
         role: u.user_metadata?.role || 'operator',
         is_active: u.user_metadata?.is_active ?? true,
+        branch: u.user_metadata?.branch || 'Bogotá',
         permissions: u.user_metadata?.permissions || {},
         created_at: u.created_at,
         last_login: u.last_sign_in_at
@@ -103,6 +105,7 @@ export function useUsers() {
           name: userData.name,
           role: userData.role,
           is_active: true,
+          branch: userData.branch || 'Bogotá',
           permissions: {}
         }
       })

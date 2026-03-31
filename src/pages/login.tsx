@@ -4,17 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowRight, ShieldCheck } from "lucide-react"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-
 import { useAuth } from "@/hooks/use-auth"
-
-export type LoginRequestRole = "admin" | "operator" | "driver" | "client"
 
 export default function Login() {
   const [, setLocation] = useLocation()
@@ -22,50 +12,23 @@ export default function Login() {
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [role, setRole] = useState<LoginRequestRole>("admin")
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
-    try {
-      await login({ email, password })
-      setLocation("/dashboard")
+  try {
+      const user = await login({ email, password })
+      
+      if (user?.user_metadata?.role === "operator") {
+        setLocation("/clients")
+      } else {
+        setLocation("/dashboard")
+      }
     } catch (error) {
       console.error("Login failed:", error)
       setIsLoading(false) // Ensured loading state is reset
-    }
-  }
-
-  const demoCredentials: Record<
-    string,
-    { email: string; password: string; role: LoginRequestRole }
-  > = {
-    admin: { email: "admin@fronteras.com", password: "admin123", role: "admin" },
-    operator: {
-      email: "operator@fronteras.com",
-      password: "operador123",
-      role: "operator",
-    },
-    driver: {
-      email: "driver@fronteras.com",
-      password: "driver123",
-      role: "driver",
-    },
-    client: {
-      email: "cliente@fronteras.com",
-      password: "cliente123",
-      role: "client",
-    },
-  }
-
-  const fillDemo = (roleType: string) => {
-    const creds = demoCredentials[roleType]
-    if (creds) {
-      setEmail(creds.email)
-      setPassword(creds.password)
-      setRole(creds.role)
     }
   }
 
@@ -146,84 +109,29 @@ export default function Login() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Rol de Acceso</Label>
-
-                <Select
-                  value={role}
-                  onValueChange={(value: LoginRequestRole) => setRole(value)}
-                >
-                  <SelectTrigger className="h-12 bg-white rounded-xl">
-                    <SelectValue placeholder="Selecciona un rol" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                    <SelectItem value="operator">Operador</SelectItem>
-                    <SelectItem value="driver">Conductor</SelectItem>
-                    <SelectItem value="client">Cliente</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
             <Button
               type="submit"
-              className="w-full h-12 rounded-xl text-base font-semibold"
+              className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all gap-2"
               disabled={isLoading}
             >
               {isLoading ? (
-                "Ingresando..."
+                "Verificando credenciales..."
               ) : (
                 <>
-                  Ingresar al Sistema
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  Ingresar al Sistema Seguro
+                  <ArrowRight className="ml-1 w-5 h-5" />
                 </>
               )}
             </Button>
+            
+            <p className="flex justify-center items-center gap-2 text-xs text-muted-foreground mt-4 font-medium">
+               <ShieldCheck className="w-4 h-4 text-emerald-500" /> Autenticación segura y cifrada de extremo a extremo
+            </p>
           </form>
 
-          {/* Demo */}
-          <div className="pt-8 border-t border-border/50">
-            <p className="text-xs text-center text-muted-foreground font-medium mb-4 flex items-center justify-center gap-2">
-              <ShieldCheck className="w-4 h-4" />
-              Accesos de Demostración
-            </p>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fillDemo("admin")}
-              >
-                Admin
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fillDemo("operator")}
-              >
-                Operador
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fillDemo("driver")}
-              >
-                Conductor
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fillDemo("client")}
-              >
-                Cliente
-              </Button>
-            </div>
-          </div>
 
           <div className="pt-6 border-t border-border/50 text-center">
             <p className="text-sm text-slate-600">

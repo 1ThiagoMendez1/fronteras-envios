@@ -12,6 +12,7 @@ import { ArrowLeft, Package, User, MapPin, DollarSign, Loader2, Truck, Building2
 import { Link } from "wouter"
 import { useClients } from "@/hooks/use-clients"
 import { useListDrivers } from "@/hooks/use-drivers"
+import { useAuth } from "@/hooks/use-auth"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useState, useRef, useEffect } from "react"
 import { cn } from "@/lib/utils"
@@ -171,6 +172,7 @@ function CitySearchCombobox({ value, onChange }: { value: string, onChange: (v: 
 
 export default function NewShipment() {
   const [, setLocation] = useLocation()
+  const { user, profile } = useAuth()
   const createMutation = useCreateShipmentMutation()
   const { data: drivers } = useListDrivers({ onlyActive: true })
   const { clients, getClientByDocument, upsertClient } = useClients()
@@ -187,6 +189,12 @@ export default function NewShipment() {
       paymentMethod: "Efectivo",
     }
   })
+
+  useEffect(() => {
+    if (user?.user_metadata?.branch) {
+      setValue("branchOrigin", user.user_metadata.branch)
+    }
+  }, [user?.user_metadata?.branch, setValue])
 
   const shippingCost = watch("shippingCost") || 0
   const driverPayment = watch("driverPayment") || 0
@@ -372,11 +380,25 @@ export default function NewShipment() {
               </div>
               <div className="space-y-1.5">
                 <Label>Sede de Origen</Label>
-                <Select defaultValue="Bogotá" onValueChange={(v) => setValue("branchOrigin", v)}>
-                  <SelectTrigger className="h-11 rounded-xl bg-slate-50"><SelectValue /></SelectTrigger>
+                <Select 
+                  value={watch("branchOrigin")} 
+                  onValueChange={(v) => setValue("branchOrigin", v)}
+                  disabled={profile?.role !== "admin"}
+                >
+                  <SelectTrigger className="h-11 rounded-xl bg-slate-50 opacity-100 disabled:bg-slate-100 disabled:opacity-100 disabled:cursor-auto disabled:text-slate-700 font-semibold">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Bogotá">Sede Bogotá</SelectItem>
-                    <SelectItem value="Medellín">Sede Medellín</SelectItem>
+                    {profile?.role === "admin" ? (
+                      <>
+                        <SelectItem value="Bogotá">Sede Bogotá</SelectItem>
+                        <SelectItem value="Medellín">Sede Medellín</SelectItem>
+                      </>
+                    ) : (
+                      <SelectItem value={user?.user_metadata?.branch || "Bogotá"}>
+                        Sede {user?.user_metadata?.branch || "Bogotá"}
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>

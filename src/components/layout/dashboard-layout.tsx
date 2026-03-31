@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { ReactNode } from "react"
 import { Link, useLocation } from "wouter"
 import { useAuth } from "@/hooks/use-auth"
@@ -23,23 +23,18 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [location] = useLocation()
-  const { profile, logout } = useAuth()
+  const { profile, logout, hasPermission } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(true)
 
-  const hasPermission = (perm: string) => {
-    if (profile?.role === 'admin') return true;
-    return profile?.permissions?.[perm] || false;
-  };
-
   const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, visible: hasPermission('view_dashboard') },
-    { href: "/clients", label: "Clientes", icon: UserCircle, visible: hasPermission('manage_clients') },
-    { href: "/shipments", label: "Envíos", icon: Package, visible: hasPermission('manage_shipments') },
-    { href: "/drivers", label: "Conductores", icon: Users, visible: hasPermission('manage_clients') },
-    { href: "/financial", label: "Financiero", icon: Wallet, visible: hasPermission('view_financial') },
-    { href: "/daily-close", label: "Cierre", icon: CalendarCheck, visible: hasPermission('view_financial') },
-    { href: "/users", label: "Usuarios", icon: Users, visible: profile?.role === "admin" },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, visible: hasPermission('dashboard') },
+    { href: "/clients", label: "Clientes", icon: UserCircle, visible: hasPermission('clients') },
+    { href: "/shipments", label: "Envíos", icon: Package, visible: hasPermission('shipments') },
+    { href: "/drivers", label: "Conductores", icon: Users, visible: hasPermission('drivers') },
+    { href: "/financial", label: "Financiero", icon: Wallet, visible: hasPermission('financial') },
+    { href: "/daily-close", label: "Cierre", icon: CalendarCheck, visible: hasPermission('daily_close') },
+    { href: "/users", label: "Usuarios", icon: Users, visible: hasPermission('users') },
   ]
 
   const filteredNavItems = navItems.filter(item => item.visible)
@@ -173,12 +168,53 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Main scrollable area */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 relative">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full mb-6 lg:mb-8 gap-4">
+            <div className="lg:hidden w-full"></div> {/* Spacer for mobile */}
+            <div className="ml-auto">
+              <ColombiaClock />
+            </div>
+          </div>
           <div className="w-full">
             {children}
           </div>
         </main>
       </div>
+    </div>
+  )
+}
+
+function ColombiaClock() {
+  const [date, setDate] = useState(new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => setDate(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const formattedDate = new Intl.DateTimeFormat('es-CO', {
+    timeZone: 'America/Bogota',
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }).format(date)
+
+  const formattedTime = new Intl.DateTimeFormat('es-CO', {
+    timeZone: 'America/Bogota',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  }).format(date)
+
+  return (
+    <div className="flex items-center gap-2 text-xs md:text-sm font-medium text-slate-500 bg-white/80 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-sm border border-slate-200">
+      <CalendarCheck className="w-4 h-4 text-primary shrink-0" />
+      <span className="capitalize hidden sm:inline">{formattedDate}</span>
+      <span className="capitalize sm:hidden">{formattedDate.split(',')[0]}</span>
+      <span className="w-1 h-1 rounded-full bg-slate-300 mx-1 shrink-0"></span>
+      <span className="font-semibold text-slate-800 tabular-nums shrink-0">{formattedTime}</span>
     </div>
   )
 }

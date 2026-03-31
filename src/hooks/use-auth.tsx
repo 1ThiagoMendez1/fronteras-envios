@@ -23,9 +23,10 @@ interface AuthContextType {
   profile: Profile | null;
   session: Session | null;
   isLoading: boolean;
-  login: (data: LoginRequest) => Promise<void>;
+  login: (data: LoginRequest) => Promise<any>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  hasPermission: (perm: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,26 +38,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (currentUser: User) => {
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
-      .eq("id", userId)
+      .eq("id", currentUser.id)
       .single();
     
     if (!error && data) {
       setProfile(data as Profile);
     } else if (error) {
-      // FALLBACK POR ERROR RLS 403: Simula un perfil para no dejar el menú lateral oculto
-      // Esto obtendrá el email y nombre real de las credenciales, asumiendo rol Admin.
+      // Fallback usando los metadatos reales guardados en la creación de Auth
       setProfile({
-        id: userId,
-        // Usar los metadatos de la sesión, si existen (user.email no siempre está disponible sin argumento)
-        email: "demo@fronteras.com", 
-        name: "Usuario de Emergencia",
-        role: "admin", 
-        is_active: true,
-        permissions: {}
+        id: currentUser.id,
+        email: currentUser.email || "demo@fronteras.com", 
+        name: currentUser.user_metadata?.name || "Usuario de Sistema",
+        role: currentUser.user_metadata?.role || "operator", 
+        branch: currentUser.user_metadata?.branch || "Bogotá",
+        is_active: currentUser.user_metadata?.is_active ?? true,
+        permissions: currentUser.user_metadata?.permissions || {}
       } as Profile);
     }
   };
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user);
       }
       setIsLoading(false);
     });
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user);
       } else {
         setProfile(null);
       }
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (data: LoginRequest) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
@@ -98,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: "Bienvenido",
         description: "Has iniciado sesión exitosamente.",
       });
+      return authData.user;
     } catch (err: any) {
       toast({
         title: "Error de autenticación",
@@ -126,6 +127,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const hasPermission = (perm: string) => {
+    if (!profile) return false;
+    if (profile.role === 'admin') return true;
+
+    if (profile.permissions?.[perm]) return true;
+
+    try {
+      const saved = localStorage.getItem("app_roles")
+      const rolesSet = saved ? JSON.parse(saved) : [
+        { id: "admin", permissions: ['dashboard', 'clients', 'shipments', 'drivers', 'financial', 'daily_close', 'users'] },
+        { id: "operator", permissions: ['dashboard', 'clients', 'shipments', 'daily_close'] }
+      ]
+      const roleDef = rolesSet.find((r: any) => r.id === profile.role);
+      if (roleDef && roleDef.permissions?.includes(perm)) {
+        return true;
+      }
+    } catch {
+      // Ignore
+    }
+    
+    return false;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -136,6 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         isAuthenticated: !!user,
+        hasPermission,
       }}
     >
       {children}

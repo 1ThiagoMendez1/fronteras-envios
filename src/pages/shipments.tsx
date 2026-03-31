@@ -32,7 +32,7 @@ export default function Shipments() {
              s.senderName.toLowerCase().includes(search.toLowerCase()) ||
              s.recipientName.toLowerCase().includes(search.toLowerCase()) 
            : true
-    const hasUnread = s.comentarios?.some((m: any) => m.sender === "user" && !m.isRead)
+    const hasUnread = s.comentarios && s.comentarios.length > 0 && s.comentarios[s.comentarios.length - 1].sender === "user"
     const matchesUnread = unreadOnly ? hasUnread : true
     return matchesSearch && matchesUnread
   }) || []
@@ -119,7 +119,7 @@ export default function Shipments() {
                   </tr>
                 ) : (
                   filteredShipments.map((shipment: any) => {
-                    const hasUnreadChat = shipment.comentarios?.some((msg: any) => msg.sender === "user" && !msg.isRead)
+                    const hasUnreadChat = shipment.comentarios && shipment.comentarios.length > 0 && shipment.comentarios[shipment.comentarios.length - 1].sender === "user"
                     
                     return (
                     <tr key={shipment.id} className="hover:bg-slate-50 transition-colors group">
