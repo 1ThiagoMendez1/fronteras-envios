@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { useCreateShipmentMutation } from "@/hooks/use-shipments-wrapper"
-import { ArrowLeft, Package, User, MapPin, DollarSign, Loader2, Truck, Building2, PenLine, Search, X, Check, ChevronDown } from "lucide-react"
+import { ArrowLeft, Package, MapPin, DollarSign, Loader2, Search, X, Check } from "lucide-react"
 import { Link } from "wouter"
 import { useClients } from "@/hooks/use-clients"
 import { useListDrivers } from "@/hooks/use-drivers"
@@ -215,7 +215,16 @@ export default function NewShipment() {
         name: data.senderName,
         phone: data.senderPhone,
         city: data.senderCity,
-        address: data.senderAddress
+        address: data.senderAddress,
+        tipoCliente: null,
+        tipoIdentificacion: null,
+        apellido: null,
+        razonSocial: null,
+        responsableIva: null,
+        regimen: null,
+        categoria: null,
+        email: null,
+        departamento: null
       })
       const result = await createMutation.mutateAsync({ data })
       setLocation(`/shipments/${result.id}`)
