@@ -35,6 +35,6 @@ COPY nginx.conf /etc/nginx/conf.d
 # Copiar los archivos compilados de React de la etapa anterior hacia la carpeta de NGINX
 COPY --from=build /app/dist /usr/share/nginx/html
 
-EXPOSE 80
+EXPOSE 3000
 
 CMD ["nginx", "-g", "daemon off;"]
