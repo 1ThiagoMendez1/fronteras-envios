@@ -11,6 +11,15 @@ RUN npm install
 # Copiar el resto del código
 COPY . .
 
+# Inyectar las variables de entorno para que Vite pueda incrustarlas en el build
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ARG VITE_SUPABASE_SERVICE_ROLE_KEY
+
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+ENV VITE_SUPABASE_SERVICE_ROLE_KEY=$VITE_SUPABASE_SERVICE_ROLE_KEY
+
 # Compilar el proyecto para producción
 RUN npm run build
 
