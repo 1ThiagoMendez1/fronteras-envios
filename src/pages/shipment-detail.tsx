@@ -332,18 +332,7 @@ export default function ShipmentDetail() {
               )}
             </Card>
 
-            {/* Profit Margin Info */}
-            <Card className="p-6 rounded-2xl shadow-sm border-border/50 bg-green-50/50 border-green-100 mt-4 resize overflow-auto min-h-[100px] max-w-full">
-               <div className="flex items-center justify-between">
-                 <div>
-                   <p className="text-sm font-bold text-green-800 uppercase tracking-widest mb-1">Margen de Ganancia (Sede {shipment.branchOrigin})</p>
-                   <p className="text-xs text-green-700">Cobro al cliente ({formatCurrency(shipment.shippingCost)}) - Pago T. ({formatCurrency(shipment.driverPayment)})</p>
-                 </div>
-                 <div className="text-2xl font-black text-green-700">
-                    {formatCurrency(shipment.shippingCost - shipment.driverPayment)}
-                 </div>
-               </div>
-            </Card>
+
 
             {/* Driver Assignment */}
             <Card className="p-6 rounded-2xl shadow-sm border-border/50 resize overflow-auto min-h-[150px] max-w-full">
@@ -497,76 +486,105 @@ export default function ShipmentDetail() {
         </div>
       </div>
 
-      {/* PRINT ONLY SECTION - This matches an actual shipping guide style */}
-      <div id="print-area" className="hidden print:block p-8 bg-white text-black font-sans w-full">
-        <div className="flex items-center justify-between border-b-2 border-black pb-4 mb-6">
-          <div className="flex items-center gap-3 font-display text-2xl font-bold">
+      {/* PRINT ONLY SECTION - Termica 100x150mm Label Style */}
+      <style>{`
+        @media print {
+          @page {
+            size: 100mm 150mm;
+            margin: 0mm !important;
+          }
+          body, html {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 100vh !important;
+            width: 100vw !important;
+            overflow: hidden !important;
+            background: white !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          #print-area {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+            z-index: 99999 !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
+      <div id="print-area" className="hidden print:flex flex-col bg-white text-black font-sans px-2 pt-0 pb-1 box-border overflow-hidden">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between border-b-[3px] border-black pb-1 mb-2">
+          <div className="flex items-center gap-1 font-display font-black">
             <Truck className="w-8 h-8" />
-            <span>FRONTERAS EXPRESS</span>
+            <span className="leading-tight text-xl tracking-tighter">FRONTERAS<br/>EXPRESS</span>
           </div>
-          <div className="text-right">
-            <h2 className="text-3xl font-bold uppercase tracking-widest">{formatGuide(shipment.guideNumber)}</h2>
-            <p className="text-sm font-medium">Guía de Transporte de Carga</p>
+          <div className="text-right flex-1 ml-2">
+            <h2 className="text-3xl font-black uppercase tracking-tighter leading-none">{formatGuide(shipment.guideNumber)}</h2>
+            <p className="text-[10px] font-bold leading-tight mt-1 uppercase">Guía de Transporte</p>
           </div>
         </div>
 
-        <div className="flex justify-between mb-8">
-          <div className="w-3/4 pr-8">
-            <div className="grid grid-cols-2 gap-4 border-2 border-black rounded-lg overflow-hidden">
-              <div className="p-4 border-r-2 border-black">
-                <h3 className="text-xs font-bold uppercase mb-2 border-b border-gray-300 pb-1">Remitente</h3>
-                <p className="font-bold text-lg">{shipment.senderName}</p>
-                <p className="text-sm mt-1">{shipment.senderAddress}</p>
-                <p className="text-sm font-bold mt-1">{shipment.senderCity}</p>
-                <p className="text-sm mt-1">Tel: {shipment.senderPhone}</p>
-              </div>
-              <div className="p-4">
-                <h3 className="text-xs font-bold uppercase mb-2 border-b border-gray-300 pb-1">Destinatario</h3>
-                <p className="font-bold text-lg">{shipment.recipientName}</p>
-                <p className="text-sm mt-1">{shipment.recipientAddress}</p>
-                <p className="text-sm font-bold mt-1">{shipment.recipientCity}</p>
-                <p className="text-sm mt-1">Tel: {shipment.recipientPhone}</p>
-              </div>
+        {/* Sender & Recipient Blocks */}
+        <div className="flex flex-col border-[3px] border-black rounded-xl overflow-hidden mb-3">
+          <div className="flex">
+            {/* Sender */}
+            <div className="w-1/2 p-2 border-r-[3px] border-black border-b-[3px]">
+              <h3 className="text-[11px] font-black uppercase border-b-2 border-black pb-0.5 mb-1.5 text-black px-1 -mx-2 -mt-2">REMITENTE</h3>
+              <p className="font-extrabold text-[13px] leading-tight line-clamp-2 uppercase text-black">{shipment.senderName}</p>
+              <p className="text-[11px] mt-1 leading-tight line-clamp-2 text-black">{shipment.senderAddress}</p>
+              <p className="text-[12px] font-black mt-1 uppercase text-black">{shipment.senderCity}</p>
+              <p className="text-[11px] mt-0.5 font-bold text-black">Tel: {shipment.senderPhone}</p>
             </div>
-
-            <div className="mt-4 flex border-2 border-black rounded-lg overflow-hidden">
-              <div className="flex-1 p-3 border-r-2 border-black">
-                <span className="text-xs font-bold uppercase block">Peso</span>
-                <span className="text-lg font-bold">{shipment.weight} kg</span>
-              </div>
-              <div className="flex-1 p-3 border-r-2 border-black">
-                <span className="text-xs font-bold uppercase block">Valor Declarado</span>
-                <span className="text-lg font-bold">{formatCurrency(shipment.declaredValue)}</span>
-              </div>
-              <div className="flex-1 p-3 bg-gray-100">
-                <span className="text-xs font-bold uppercase block">Costo Flete</span>
-                <span className="text-lg font-bold">{formatCurrency(shipment.shippingCost)}</span>
-              </div>
+            {/* Recipient */}
+            <div className="w-1/2 p-2 border-b-[3px] border-black">
+              <h3 className="text-[11px] font-black uppercase border-b-2 border-black pb-0.5 mb-1.5 text-black px-1 -mx-2 -mt-2">DESTINATARIO</h3>
+              <p className="font-extrabold text-[14px] leading-tight line-clamp-2 uppercase text-black">{shipment.recipientName}</p>
+              <p className="text-[11px] mt-1 leading-tight line-clamp-3 text-black">{shipment.recipientAddress}</p>
+              <p className="text-[14px] font-black mt-1 uppercase text-black bg-gray-200 px-1 inline-block rounded">{shipment.recipientCity}</p>
+              <p className="text-[11px] mt-0.5 font-bold text-black">Tel: {shipment.recipientPhone}</p>
             </div>
-
-            {shipment.observations && (
-              <div className="mt-4 p-3 border-2 border-black rounded-lg">
-                <span className="text-xs font-bold uppercase block mb-1">Observaciones</span>
-                <p className="text-sm">{shipment.observations}</p>
-              </div>
-            )}
           </div>
+          
+          {/* Details Row */}
+          <div className="flex bg-gray-100">
+            <div className="flex-1 p-2 border-r-[3px] border-black text-center flex flex-col justify-center">
+              <span className="text-[10px] font-black uppercase block">Peso</span>
+              <span className="text-lg font-black leading-none mt-1">{shipment.weight} <span className="text-xs">kg</span></span>
+            </div>
+            <div className="flex-1 p-2 border-r-[3px] border-black text-center flex flex-col justify-center">
+              <span className="text-[10px] font-black uppercase block">Declarado</span>
+              <span className="text-sm font-bold leading-none mt-1">{formatCurrency(shipment.declaredValue)}</span>
+            </div>
+            <div className="flex-1 p-2 text-center flex flex-col justify-center text-black">
+               <span className="text-[10px] font-black uppercase block">Total Flete</span>
+               <span className="text-lg font-black leading-none mt-1 text-black">{formatCurrency(shipment.shippingCost)}</span>
+            </div>
+          </div>
+        </div>
 
-          <div className="w-1/4 flex flex-col items-center justify-start pt-2">
-            <QRCodeSVG value={trackingUrl} size={150} level="H" includeMargin={false} />
-            <p className="text-xs text-center mt-3 font-bold w-full uppercase">Escanee para<br/>rastrear paquete</p>
+        {/* Observation & QR */}
+        <div className="flex gap-3 mb-3 flex-1">
+          <div className="flex-1 border-[3px] border-black rounded-xl p-2 flex flex-col relative overflow-hidden">
+            <span className="text-[11px] font-black uppercase block border-b-2 border-black pb-1 mb-1 relative z-10 w-full bg-white">OBSERVACIONES</span>
+            <p className="text-[11px] leading-tight font-bold whitespace-pre-wrap overflow-hidden relative z-10">{shipment.observations || "Sin observaciones registradas."}</p>
+          </div>
+          <div className="w-[120px] flex flex-col items-center justify-center p-2 border-[3px] border-black rounded-xl shrink-0">
+             <QRCodeSVG value={trackingUrl} size={90} level="M" />
+             <p className="text-[9px] text-center mt-2 font-black w-full uppercase leading-tight bg-black text-white py-0.5 rounded">RASTREAR</p>
           </div>
         </div>
 
-        <div className="mt-12 grid grid-cols-2 gap-8 pt-8 border-t border-dashed border-gray-400">
-          <div className="border-b border-black pb-1 mb-8 relative">
-            <span className="absolute bottom-1 left-0 text-xs font-bold text-gray-500">Firma Remitente / Sello</span>
-          </div>
-          <div className="border-b border-black pb-1 mb-8 relative">
-            <span className="absolute bottom-1 left-0 text-xs font-bold text-gray-500">Firma Destinatario (Recibido conforme)</span>
-          </div>
+        <div className="border-t-[3px] border-black pt-1.5 mt-auto text-center text-[8px] font-bold leading-tight uppercase">
+          Fronteras Express S.A.S. - El envío se rige por nuestras políticas.<br/>Consulte términos en www.fronterasexpress.com
         </div>
-        <p className="text-[10px] text-center mt-8 text-gray-500">Fronteras Express - Más que rápido, siempre a tiempo. El envío de este paquete se rige por las políticas de transporte nacional publicadas en nuestro portal. Para más información consulte en www.fronterasexpress.com</p>
       </div>
     </DashboardLayout>
   )
