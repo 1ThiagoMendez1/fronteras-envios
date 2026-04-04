@@ -672,6 +672,9 @@ export default function ShipmentDetail() {
           </div>
         )}
 
+
+
+
         {printType === "labels" && (
           <div className="labels-print block w-full">
             {labelChunks.map((chunk, sheetIdx) => {
