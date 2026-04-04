@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import { useRoute, Link } from "wouter"
 import SignatureCanvas from "react-signature-canvas"
 import { useGetShipment } from "@/hooks/use-shipments"
