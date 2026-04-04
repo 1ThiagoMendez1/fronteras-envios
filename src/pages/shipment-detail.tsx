@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRoute, Link } from "wouter"
 import SignatureCanvas from "react-signature-canvas"
 import { useGetShipment } from "@/hooks/use-shipments"
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { formatCurrency, getStatusColor, getStatusLabel, cn, formatGuide } from "@/lib/utils"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { ArrowLeft, Printer, Truck, MapPin, Building, Phone } from "lucide-react"
+import { ArrowLeft, Printer, Truck, MapPin, Building, Phone, Package } from "lucide-react"
 import { useUpdateShipmentStatusMutation, useAssignDriverMutation } from "@/hooks/use-shipments-wrapper"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -36,11 +36,15 @@ export default function ShipmentDetail() {
   const sigCanvas = useRef<SignatureCanvas>(null)
   const { toast } = useToast()
 
-  // Local state for signature and driver display (mocking actual persistence hook)
   const [localSignature, setLocalSignature] = useState<string | null>(null)
   const [localDriverId, setLocalDriverId] = useState<string | null>(null)
   const [isReassigning, setIsReassigning] = useState(false)
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false)
+
+  // Labels print state
+  const [printType, setPrintType] = useState<"guide" | "labels">("guide")
+  const [isLabelsDialogOpen, setIsLabelsDialogOpen] = useState(false)
+  const [labelsCount, setLabelsCount] = useState<number>(1)
 
   if (isLoading || !shipment) {
     return (
@@ -101,8 +105,15 @@ export default function ShipmentDetail() {
     sigCanvas.current?.clear()
   }
 
-  const handlePrint = () => {
-    window.print()
+  const handlePrintGuide = () => {
+    setPrintType("guide")
+    setTimeout(() => window.print(), 350)
+  }
+
+  const handlePrintLabels = () => {
+    setPrintType("labels")
+    setIsLabelsDialogOpen(false)
+    setTimeout(() => window.print(), 350)
   }
 
   const handlePrintActa = () => {
@@ -193,6 +204,12 @@ export default function ShipmentDetail() {
   const sortedHistory = (shipment.history as {id: number, status: string, notes: string | null, createdAt: string}[])?.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || []
   const displayHistory = isHistoryExpanded ? sortedHistory : sortedHistory.slice(0, 3)
 
+  // Generate chunks of up to 4 labels each
+  const labelChunks = []
+  for (let i = 0; i < labelsCount; i += 4) {
+    labelChunks.push(Array.from({ length: Math.min(4, labelsCount - i) }, (_, index) => i + index + 1))
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6 pb-20 no-print">
@@ -218,7 +235,39 @@ export default function ShipmentDetail() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="secondary" onClick={handlePrint} className="rounded-xl h-11 font-semibold">
+            <Dialog open={isLabelsDialogOpen} onOpenChange={setIsLabelsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="rounded-xl h-11 font-semibold flex items-center gap-2">
+                  <Package className="w-4 h-4" /> Rótulos
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-xs rounded-3xl">
+                <DialogHeader>
+                  <DialogTitle>Imprimir Rótulos de Cajas</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Cantidad de Cajas</label>
+                    <Input 
+                      type="number" 
+                      min="1" 
+                      max="100"
+                      value={labelsCount} 
+                      onChange={e => setLabelsCount(parseInt(e.target.value) || 1)}
+                      className="rounded-xl h-12 text-lg text-center font-bold"
+                    />
+                    <p className="text-xs text-muted-foreground text-center">
+                       Se agruparán hasta 4 rótulos por hoja (100x150mm) para ahorrar papel.
+                    </p>
+                  </div>
+                  <Button className="w-full h-12 rounded-xl" onClick={handlePrintLabels}>
+                    <Printer className="w-4 h-4 mr-2" /> Imprimir {labelsCount} Rótulo(s)
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Button variant="secondary" onClick={handlePrintGuide} className="rounded-xl h-11 font-semibold">
               <Printer className="w-4 h-4 mr-2" /> Imprimir Guía
             </Button>
 
@@ -488,103 +537,204 @@ export default function ShipmentDetail() {
 
       {/* PRINT ONLY SECTION - Termica 100x150mm Label Style */}
       <style>{`
+        @page {
+          size: 100mm 150mm;
+          margin: 0 !important;
+        }
+        
         @media print {
-          @page {
-            size: 100mm 150mm;
-            margin: 0mm !important;
+          /* Reset root flow to prevent cropping */
+          * {
+            overflow: visible !important;
           }
           body, html {
             margin: 0 !important;
             padding: 0 !important;
-            height: 100vh !important;
-            width: 100vw !important;
-            overflow: hidden !important;
             background: white !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          #print-area {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
+          /* Hide all default elements visually but preserve flow so CSS parses 100% safely */
+          body * {
+            visibility: hidden;
+            box-sizing: border-box;
+          }
+          /* Strip all layout structural gaps (like top headers and padding) from ancestors */
+          #root, #root > div, main {
+            position: static !important;
+            padding: 0 !important;
             margin: 0 !important;
-            box-sizing: border-box !important;
-            z-index: 99999 !important;
+            transform: none !important;
           }
           .no-print {
             display: none !important;
           }
+          #print-area-container, #print-area-container * {
+            visibility: visible !important;
+          }
+          #print-area-container {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            margin: 0 !important;
+            z-index: 99999 !important;
+            display: block !important;
+            background: white !important;
+          }
+          .guide-print {
+            width: 100vw !important;
+            height: 100vh !important;
+            overflow: hidden !important;
+          }
+          .sheet {
+            width: 100vw !important;
+            height: 100vh !important;
+            page-break-after: always;
+            break-after: page;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden !important;
+            background: white;
+          }
         }
       `}</style>
-      <div id="print-area" className="hidden print:flex flex-col bg-white text-black font-sans px-2 pt-0 pb-1 box-border overflow-hidden">
+      
+      <div id="print-area-container" className="hidden print:block bg-white text-black font-sans box-border w-full">
         
-        {/* Header */}
-        <div className="flex items-center justify-between border-b-[3px] border-black pb-1 mb-2">
-          <div className="flex items-center gap-1 font-display font-black">
-            <Truck className="w-8 h-8" />
-            <span className="leading-tight text-xl tracking-tighter">FRONTERAS<br/>EXPRESS</span>
-          </div>
-          <div className="text-right flex-1 ml-2">
-            <h2 className="text-3xl font-black uppercase tracking-tighter leading-none">{formatGuide(shipment.guideNumber)}</h2>
-            <p className="text-[10px] font-bold leading-tight mt-1 uppercase">Guía de Transporte</p>
-          </div>
-        </div>
+        {printType === "guide" && (
+          <div className="guide-print flex flex-col px-2 pt-0 pb-1 box-border">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b-[3px] border-black pb-1 mb-2">
+              <div className="flex items-center gap-1 font-display font-black">
+                <Truck className="w-8 h-8" />
+                <span className="leading-tight text-xl tracking-tighter">FRONTERAS<br/>EXPRESS</span>
+              </div>
+              <div className="text-right flex-1 ml-2">
+                <h2 className="text-3xl font-black uppercase tracking-tighter leading-none">{formatGuide(shipment.guideNumber)}</h2>
+                <p className="text-[10px] font-bold leading-tight mt-1 uppercase">Guía de Transporte</p>
+              </div>
+            </div>
 
-        {/* Sender & Recipient Blocks */}
-        <div className="flex flex-col border-[3px] border-black rounded-xl overflow-hidden mb-3">
-          <div className="flex">
-            {/* Sender */}
-            <div className="w-1/2 p-2 border-r-[3px] border-black border-b-[3px]">
-              <h3 className="text-[11px] font-black uppercase border-b-2 border-black pb-0.5 mb-1.5 text-black px-1 -mx-2 -mt-2">REMITENTE</h3>
-              <p className="font-extrabold text-[13px] leading-tight line-clamp-2 uppercase text-black">{shipment.senderName}</p>
-              <p className="text-[11px] mt-1 leading-tight line-clamp-2 text-black">{shipment.senderAddress}</p>
-              <p className="text-[12px] font-black mt-1 uppercase text-black">{shipment.senderCity}</p>
-              <p className="text-[11px] mt-0.5 font-bold text-black">Tel: {shipment.senderPhone}</p>
+            {/* Sender & Recipient Blocks */}
+            <div className="flex flex-col border-[3px] border-black rounded-xl overflow-hidden mb-3">
+              <div className="flex">
+                {/* Sender */}
+                <div className="w-1/2 p-2 border-r-[3px] border-black border-b-[3px]">
+                  <h3 className="text-[11px] font-black uppercase border-b-2 border-black pb-0.5 mb-1.5 text-black px-1 -mx-2 -mt-2">REMITENTE</h3>
+                  <p className="font-extrabold text-[13px] leading-tight line-clamp-2 uppercase text-black">{shipment.senderName}</p>
+                  <p className="text-[11px] mt-1 leading-tight line-clamp-2 text-black">{shipment.senderAddress}</p>
+                  <p className="text-[12px] font-black mt-1 uppercase text-black">{shipment.senderCity}</p>
+                  <p className="text-[11px] mt-0.5 font-bold text-black">Tel: {shipment.senderPhone}</p>
+                </div>
+                {/* Recipient */}
+                <div className="w-1/2 p-2 border-b-[3px] border-black">
+                  <h3 className="text-[11px] font-black uppercase border-b-2 border-black pb-0.5 mb-1.5 text-black px-1 -mx-2 -mt-2">DESTINATARIO</h3>
+                  <p className="font-extrabold text-[14px] leading-tight line-clamp-2 uppercase text-black">{shipment.recipientName}</p>
+                  <p className="text-[11px] mt-1 leading-tight line-clamp-3 text-black">{shipment.recipientAddress}</p>
+                  <p className="text-[14px] font-black mt-1 uppercase text-black bg-gray-200 px-1 inline-block rounded">{shipment.recipientCity}</p>
+                  <p className="text-[11px] mt-0.5 font-bold text-black">Tel: {shipment.recipientPhone}</p>
+                </div>
+              </div>
+              
+              {/* Details Row */}
+              <div className="flex bg-gray-100">
+                <div className="flex-1 p-2 border-r-[3px] border-black text-center flex flex-col justify-center">
+                  <span className="text-[10px] font-black uppercase block">Peso</span>
+                  <span className="text-lg font-black leading-none mt-1">{shipment.weight} <span className="text-xs">kg</span></span>
+                </div>
+                <div className="flex-1 p-2 border-r-[3px] border-black text-center flex flex-col justify-center">
+                  <span className="text-[10px] font-black uppercase block">Declarado</span>
+                  <span className="text-sm font-bold leading-none mt-1">{formatCurrency(shipment.declaredValue)}</span>
+                </div>
+                <div className="flex-1 p-2 text-center flex flex-col justify-center text-black">
+                   <span className="text-[10px] font-black uppercase block">Total Flete</span>
+                   <span className="text-lg font-black leading-none mt-1 text-black">{formatCurrency(shipment.shippingCost)}</span>
+                </div>
+              </div>
             </div>
-            {/* Recipient */}
-            <div className="w-1/2 p-2 border-b-[3px] border-black">
-              <h3 className="text-[11px] font-black uppercase border-b-2 border-black pb-0.5 mb-1.5 text-black px-1 -mx-2 -mt-2">DESTINATARIO</h3>
-              <p className="font-extrabold text-[14px] leading-tight line-clamp-2 uppercase text-black">{shipment.recipientName}</p>
-              <p className="text-[11px] mt-1 leading-tight line-clamp-3 text-black">{shipment.recipientAddress}</p>
-              <p className="text-[14px] font-black mt-1 uppercase text-black bg-gray-200 px-1 inline-block rounded">{shipment.recipientCity}</p>
-              <p className="text-[11px] mt-0.5 font-bold text-black">Tel: {shipment.recipientPhone}</p>
-            </div>
-          </div>
-          
-          {/* Details Row */}
-          <div className="flex bg-gray-100">
-            <div className="flex-1 p-2 border-r-[3px] border-black text-center flex flex-col justify-center">
-              <span className="text-[10px] font-black uppercase block">Peso</span>
-              <span className="text-lg font-black leading-none mt-1">{shipment.weight} <span className="text-xs">kg</span></span>
-            </div>
-            <div className="flex-1 p-2 border-r-[3px] border-black text-center flex flex-col justify-center">
-              <span className="text-[10px] font-black uppercase block">Declarado</span>
-              <span className="text-sm font-bold leading-none mt-1">{formatCurrency(shipment.declaredValue)}</span>
-            </div>
-            <div className="flex-1 p-2 text-center flex flex-col justify-center text-black">
-               <span className="text-[10px] font-black uppercase block">Total Flete</span>
-               <span className="text-lg font-black leading-none mt-1 text-black">{formatCurrency(shipment.shippingCost)}</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Observation & QR */}
-        <div className="flex gap-3 mb-3 flex-1">
-          <div className="flex-1 border-[3px] border-black rounded-xl p-2 flex flex-col relative overflow-hidden">
-            <span className="text-[11px] font-black uppercase block border-b-2 border-black pb-1 mb-1 relative z-10 w-full bg-white">OBSERVACIONES</span>
-            <p className="text-[11px] leading-tight font-bold whitespace-pre-wrap overflow-hidden relative z-10">{shipment.observations || "Sin observaciones registradas."}</p>
-          </div>
-          <div className="w-[120px] flex flex-col items-center justify-center p-2 border-[3px] border-black rounded-xl shrink-0">
-             <QRCodeSVG value={trackingUrl} size={90} level="M" />
-             <p className="text-[9px] text-center mt-2 font-black w-full uppercase leading-tight bg-black text-white py-0.5 rounded">RASTREAR</p>
-          </div>
-        </div>
+            {/* Observation & QR */}
+            <div className="flex gap-3 mb-3 flex-1">
+              <div className="flex-1 border-[3px] border-black rounded-xl p-2 flex flex-col relative overflow-hidden">
+                <span className="text-[11px] font-black uppercase block border-b-2 border-black pb-1 mb-1 relative z-10 w-full bg-white">OBSERVACIONES</span>
+                <p className="text-[11px] leading-tight font-bold whitespace-pre-wrap overflow-hidden relative z-10">{shipment.observations || "Sin observaciones registradas."}</p>
+              </div>
+              <div className="w-[120px] flex flex-col items-center justify-center p-2 border-[3px] border-black rounded-xl shrink-0">
+                 <QRCodeSVG value={trackingUrl} size={90} level="M" />
+                 <p className="text-[9px] text-center mt-2 font-black w-full uppercase leading-tight bg-black text-white py-0.5 rounded">RASTREAR</p>
+              </div>
+            </div>
 
-        <div className="border-t-[3px] border-black pt-1.5 mt-auto text-center text-[8px] font-bold leading-tight uppercase">
-          Fronteras Express S.A.S. - El envío se rige por nuestras políticas.<br/>Consulte términos en www.fronterasexpress.com
-        </div>
+            <div className="border-t-[3px] border-black pt-1.5 mt-auto text-center text-[8px] font-bold leading-tight uppercase">
+              Fronteras Express S.A.S. - El envío se rige por nuestras políticas.<br/>Consulte términos en www.fronterasexpress.com
+            </div>
+          </div>
+        )}
+
+        {printType === "labels" && (
+          <div className="labels-print block w-full">
+            {labelChunks.map((chunk, sheetIdx) => {
+              const isCompact = chunk.length >= 3;
+              const isUltraCompact = chunk.length === 4;
+              return (
+                <div key={sheetIdx} className="sheet">
+                  {chunk.map(labelNum => {
+                    const boxLetter = String.fromCharCode(64 + labelNum); // 1->A, 2->B, etc.
+                    return (
+                      <div key={labelNum} className="flex-1 flex relative overflow-hidden box-border border-b-[2px] border-dashed border-black last:border-b-0 w-full">
+                        <div className={cn("flex-1 flex flex-col justify-center w-full h-full", isUltraCompact ? "p-1.5" : "p-2")}>
+                          <div className={cn("flex justify-between items-center border-b-[2px] border-black", isUltraCompact ? "pb-0.5 mb-0.5" : "pb-1 mb-1")}>
+                            <div className="flex flex-col">
+                               <div className={cn("font-black uppercase tracking-tighter leading-none", isUltraCompact ? "text-lg" : isCompact ? "text-xl" : "text-3xl")}>
+                                  {formatGuide(shipment.guideNumber)}
+                               </div>
+                               <div className={cn("font-bold text-gray-500", isUltraCompact ? "hidden" : isCompact ? "text-[8px] mt-0.5" : "text-[10px] mt-1")}>
+                                  GUÍA SECUNDARIA DE ROTULADO
+                               </div>
+                            </div>
+                            <div className={cn("font-black bg-black text-white px-2 rounded-sm uppercase tracking-wider text-center flex flex-col items-center justify-center", isUltraCompact ? "py-0.5 text-xs" : isCompact ? "py-1 text-sm" : "py-1 text-2xl")}>
+                              <span>CAJA {boxLetter}</span>
+                              <span className={cn("font-bold text-gray-300", isUltraCompact ? "text-[7px] mt-0" : isCompact ? "text-[8px] mt-0.5" : "text-sm mt-0.5")}>Pza {labelNum}/{labelsCount}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex-1 flex flex-col justify-center">
+                              <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-0">Destinatario</span>
+                              <span className={cn("font-extrabold uppercase leading-none line-clamp-1", isUltraCompact ? "text-xs mt-0.5" : isCompact ? "text-sm mt-0.5" : "text-xl mt-1")}>
+                                {shipment.recipientName}
+                              </span>
+                              <span className={cn("font-black bg-gray-200 self-start px-1 rounded uppercase", isUltraCompact ? "mt-0.5 text-[9px]" : isCompact ? "mt-1 text-xs" : "mt-1 text-lg")}>
+                                {shipment.recipientCity}
+                              </span>
+                              <span className={cn("font-medium leading-tight line-clamp-2", isUltraCompact ? "mt-0.5 text-[9px]" : isCompact ? "mt-1 text-[10px]" : "mt-1 text-sm")}>
+                                {shipment.recipientAddress}
+                              </span>
+                              <span className={cn("font-bold", isUltraCompact ? "mt-0 text-[8px]" : isCompact ? "mt-0.5 text-[9px]" : "mt-0.5 text-xs")}>
+                                Tel: {shipment.recipientPhone}
+                              </span>
+                          </div>
+
+                          {/* Add Sender info horizontally if we have space (chunk < 3) */}
+                          {!isCompact && (
+                             <div className="mt-2 flex gap-2 w-full">
+                               <div className="flex-1 border border-black p-1.5 rounded bg-gray-50">
+                                 <span className="text-[9px] font-black uppercase text-gray-600 block mb-0.5">Remitente</span>
+                                 <p className="text-[12px] font-bold truncate">{shipment.senderName}</p>
+                                 <p className="text-[10px] truncate">{shipment.senderCity}</p>
+                               </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
       </div>
     </DashboardLayout>
   )
