@@ -24,12 +24,14 @@ export function useCreateShipmentMutation() {
         senderPhone: string;
         senderAddress: string;
         senderCity: string;
+        recipientDocument?: string;
         recipientName: string;
         recipientPhone: string;
         recipientAddress: string;
         recipientCity: string;
         paymentMethod?: string;
         weight?: number;
+        quantity?: number;
         declaredValue?: number;
         shippingCost?: number;
         driverPayment?: number;
@@ -40,6 +42,27 @@ export function useCreateShipmentMutation() {
     }) => {
       const { data: d } = payload;
       const adminClient = getAdminClient();
+      // ─── UPSERT Clients (if they don't exist) ───
+      if (d.senderDocument) {
+        await adminClient.from("clients").upsert({
+          document: d.senderDocument,
+          name: d.senderName,
+          phone: d.senderPhone,
+          address: d.senderAddress,
+          city: d.senderCity
+        }, { onConflict: "document", ignoreDuplicates: true });
+      }
+
+      if (d.recipientDocument) {
+        await adminClient.from("clients").upsert({
+          document: d.recipientDocument,
+          name: d.recipientName,
+          phone: d.recipientPhone,
+          address: d.recipientAddress,
+          city: d.recipientCity
+        }, { onConflict: "document", ignoreDuplicates: true });
+      }
+
       const { data: result, error } = await adminClient
         .from("shipments")
         .insert({
@@ -48,12 +71,14 @@ export function useCreateShipmentMutation() {
           sender_phone: d.senderPhone,
           sender_address: d.senderAddress,
           sender_city: d.senderCity,
+          recipient_document: d.recipientDocument ?? null,
           recipient_name: d.recipientName,
           recipient_phone: d.recipientPhone,
           recipient_address: d.recipientAddress,
           recipient_city: d.recipientCity,
           payment_method: d.paymentMethod ?? 'Efectivo',
           weight: d.weight ?? 1,
+          quantity: d.quantity ?? 1,
           declared_value: d.declaredValue ?? 0,
           shipping_cost: d.shippingCost ?? 0,
           driver_payment: d.driverPayment ?? 0,
@@ -121,6 +146,27 @@ export function useUpdateShipmentMutation(id: number) {
     mutationFn: async (payload: { data: Record<string, any> }) => {
       const d = payload.data;
       const adminClient = getAdminClient();
+      // ─── UPSERT Clients (if they don't exist) ───
+      if (d.senderDocument) {
+        await adminClient.from("clients").upsert({
+          document: d.senderDocument,
+          name: d.senderName,
+          phone: d.senderPhone,
+          address: d.senderAddress,
+          city: d.senderCity
+        }, { onConflict: "document", ignoreDuplicates: true });
+      }
+
+      if (d.recipientDocument) {
+        await adminClient.from("clients").upsert({
+          document: d.recipientDocument,
+          name: d.recipientName,
+          phone: d.recipientPhone,
+          address: d.recipientAddress,
+          city: d.recipientCity
+        }, { onConflict: "document", ignoreDuplicates: true });
+      }
+
       const { data: result, error } = await adminClient
         .from("shipments")
         .update({
@@ -129,12 +175,14 @@ export function useUpdateShipmentMutation(id: number) {
           sender_phone: d.senderPhone,
           sender_address: d.senderAddress,
           sender_city: d.senderCity,
+          recipient_document: d.recipientDocument,
           recipient_name: d.recipientName,
           recipient_phone: d.recipientPhone,
           recipient_address: d.recipientAddress,
           recipient_city: d.recipientCity,
           payment_method: d.paymentMethod,
           weight: d.weight,
+          quantity: d.quantity,
           declared_value: d.declaredValue,
           shipping_cost: d.shippingCost,
           driver_payment: d.driverPayment,

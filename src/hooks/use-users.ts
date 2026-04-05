@@ -59,6 +59,7 @@ export function useUsers() {
         user_metadata: { role }
       });
       if (error) throw error
+      await adminClient.from("profiles").update({ role }).eq("id", id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] })
@@ -73,6 +74,7 @@ export function useUsers() {
         user_metadata: { is_active: isActive }
       });
       if (error) throw error
+      await adminClient.from("profiles").update({ is_active: isActive }).eq("id", id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] })

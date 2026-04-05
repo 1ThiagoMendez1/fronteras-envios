@@ -27,6 +27,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   hasPermission: (perm: string) => boolean;
+  globalRoles: any[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,16 +38,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [globalRoles, setGlobalRoles] = useState<any[]>([]);
 
   const fetchProfile = async (currentUser: User) => {
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", currentUser.id)
-      .single();
-    
+      .single()
     if (!error && data) {
-      setProfile(data as Profile);
+      setProfile({
+        ...(data as any),
+        role: currentUser.user_metadata?.role || (data as any).role,
+        is_active: currentUser.user_metadata?.is_active ?? (data as any).is_active
+      } as Profile);
     } else if (error) {
       // Fallback usando los metadatos reales guardados en la creación de Auth
       setProfile({
@@ -80,6 +85,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         fetchProfile(session.user);
       } else {
         setProfile(null);
+      }
+    });
+
+    // Cargar roles globales de la BD o fallback a localStorage si no existe la tabla
+    supabase.from("app_roles").select("*").then(({ data, error }) => {
+      if (!error && data && data.length > 0) {
+        setGlobalRoles(data);
+      } else {
+        const saved = localStorage.getItem("app_roles");
+        if (saved) setGlobalRoles(JSON.parse(saved));
       }
     });
 
@@ -133,6 +148,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (profile.permissions?.[perm]) return true;
 
+    if (globalRoles && globalRoles.length > 0) {
+      const roleDef = globalRoles.find(r => r.id === profile.role);
+      if (roleDef && roleDef.permissions?.includes(perm)) {
+        return true;
+      }
+      return false; // Bloquea si explícitamente no lo tiene
+    }
+
     try {
       const saved = localStorage.getItem("app_roles")
       const rolesSet = saved ? JSON.parse(saved) : [
@@ -161,6 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         isAuthenticated: !!user,
         hasPermission,
+        globalRoles,
       }}
     >
       {children}

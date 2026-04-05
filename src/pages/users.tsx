@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { supabase } from "@/lib/supabase"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { useUsers, type UserProfile } from "@/hooks/use-users"
 import {
@@ -87,13 +88,23 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
 
   // Roles State
-  const [roles, setRoles] = useState(() => {
-    const saved = localStorage.getItem("app_roles")
-    return saved ? JSON.parse(saved) : INITIAL_ROLES
-  })
+  const [roles, setRoles] = useState<any[]>(INITIAL_ROLES)
+
+  useEffect(() => {
+    supabase.from("app_roles").select("*").order("id").then(({ data, error }) => {
+      if (!error && data && data.length > 0) {
+        setRoles(data)
+      } else {
+        const saved = localStorage.getItem("app_roles")
+        if (saved) setRoles(JSON.parse(saved))
+      }
+    })
+  }, [])
   
   useEffect(() => {
-    localStorage.setItem("app_roles", JSON.stringify(roles))
+    if (roles.length > 0) {
+      localStorage.setItem("app_roles", JSON.stringify(roles))
+    }
   }, [roles])
 
   const [selectedRoleIndex, setSelectedRoleIndex] = useState(0)
@@ -130,8 +141,8 @@ export default function UsersPage() {
     }
   }
 
-  const toggleRolePermission = (roleId: string, permId: string) => {
-    setRoles(roles.map((r: any) => {
+  const toggleRolePermission = async (roleId: string, permId: string) => {
+    const updatedRoles = roles.map((r: any) => {
       if (r.id === roleId) {
         const hasPerm = r.permissions.includes(permId)
         return {
@@ -140,11 +151,19 @@ export default function UsersPage() {
         }
       }
       return r
-    }))
-    toast.success("Permisos de rol actualizados localmente")
+    })
+    setRoles(updatedRoles)
+
+    const roleToUpdate = updatedRoles.find(r => r.id === roleId)
+    if (roleToUpdate) {
+      // Sincronizar silenciosamente con BD
+      await (supabase as any).from("app_roles").update({ permissions: roleToUpdate.permissions }).eq("id", roleId)
+    }
+
+    toast.success("Permisos guardados globalmente")
   }
 
-  const createNewRole = () => {
+  const createNewRole = async () => {
     if (!newRoleData.name) {
        toast.error("El nombre del rol es obligatorio")
        return
@@ -156,10 +175,14 @@ export default function UsersPage() {
        return
     }
 
-    setRoles([...roles, { id: slugId, name: newRoleData.name, description: newRoleData.description || "Nuevo rol de acceso", permissions: [] }])
+    const newRoleObj = { id: slugId, name: newRoleData.name, description: newRoleData.description || "Nuevo rol de acceso", permissions: [] }
+    setRoles([...roles, newRoleObj])
+    
+    await (supabase as any).from("app_roles").insert([newRoleObj])
+
     setIsNewRoleDialogOpen(false)
     setNewRoleData({ name: "", description: "" })
-    toast.success("Nuevo rol creado")
+    toast.success("Nuevo rol creado globalmente")
     setSelectedRoleIndex(roles.length) // Focus el nuevo rol
   }
 

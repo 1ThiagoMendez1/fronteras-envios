@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { useCreateShipmentMutation } from "@/hooks/use-shipments-wrapper"
-import { ArrowLeft, Package, MapPin, DollarSign, Loader2, Search, X, Check } from "lucide-react"
+import { ArrowLeft, Package, MapPin, DollarSign, Loader2 } from "lucide-react"
 import { Link } from "wouter"
 import { useClients } from "@/hooks/use-clients"
 import { useListDrivers } from "@/hooks/use-drivers"
@@ -16,6 +16,35 @@ import { useAuth } from "@/hooks/use-auth"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useState, useRef, useEffect } from "react"
 import { cn } from "@/lib/utils"
+import { DriverSearchCombobox } from "@/components/driver-search-combobox"
+import { Component, ErrorInfo, ReactNode } from "react"
+
+class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error: Error | null}> {
+  constructor(props: {children: ReactNode}) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-10 bg-white text-red-500 min-h-screen">
+          <h1 className="text-2xl font-bold mb-4">Aparació un error de sistema interno:</h1>
+          <p className="font-semibold">{this.state.error?.message}</p>
+          <pre className="mt-4 bg-red-50 text-xs p-4 rounded overflow-auto border border-red-200">
+            {this.state.error?.stack}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const COVERAGE_CITIES = [
   "Aguazul", "Apartadó", "Barranquilla", "Bogotá", "Bucaramanga", "Cali", 
@@ -31,11 +60,13 @@ const formSchema = z.object({
   senderPhone: z.string().min(7, "Requerido"),
   senderAddress: z.string().min(5, "Requerido"),
   senderCity: z.string().min(3, "Requerido"),
+  recipientDocument: z.string().min(5, "Requerido"),
   recipientName: z.string().min(2, "Requerido"),
   recipientPhone: z.string().min(7, "Requerido"),
   recipientAddress: z.string().min(5, "Requerido"),
   recipientCity: z.string().min(3, "Requerido"),
   weight: z.coerce.number().min(0.1, "Mayor a 0"),
+  quantity: z.coerce.number().min(1, "Mayor a 0").default(1),
   declaredValue: z.coerce.number().min(0, "Requerido"),
   shippingCost: z.coerce.number().min(0, "Requerido"),
   driverPayment: z.coerce.number().min(0, "Requerido"),
@@ -47,76 +78,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
-/** Inline client search combobox — searches by name, document or city */
-function ClientSearchCombobox({ clients, onSelect }: {
-  clients: any[]
-  onSelect: (client: any) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const [q, setQ] = useState("")
-  const ref = useRef<HTMLDivElement>(null)
-
-  const filtered = clients.filter(c => {
-    const s = q.toLowerCase()
-    return (
-      c.name?.toLowerCase().includes(s) ||
-      c.document?.toLowerCase().includes(s) ||
-      (c.razonSocial ?? "").toLowerCase().includes(s) ||
-      (c.city ?? "").toLowerCase().includes(s)
-    )
-  }).slice(0, 8)
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
-  }, [])
-
-  return (
-    <div className="relative" ref={ref}>
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-        <Input
-          value={q}
-          onChange={e => { setQ(e.target.value); setOpen(true) }}
-          onFocus={() => setOpen(true)}
-          placeholder="Buscar por nombre, documento, razón social..."
-          className="pl-9 h-11 rounded-xl bg-white border-primary/30 focus:border-primary"
-        />
-        {q && (
-          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            onClick={() => { setQ(""); setOpen(false) }}>
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      {open && filtered.length > 0 && (
-        <div className="absolute z-50 top-full mt-1 w-full max-h-[300px] overflow-y-auto bg-white border border-border/50 rounded-xl shadow-2xl py-1">
-          {filtered.map(c => (
-            <button
-              key={c.id ?? c.document}
-              type="button"
-              className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 text-left border-b border-slate-50 last:border-0 transition-colors"
-              onClick={() => { onSelect(c); setQ(c.name); setOpen(false) }}
-            >
-              <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0 mt-0.5">
-                {(c.razonSocial ?? c.name)?.charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <p className="font-semibold text-sm text-slate-800 truncate">{c.razonSocial ?? c.name}</p>
-                <p className="text-xs text-slate-500">{c.document} {c.city ? `· ${c.city}` : ""}</p>
-              </div>
-              <Check className="w-4 h-4 text-primary ml-auto shrink-0 mt-1 opacity-0 group-hover:opacity-100" />
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
+// ClientSearchCombobox removed
 
 function CitySearchCombobox({ value, onChange }: { value: string, onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false)
@@ -175,13 +137,15 @@ export default function NewShipment() {
   const { user, profile } = useAuth()
   const createMutation = useCreateShipmentMutation()
   const { data: drivers } = useListDrivers({ onlyActive: true })
-  const { clients, getClientByDocument, upsertClient } = useClients()
+  const { getClientByDocument } = useClients()
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
       senderDocument: "",
+      recipientDocument: "",
       weight: 1,
+      quantity: 1,
       declaredValue: 0,
       shippingCost: 0,
       driverPayment: 0,
@@ -200,38 +164,30 @@ export default function NewShipment() {
   const driverPayment = watch("driverPayment") || 0
   const margin = Number(shippingCost) - Number(driverPayment)
 
-  const fillFromClient = (client: any) => {
-    setValue("senderDocument", client.document ?? "")
-    setValue("senderName", client.razonSocial ?? client.name ?? "")
-    setValue("senderPhone", client.phone ?? "")
-    setValue("senderCity", client.city ?? "")
-    setValue("senderAddress", client.address ?? "")
+  const fillSenderFromClient = (client: any) => {
+    setValue("senderName", client.razonSocial ?? client.name ?? "", { shouldValidate: true })
+    setValue("senderPhone", client.phone ?? "", { shouldValidate: true })
+    setValue("senderCity", client.city ?? "", { shouldValidate: true })
+    setValue("senderAddress", client.address ?? "", { shouldValidate: true })
+  }
+
+  const fillRecipientFromClient = (client: any) => {
+    setValue("recipientName", client.razonSocial ?? client.name ?? "", { shouldValidate: true })
+    setValue("recipientPhone", client.phone ?? "", { shouldValidate: true })
+    setValue("recipientCity", client.city ?? "", { shouldValidate: true })
+    setValue("recipientAddress", client.address ?? "", { shouldValidate: true })
   }
 
   const onSubmit = async (data: any) => {
     try {
-      upsertClient({
-        document: data.senderDocument,
-        name: data.senderName,
-        phone: data.senderPhone,
-        city: data.senderCity,
-        address: data.senderAddress,
-        tipoCliente: null,
-        tipoIdentificacion: null,
-        apellido: null,
-        razonSocial: null,
-        responsableIva: null,
-        regimen: null,
-        categoria: null,
-        email: null,
-        departamento: null
-      })
+      // API mutation triggers upserts behind the scenes automatically
       const result = await createMutation.mutateAsync({ data })
       setLocation(`/shipments/${result.id}`)
     } catch (e) { /* handled in mutation */ }
   }
 
   return (
+    <ErrorBoundary>
     <DashboardLayout>
       <div className="space-y-6 pb-20">
         {/* Header */}
@@ -246,18 +202,7 @@ export default function NewShipment() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-          {/* Client Search Banner */}
-          <Card className="p-5 rounded-2xl border-primary/20 bg-gradient-to-r from-primary/5 to-transparent shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="bg-primary/10 p-1.5 rounded-lg text-primary"><Search className="w-4 h-4" /></div>
-              <h3 className="font-bold text-sm text-primary">Buscar cliente existente</h3>
-              <span className="text-xs text-slate-400 ml-1">— Auto-completa el formulario de remitente</span>
-            </div>
-            <ClientSearchCombobox
-              clients={clients ?? []}
-              onSelect={fillFromClient}
-            />
-          </Card>
+          {/* Search combobox banner removed */}
 
           {/* Sender & Recipient — side by side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -272,7 +217,11 @@ export default function NewShipment() {
                   <Label>Documento (CC / NIT)</Label>
                   <Input {...register("senderDocument")} placeholder="Ej. 900123456"
                     className="h-11 rounded-xl bg-slate-50"
-                    onBlur={e => { const c = getClientByDocument(e.target.value); if (c) fillFromClient(c) }}
+                    onBlur={e => {
+                      if (!e.target.value) return;
+                      const c = getClientByDocument(e.target.value);
+                      if (c) fillSenderFromClient(c);
+                    }}
                   />
                   {errors.senderDocument && <p className="text-red-500 text-xs">{errors.senderDocument.message}</p>}
                 </div>
@@ -303,6 +252,18 @@ export default function NewShipment() {
                 <h3 className="font-bold text-base">Destinatario (Destino)</h3>
               </div>
               <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-1.5">
+                  <Label>Documento (CC / NIT)</Label>
+                  <Input {...register("recipientDocument")} placeholder="Ej. 900123456" 
+                    className="h-11 rounded-xl bg-slate-50" 
+                    onBlur={e => {
+                      if (!e.target.value) return;
+                      const c = getClientByDocument(e.target.value);
+                      if (c) fillRecipientFromClient(c);
+                    }}
+                  />
+                  {errors.recipientDocument && <p className="text-red-500 text-xs">{errors.recipientDocument.message}</p>}
+                </div>
                 <div className="col-span-2 space-y-1.5">
                   <Label>Nombre Completo</Label>
                   <Input {...register("recipientName")} className="h-11 rounded-xl bg-slate-50" />
@@ -344,7 +305,13 @@ export default function NewShipment() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
+              <div className="space-y-1.5">
+                <Label>Cantidad (Pzs)</Label>
+                <div className="relative">
+                  <Input type="number" step="1" {...register("quantity")} className="h-11 rounded-xl bg-slate-50" />
+                </div>
+              </div>
               <div className="space-y-1.5">
                 <Label>Peso (kg)</Label>
                 <div className="relative">
@@ -378,14 +345,11 @@ export default function NewShipment() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mt-5">
               <div className="space-y-1.5">
                 <Label>Asignar Conductor</Label>
-                <Select onValueChange={(v) => setValue("driverId", parseInt(v))}>
-                  <SelectTrigger className="h-11 rounded-xl bg-slate-50"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
-                  <SelectContent>
-                    {drivers?.filter(d => d.isActive).map(d => (
-                      <SelectItem key={d.id} value={d.id.toString()}>{d.name} · {d.vehicleType} · {d.city}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <DriverSearchCombobox
+                  drivers={drivers || []}
+                  value={watch("driverId")}
+                  onChange={(v) => setValue("driverId", v)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Sede de Origen</Label>
@@ -448,5 +412,6 @@ export default function NewShipment() {
         </form>
       </div>
     </DashboardLayout>
+    </ErrorBoundary>
   )
 }

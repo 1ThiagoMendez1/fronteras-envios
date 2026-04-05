@@ -28,10 +28,10 @@ export default function Shipments() {
 
   // Local filtering for search (in real app, this would be server side)
   const filteredShipments = data?.shipments.filter(s => {
-    const matchesSearch = search ? s.guideNumber.toLowerCase().includes(search.toLowerCase()) || 
-             s.senderName.toLowerCase().includes(search.toLowerCase()) ||
-             s.recipientName.toLowerCase().includes(search.toLowerCase()) 
-           : true
+    const matchesSearch = search ? s.guideNumber.toLowerCase().includes(search.toLowerCase()) ||
+      s.senderName.toLowerCase().includes(search.toLowerCase()) ||
+      s.recipientName.toLowerCase().includes(search.toLowerCase())
+      : true
     const hasUnread = s.comentarios && s.comentarios.length > 0 && s.comentarios[s.comentarios.length - 1].sender === "user"
     const matchesUnread = unreadOnly ? hasUnread : true
     return matchesSearch && matchesUnread
@@ -53,8 +53,8 @@ export default function Shipments() {
         <Card className="p-4 rounded-2xl border-border/50 shadow-sm flex flex-col md:flex-row gap-4 items-center bg-white/50 backdrop-blur-sm">
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-            <Input 
-              placeholder="Buscar por guía, remitente o destinatario..." 
+            <Input
+              placeholder="Buscar por guía, remitente o destinatario..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
               className="pl-10 h-12 rounded-xl bg-white border-slate-200"
@@ -81,7 +81,7 @@ export default function Shipments() {
                 <SelectItem value="assigned">Asignado</SelectItem>
                 <SelectItem value="picked_up">Recogido</SelectItem>
                 <SelectItem value="in_transit">En Tránsito</SelectItem>
-                <SelectItem value="out_for_delivery">En Entrega</SelectItem>
+                <SelectItem value="out_for_delivery">Pendiente por entregar</SelectItem>
                 <SelectItem value="delivered">Entregado</SelectItem>
                 <SelectItem value="incident">Incidencia</SelectItem>
               </SelectContent>
@@ -120,61 +120,61 @@ export default function Shipments() {
                 ) : (
                   filteredShipments.map((shipment: any) => {
                     const hasUnreadChat = shipment.comentarios && shipment.comentarios.length > 0 && shipment.comentarios[shipment.comentarios.length - 1].sender === "user"
-                    
+
                     return (
-                    <tr key={shipment.id} className="hover:bg-slate-50 transition-colors group">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <Link href={`/shipments/${shipment.id}`} className="font-bold text-primary hover:underline">
-                            {formatGuide(shipment.guideNumber)}
-                          </Link>
-                          {hasUnreadChat && (
-                             <div className="relative flex h-3 w-3 flex-shrink-0" title="Nuevo mensaje">
-                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                               <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                             </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-semibold text-slate-800">{shipment.senderName}</div>
-                        <div className="text-xs text-slate-500">{shipment.senderCity}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-xs font-semibold text-slate-700">
-                          {shipment.branchOrigin || "Bogotá"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-semibold text-slate-800">{shipment.recipientName}</div>
-                        <div className="text-xs text-slate-500">{shipment.recipientCity}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-semibold text-slate-700">Flete: {formatCurrency(shipment.shippingCost)}</div>
-                        <div className="text-[11px] font-bold text-green-600 uppercase tracking-widest mt-0.5">Neto: {formatCurrency(shipment.shippingCost - (shipment.driverPayment || 0))}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={cn("px-3 py-1 rounded-full text-xs font-bold border inline-flex items-center", getStatusColor(shipment.status))}>
-                          {getStatusLabel(shipment.status)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-slate-500">
-                        {format(new Date(shipment.createdAt), "d MMM yyyy", { locale: es })}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-200" onClick={() => setLocation(`/shipments/${shipment.id}/edit`)}>
-                            <Pencil className="w-4 h-4 text-slate-500" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-200" onClick={() => setLocation(`/shipments/${shipment.id}`)}>
-                            <ChevronRight className="w-5 h-5 text-slate-400" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
+                      <tr key={shipment.id} className="hover:bg-slate-50 transition-colors group">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <Link href={`/shipments/${shipment.id}`} className="font-bold text-primary hover:underline">
+                              {formatGuide(shipment.guideNumber)}
+                            </Link>
+                            {hasUnreadChat && (
+                              <div className="relative flex h-3 w-3 flex-shrink-0" title="Nuevo mensaje">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="font-semibold text-slate-800">{shipment.senderName}</div>
+                          <div className="text-xs text-slate-500">{shipment.senderCity}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-xs font-semibold text-slate-700">
+                            {shipment.branchOrigin || "Bogotá"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="font-semibold text-slate-800">{shipment.recipientName}</div>
+                          <div className="text-xs text-slate-500">{shipment.recipientCity}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="font-semibold text-slate-700">Flete: {formatCurrency(shipment.shippingCost)}</div>
+                          <div className="text-[11px] font-bold text-green-600 uppercase tracking-widest mt-0.5">Neto: {formatCurrency(shipment.shippingCost - (shipment.driverPayment || 0))}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={cn("px-3 py-1 rounded-full text-xs font-bold border inline-flex items-center", getStatusColor(shipment.status))}>
+                            {getStatusLabel(shipment.status)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-500">
+                          {format(new Date(shipment.createdAt), "d MMM yyyy", { locale: es })}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-200" onClick={() => setLocation(`/shipments/${shipment.id}/edit`)}>
+                              <Pencil className="w-4 h-4 text-slate-500" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-200" onClick={() => setLocation(`/shipments/${shipment.id}`)}>
+                              <ChevronRight className="w-5 h-5 text-slate-400" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
               </tbody>
             </table>
           </div>
