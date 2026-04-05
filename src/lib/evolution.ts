@@ -1,8 +1,5 @@
 // src/lib/evolution.ts
 
-/**
- * Función genérica para enviar mensajes de WhatsApp usando Evolution API.
- */
 export async function sendWhatsAppMessage(phone: string, text: string) {
   try {
     const url = import.meta.env.VITE_EVOLUTION_API_URL;
@@ -14,10 +11,15 @@ export async function sendWhatsAppMessage(phone: string, text: string) {
       return false;
     }
 
+    if (!phone) {
+      console.warn("No hay número de teléfono para enviar el mensaje.");
+      return false;
+    }
+
     // Formatear teléfono: quitar símbolos
     let formattedPhone = phone.replace(/\D/g, "");
     
-    // Asumir Colombia (+57) si tiene exactamente 10 dígitos (típicamente celulares de allá)
+    // Si tiene 10 dígitos, asumir teléfono móvil de Colombia (+57)
     if (formattedPhone.length === 10) {
       formattedPhone = `57${formattedPhone}`;
     }
@@ -25,7 +27,7 @@ export async function sendWhatsAppMessage(phone: string, text: string) {
     const payload = {
       number: formattedPhone,
       text: text,
-      delay: 1200, // un pequeño delay para que parezca más humano
+      delay: 1200, 
     };
 
     const endpoint = `${url}/message/sendText/${instance}`;
@@ -41,14 +43,14 @@ export async function sendWhatsAppMessage(phone: string, text: string) {
 
     if (!response.ok) {
       const respError = await response.text();
-      throw new Error(`Evolution API Error (${response.status}): ${respError}`);
+      console.error(`Evolution API Error (${response.status}): ${respError}`);
+      return false;
     }
 
-    console.log(`Mensaje de WhatsApp enviado correctamente a ${formattedPhone}`);
+    console.log(`Mensaje enviado a ${formattedPhone}`);
     return true;
   } catch (error) {
-    // Manejo de errores silencioso para no romper la creación de envíos en UI
-    console.error("Error al enviar mensaje de WhatsApp:", error);
+    console.error("Excepción al enviar mensaje de WhatsApp:", error);
     return false;
   }
 }
