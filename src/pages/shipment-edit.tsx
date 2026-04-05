@@ -16,6 +16,7 @@ import { useGetShipment } from "@/hooks/use-shipments"
 import { useListDrivers } from "@/hooks/use-drivers"
 import { cn } from "@/lib/utils"
 import { DriverSearchCombobox } from "@/components/driver-search-combobox"
+import { useAuth } from "@/hooks/use-auth"
 
 const COVERAGE_CITIES = [
   "Aguazul", "Apartadó", "Barranquilla", "Bogotá", "Bucaramanga", "Cali", 
@@ -108,6 +109,8 @@ export default function EditShipment() {
   const id = parseInt(params?.id || "0")
 
   const { data: shipment, isLoading } = useGetShipment(id)
+  const { profile } = useAuth()
+  const isAdmin = profile?.role === "admin"
   const updateMutation = useUpdateShipmentMutation(id)
   const { data: drivers } = useListDrivers({ onlyActive: true })
   const { getClientByDocument } = useClients()
@@ -321,14 +324,24 @@ export default function EditShipment() {
                 <Label className="text-primary font-bold">Costo Flete</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary text-sm font-bold">$</span>
-                  <Input type="number" {...register("shippingCost")} className="h-11 rounded-xl bg-primary/5 border-primary/30 pl-6 font-semibold text-primary" />
+                  <Input 
+                    type="number" 
+                    {...register("shippingCost")} 
+                    disabled={!isAdmin}
+                    className="h-11 rounded-xl bg-primary/5 border-primary/30 pl-6 font-semibold text-primary disabled:opacity-70 disabled:cursor-not-allowed" 
+                  />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label>Pago Conductor</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-                  <Input type="number" {...register("driverPayment")} className="h-11 rounded-xl bg-slate-50 pl-6" />
+                  <Input 
+                    type="number" 
+                    {...register("driverPayment")} 
+                    disabled={!isAdmin}
+                    className="h-11 rounded-xl bg-slate-50 pl-6 disabled:opacity-70 disabled:cursor-not-allowed" 
+                  />
                 </div>
               </div>
             </div>

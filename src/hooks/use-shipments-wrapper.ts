@@ -125,11 +125,40 @@ export function useCreateShipmentMutation() {
 
       return { id: result.id, guideNumber: result.guide_number };
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["financial"] });
       toast({ title: "Éxito", description: "Envío creado correctamente" });
+
+      // Notificación WhatsApp al remitente con la guía generada
+      try {
+        const adminClient = getAdminClient();
+        const { data: shipment } = await adminClient
+          .from("shipments")
+          .select("*")
+          .eq("id", result.id)
+          .single();
+
+        if (shipment && shipment.sender_phone) {
+          const numGuia = shipment.guide_number
+            ? `*FEX-${shipment.guide_number}*`
+            : `*#${shipment.id}*`;
+
+          const messageText =
+            `¡Hola ${shipment.sender_name}! 👋\n\n` +
+            `Tu envío ha sido *REGISTRADO EXITOSAMENTE* con el número de guía ${numGuia}.\n\n` +
+            `📦 *Destinatario:* ${shipment.recipient_name}\n` +
+            `📍 *Destino:* ${shipment.recipient_city}\n` +
+            `💰 *Flete:* $${Number(shipment.shipping_cost).toLocaleString("es-CO")}\n\n` +
+            `_Fronteras Express — Siempre a tiempo 🚚_`;
+
+          const { sendWhatsAppMessage } = await import("@/lib/whatsapp");
+          await sendWhatsAppMessage(shipment.sender_phone, messageText);
+        }
+      } catch (err) {
+        console.error("Error enviando notificación WhatsApp al crear guía:", err);
+      }
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message || "Error al crear envío", variant: "destructive" });
