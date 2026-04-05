@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
+import { getAdminClient } from "@/lib/admin-client"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { useUsers, type UserProfile } from "@/hooks/use-users"
 import {
@@ -142,25 +143,40 @@ export default function UsersPage() {
   }
 
   const toggleRolePermission = async (roleId: string, permId: string) => {
-    const updatedRoles = roles.map((r: any) => {
-      if (r.id === roleId) {
-        const hasPerm = r.permissions.includes(permId)
-        return {
-          ...r,
-          permissions: hasPerm ? r.permissions.filter((p: string) => p !== permId) : [...r.permissions, permId]
+    try {
+      const updatedRoles = roles.map((r: any) => {
+        if (r.id === roleId) {
+          const hasPerm = r.permissions.includes(permId)
+          return {
+            ...r,
+            permissions: hasPerm ? r.permissions.filter((p: string) => p !== permId) : [...r.permissions, permId]
+          }
         }
+        return r
+      })
+
+      const roleToUpdate = updatedRoles.find(r => r.id === roleId)
+      if (!roleToUpdate) return
+
+      // Sincronizar con BD usando cliente administrativo para Alta Seguridad
+      const { error } = await getAdminClient()
+        .from("app_roles")
+        .update({ permissions: roleToUpdate.permissions })
+        .eq("id", roleId)
+
+      if (error) {
+        toast.error(`Error al guardar en BD: ${error.message}`)
+        return
       }
-      return r
-    })
-    setRoles(updatedRoles)
 
-    const roleToUpdate = updatedRoles.find(r => r.id === roleId)
-    if (roleToUpdate) {
-      // Sincronizar silenciosamente con BD
-      await (supabase as any).from("app_roles").update({ permissions: roleToUpdate.permissions }).eq("id", roleId)
+      // Solo actualizamos el estado local y localStorage si la BD confirmó el cambio
+      setRoles(updatedRoles)
+      localStorage.setItem("app_roles", JSON.stringify(updatedRoles))
+      
+      toast.success("Permisos actualizados y sincronizados correctamente")
+    } catch (err: any) {
+      toast.error(`Error inesperado: ${err.message}`)
     }
-
-    toast.success("Permisos guardados globalmente")
   }
 
   const createNewRole = async () => {

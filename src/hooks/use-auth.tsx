@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { getAdminClient } from "@/lib/admin-client";
 import type { User, Session } from "@supabase/supabase-js";
 import { useToast } from "./use-toast";
 
@@ -68,30 +69,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Load existing session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user);
+        await fetchProfile(session.user);
       }
       setIsLoading(false);
     });
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user);
+        await fetchProfile(session.user);
       } else {
         setProfile(null);
       }
+      setIsLoading(false);
     });
 
-    // Cargar roles globales de la BD o fallback a localStorage si no existe la tabla
-    supabase.from("app_roles").select("*").then(({ data, error }) => {
+    // Cargar roles globales de la BD usando cliente administrativo (Alta Seguridad)
+    getAdminClient().from("app_roles").select("*").then(({ data, error }) => {
       if (!error && data && data.length > 0) {
         setGlobalRoles(data);
+        localStorage.setItem("app_roles", JSON.stringify(data));
       } else {
         const saved = localStorage.getItem("app_roles");
         if (saved) setGlobalRoles(JSON.parse(saved));

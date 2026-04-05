@@ -108,8 +108,8 @@ export default function EditShipment() {
   const [, params] = useRoute("/shipments/:id/edit")
   const id = parseInt(params?.id || "0")
 
-  const { data: shipment, isLoading } = useGetShipment(id)
-  const { profile } = useAuth()
+  const { data: shipment, isLoading: isShipmentLoading } = useGetShipment(id)
+  const { profile, isLoading: isAuthLoading } = useAuth()
   const isAdmin = profile?.role === "admin"
   const updateMutation = useUpdateShipmentMutation(id)
   const { data: drivers } = useListDrivers({ onlyActive: true })
@@ -175,11 +175,14 @@ export default function EditShipment() {
     } catch (e) { /* handled */ }
   }
 
-  if (isLoading) {
+  if (isShipmentLoading || isAuthLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-slate-500 text-sm animate-pulse">
+            {isAuthLoading ? "Verificando permisos..." : "Cargando envío..."}
+          </p>
         </div>
       </DashboardLayout>
     )
