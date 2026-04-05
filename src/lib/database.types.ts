@@ -37,6 +37,27 @@ export interface Database {
           updated_at?: string
         }
       }
+      app_roles: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          permissions: Json
+        }
+        Insert: {
+          id: string
+          name: string
+          description?: string | null
+          permissions: Json
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          permissions?: Json
+        }
+      }
+
       clients: {
         Row: {
           id: number

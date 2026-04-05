@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { useUsers, type UserProfile } from "@/hooks/use-users"
+import { useRoles } from "@/hooks/use-roles"
 import {
   Table,
   TableBody,
@@ -37,7 +38,9 @@ import {
   Plus,
   Truck,
   Wallet,
-  ClipboardList
+  ClipboardList,
+  Save,
+  Loader2
 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
@@ -62,10 +65,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
-// --- Fake Global State for dynamic Future Roles & Permissions --- //
 const INITIAL_ROLES = [
-  { id: "admin", name: "Administrador", description: "Control total del sistema: gestión de usuarios, configuración y reportes.", permissions: ['dashboard', 'clients', 'shipments', 'drivers', 'financial', 'daily_close', 'users'] },
-  { id: "operator", name: "Operador", description: "Gestión operativa: creación de envíos y actualización de estados.", permissions: ['dashboard', 'clients', 'shipments', 'daily_close'] }
+  { id: "admin", name: "Administrador", description: "Control total del sistema.", permissions: ['dashboard', 'clients', 'shipments', 'drivers', 'financial', 'daily_close', 'users'] },
+  { id: "operator", name: "Operador", description: "Gestión operativa estándar.", permissions: ['dashboard', 'clients'] }
 ]
 
 const MODULES = [
@@ -83,18 +85,18 @@ export default function UsersPage() {
   const [isEditRoleOpen, setIsEditRoleOpen] = useState(false)
   const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "operator", branch: "Bogotá" })
   const { users, isLoading, updateRole, toggleStatus, createUser } = useUsers()
+  const { roles: dbRoles, isLoading: isLoadingRoles, updateRole: updateDbRole, createRole: createDbRole, isUpdating } = useRoles()
   
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
 
-  // Roles State
-  const [roles, setRoles] = useState(() => {
-    const saved = localStorage.getItem("app_roles")
-    return saved ? JSON.parse(saved) : INITIAL_ROLES
-  })
+  // Combined Roles State (Local + DB Sync)
+  const [roles, setRoles] = useState<any[]>(INITIAL_ROLES)
   
   useEffect(() => {
-    localStorage.setItem("app_roles", JSON.stringify(roles))
-  }, [roles])
+    if (dbRoles && dbRoles.length > 0) {
+      setRoles(dbRoles)
+    }
+  }, [dbRoles])
 
   const [selectedRoleIndex, setSelectedRoleIndex] = useState(0)
   const activeRole = roles[selectedRoleIndex] || roles[0]
@@ -141,10 +143,22 @@ export default function UsersPage() {
       }
       return r
     }))
-    toast.success("Permisos de rol actualizados localmente")
   }
 
-  const createNewRole = () => {
+  const handleSaveRole = async () => {
+    if (activeRole) {
+      try {
+        await updateDbRole({
+          id: activeRole.id,
+          name: activeRole.name,
+          description: activeRole.description,
+          permissions: activeRole.permissions
+        })
+      } catch (e) {}
+    }
+  }
+
+  const createNewRole = async () => {
     if (!newRoleData.name) {
        toast.error("El nombre del rol es obligatorio")
        return
@@ -156,11 +170,16 @@ export default function UsersPage() {
        return
     }
 
-    setRoles([...roles, { id: slugId, name: newRoleData.name, description: newRoleData.description || "Nuevo rol de acceso", permissions: [] }])
-    setIsNewRoleDialogOpen(false)
-    setNewRoleData({ name: "", description: "" })
-    toast.success("Nuevo rol creado")
-    setSelectedRoleIndex(roles.length) // Focus el nuevo rol
+    try {
+      await createDbRole({ 
+        id: slugId, 
+        name: newRoleData.name, 
+        description: newRoleData.description || "Nuevo rol de acceso", 
+        permissions: [] 
+      })
+      setIsNewRoleDialogOpen(false)
+      setNewRoleData({ name: "", description: "" })
+    } catch (e) {}
   }
 
   const getRoleBadge = (roleId: string) => {
@@ -331,12 +350,22 @@ export default function UsersPage() {
                 {/* Editor de Permisos por Módulo */}
                 <div className="lg:col-span-3">
                    <Card className="p-6 rounded-[2rem] border-slate-200 shadow-sm bg-white h-full">
-                      <div className="mb-8 border-b border-slate-100 pb-6">
-                         <div className="flex items-center gap-3 mb-2">
-                            <h2 className="text-2xl font-bold font-display text-slate-900">{activeRole.name}</h2>
-                            <Badge className={activeRole.id === 'admin' ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600"}>{activeRole.id}</Badge>
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8 border-b border-slate-100 pb-6">
+                         <div className="space-y-1">
+                            <div className="flex items-center gap-3 mb-2">
+                               <h2 className="text-2xl font-bold font-display text-slate-900">{activeRole.name}</h2>
+                               <Badge className={activeRole.id === 'admin' ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600"}>{activeRole.id}</Badge>
+                            </div>
+                            <p className="text-slate-500 text-sm max-w-2xl">{activeRole.description}</p>
                          </div>
-                         <p className="text-slate-500 text-sm max-w-2xl">{activeRole.description}</p>
+                         <Button 
+                           onClick={handleSaveRole}
+                           disabled={isUpdating || activeRole.id === 'admin' || isLoadingRoles}
+                           className="rounded-xl gap-2 font-semibold shadow-md bg-emerald-600 hover:bg-emerald-700 text-white transition-all hover:scale-105 active:scale-95"
+                         >
+                           {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                           Guardar Cambios
+                         </Button>
                       </div>
 
                       <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-5">Restricciones y Accesos de Módulos</h3>

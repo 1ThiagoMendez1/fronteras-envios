@@ -37,6 +37,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [appRoles, setAppRoles] = useState<any[]>([]);
+
+  const fetchAppRoles = async () => {
+    try {
+      const { data, error } = await supabase.from("app_roles").select("*");
+      if (error) throw error;
+      if (data) setAppRoles(data);
+    } catch (e) {
+      console.error("Error fetching app_roles:", e);
+    }
+  };
 
   const fetchProfile = async (currentUser: User) => {
     const { data, error } = await supabase
@@ -62,15 +73,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Load existing session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user);
+    // Load existing roles and session on mount
+    const initialize = async () => {
+      await fetchAppRoles();
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      if (currentSession?.user) {
+        await fetchProfile(currentSession.user);
       }
       setIsLoading(false);
-    });
+    };
+
+    initialize();
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -131,20 +146,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!profile) return false;
     if (profile.role === 'admin') return true;
 
+    // 1. Check granular permissions on user profile metadata
     if (profile.permissions?.[perm]) return true;
 
-    try {
-      const saved = localStorage.getItem("app_roles")
-      const rolesSet = saved ? JSON.parse(saved) : [
-        { id: "admin", permissions: ['dashboard', 'clients', 'shipments', 'drivers', 'financial', 'daily_close', 'users'] },
-        { id: "operator", permissions: ['dashboard', 'clients', 'shipments', 'daily_close'] }
-      ]
-      const roleDef = rolesSet.find((r: any) => r.id === profile.role);
-      if (roleDef && roleDef.permissions?.includes(perm)) {
-        return true;
-      }
-    } catch {
-      // Ignore
+    // 2. Check role-based permissions from synchronised app_roles table
+    const roleDef = appRoles.find((r: any) => r.id === profile.role);
+    if (roleDef && Array.isArray(roleDef.permissions) && roleDef.permissions.includes(perm)) {
+      return true;
     }
     
     return false;
