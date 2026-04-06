@@ -42,18 +42,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [globalRoles, setGlobalRoles] = useState<any[]>([]);
 
   const fetchProfile = async (currentUser: User) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", currentUser.id)
-      .single()
-    if (!error && data) {
-      setProfile({
-        ...(data as any),
-        role: currentUser.user_metadata?.role || (data as any).role,
-        is_active: currentUser.user_metadata?.is_active ?? (data as any).is_active
-      } as Profile);
-    } else if (error) {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", currentUser.id)
+        .single()
+      if (!error && data) {
+        setProfile({
+          ...(data as any),
+          role: currentUser.user_metadata?.role || (data as any).role,
+          is_active: currentUser.user_metadata?.is_active ?? (data as any).is_active
+        } as Profile);
+      } else {
+        throw error || new Error("No data returned");
+      }
+    } catch (err) {
+      console.error("fetchProfile error, using fallback:", err);
       // Fallback usando los metadatos reales guardados en la creación de Auth
       setProfile({
         id: currentUser.id,
@@ -69,25 +74,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Load existing session on mount
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (error) {
+        console.error("Auth getSession error:", error);
+      }
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        await fetchProfile(session.user);
+        try {
+          await fetchProfile(session.user);
+        } catch (err) {
+          console.error("fetchProfile error:", err);
+        }
       }
+    }).catch(err => {
+      console.error("getSession catch error:", err);
+    }).finally(() => {
       setIsLoading(false);
     });
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user);
-      } else {
-        setProfile(null);
+      try {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchProfile(session.user);
+        } else {
+          setProfile(null);
+        }
+      } catch (err) {
+        console.error("onAuthStateChange error:", err);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
     // Cargar roles globales de la BD usando cliente administrativo (Alta Seguridad)
