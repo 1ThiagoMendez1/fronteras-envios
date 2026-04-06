@@ -1,0 +1,55 @@
+[33mb37ad97[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mv2.1.0[m[33m, [m[1;31morigin/V2.1.11[m[33m)[m HEAD@{0}: pull origin V2.1.11: Fast-forward
+[33m07330b8[m[33m ([m[1;31morigin/v2.1.0[m[33m)[m HEAD@{1}: reset: moving to HEAD
+[33m07330b8[m[33m ([m[1;31morigin/v2.1.0[m[33m)[m HEAD@{2}: reset: moving to HEAD
+[33m07330b8[m[33m ([m[1;31morigin/v2.1.0[m[33m)[m HEAD@{3}: commit: fix: robust error handling in useAuth to prevent infinite loading screen on profile fetch errors/network issues
+[33m1fe7919[m HEAD@{4}: commit: vite de mrdaa
+[33m135c538[m HEAD@{5}: commit: fix: hardcode env vars in vite.config.ts define for Docker builds
+[33m16f43d6[m HEAD@{6}: commit: fix: change nginx/docker to port 80 for Dokploy/Traefik compatibility
+[33m3cc5565[m HEAD@{7}: commit: solucion a evolutionapi, solucion supabase y arreglos de el dashboard
+[33mba9ccc3[m HEAD@{8}: commit: solucionado lo de los usuarios
+[33m6696ac1[m HEAD@{9}: commit: solucionamos el problema wp
+[33mf008330[m[33m ([m[1;31morigin/v1.1.0[m[33m, [m[1;32mv1.1.0[m[33m)[m HEAD@{10}: pull origin v1.1.0: Fast-forward
+[33m3cd2bc2[m HEAD@{11}: reset: moving to HEAD
+[33m3cd2bc2[m HEAD@{12}: checkout: moving from v1.1.0 to v2.1.0
+[33mf008330[m[33m ([m[1;31morigin/v1.1.0[m[33m, [m[1;32mv1.1.0[m[33m)[m HEAD@{13}: checkout: moving from v1.1.0 to v1.1.0
+[33mf008330[m[33m ([m[1;31morigin/v1.1.0[m[33m, [m[1;32mv1.1.0[m[33m)[m HEAD@{14}: commit: solución a la cantidad, solucion al apartado de remitente y destinatario
+[33m3cd2bc2[m HEAD@{15}: checkout: moving from v1.1.0 to v1.1.0
+[33m3cd2bc2[m HEAD@{16}: checkout: moving from v1.0 to v1.1.0
+[33m098b4cb[m[33m ([m[1;31morigin/v1.0[m[33m, [m[1;32mv1.0[m[33m)[m HEAD@{17}: commit: entorno evolution api .env
+[33macb1f8c[m HEAD@{18}: commit: listoo
+[33m5f4852c[m HEAD@{19}: commit: solucionado el vite.config
+[33mebe77b4[m HEAD@{20}: commit: solucionado
+[33mdbeb200[m HEAD@{21}: commit: no servía bien, ya lo arreglo la IA
+[33m3c63bc2[m HEAD@{22}: commit: no servía bien
+[33m838885f[m HEAD@{23}: commit: Nuevo apartado de rotulado
+[33m3cd2bc2[m HEAD@{24}: commit: solucionamos el formato de la guía a la hora de imprimir
+[33mcc59fe5[m HEAD@{25}: commit: Reparacion definitiva de variables de entorno Vite
+[33m777e1ee[m HEAD@{26}: commit: Cambiar Nginx a puerto 3000 para Dokploy
+[33m4a16bcb[m HEAD@{27}: commit: Permitir inyeccion de variables al compilar
+[33m690c583[m HEAD@{28}: commit: Actualizar Node a v20 para Vite
+[33m88ba214[m HEAD@{29}: commit: Fix typescript error para compilacion en docker
+[33m362b04b[m HEAD@{30}: commit: Agregada configuración de Docker y Nginx para VPS
+[33m6571852[m[33m ([m[1;31morigin/HV1.9[m[33m)[m HEAD@{31}: pull origin HV1.9: Fast-forward
+[33maa2ab03[m HEAD@{32}: commit (merge): no se
+[33m00a6816[m HEAD@{33}: commit: se actualizaron muchas cosas
+[33mf44470f[m HEAD@{34}: commit: Arreglo de los chats y el logo
+[33m06ff154[m HEAD@{35}: commit (merge): hola
+[33m6e8302d[m HEAD@{36}: commit: arreglo del logo
+[33ma22cb2e[m HEAD@{37}: pull origin HV1.5_2: Merge made by the 'ort' strategy.
+[33m33803f5[m HEAD@{38}: commit (merge): arreglo de botón reasignar conductor
+[33md783702[m HEAD@{39}: commit: cambios con data y arreglo del chat
+[33mbe831ec[m[33m ([m[1;31morigin/HV1.3-BD[m[33m)[m HEAD@{40}: pull origin HV1.4: Fast-forward
+[33m509aac5[m HEAD@{41}: commit: Muchas cosas solucionadas ajsdfj
+[33mbf95f95[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{42}: checkout: moving from main to v1.0
+[33mbf95f95[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{43}: commit: cambios de footer y nav, y... cambios en el slidebar
+[33mbbd1254[m HEAD@{44}: commit: gitignore
+[33m701a757[m HEAD@{45}: Branch: renamed refs/heads/main to refs/heads/main
+[33m701a757[m HEAD@{47}: Branch: renamed refs/heads/main to refs/heads/main
+[33m701a757[m HEAD@{49}: Branch: renamed refs/heads/main to refs/heads/main
+[33m701a757[m HEAD@{51}: commit: first commit
+[33mafd21db[m HEAD@{52}: Branch: renamed refs/heads/main to refs/heads/main
+[33mafd21db[m HEAD@{54}: Branch: renamed refs/heads/main to refs/heads/main
+[33mafd21db[m HEAD@{56}: commit: commit inicial
+[33m92a2c8c[m HEAD@{57}: Branch: renamed refs/heads/main to refs/heads/main
+[33m92a2c8c[m HEAD@{59}: Branch: renamed refs/heads/master to refs/heads/main
+[33m92a2c8c[m HEAD@{61}: commit (initial): first commit
