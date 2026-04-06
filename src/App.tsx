@@ -21,23 +21,16 @@ import UsersPage from "@/pages/users"
 import NotFound from "@/pages/not-found"
 
 import { Redirect } from "wouter"
-import { Loader2 } from "lucide-react"
 
 const queryClient = new QueryClient()
 
-// Protected Route Wrapper
+// Protected Route Wrapper — NO "Verificando sesión" text, ever
 function ProtectedRoute({ component: Component, requiredPermission, ...rest }: { component: any; path: string; requiredPermission?: string }) {
-  const { isAuthenticated, isLoading, hasPermission, profile } = useAuth();
+  const { isAuthenticated, isLoading, hasPermission } = useAuth();
   
-  if (isLoading || (isAuthenticated && !profile)) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-4 text-primary">
-          <Loader2 className="h-10 w-10 animate-spin" />
-          <p className="font-semibold text-sm">Verificando sesión...</p>
-        </div>
-      </div>
-    );
+  // Mientras se restaura la sesión, mostrar pantalla en blanco (sin spinner ni texto)
+  if (isLoading) {
+    return <div className="min-h-screen w-full bg-slate-50" />;
   }
   
   if (!isAuthenticated) {

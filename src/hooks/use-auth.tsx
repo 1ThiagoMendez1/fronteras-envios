@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { getAdminClient } from "@/lib/admin-client";
 import type { User, Session } from "@supabase/supabase-js";
@@ -33,13 +33,50 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Limpia cualquier token de Supabase corrupto en localStorage.
+ * Esto evita que el usuario tenga que borrar caché manualmente.
+ */
+function cleanStaleSupabaseTokens() {
+  try {
+    const keys = Object.keys(localStorage);
+    for (const key of keys) {
+      // Supabase guarda tokens con prefijo "sb-" 
+      if (key.startsWith("sb-") && key.includes("auth-token")) {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            // Si el token expiró, limpiarlo
+            if (parsed?.expires_at) {
+              const expiresAt = parsed.expires_at * 1000; // unix seconds → ms
+              if (Date.now() > expiresAt) {
+                console.warn("Cleaning expired Supabase token:", key);
+                localStorage.removeItem(key);
+              }
+            }
+          } catch {
+            // Token corrupto, eliminarlo
+            console.warn("Cleaning corrupt Supabase token:", key);
+            localStorage.removeItem(key);
+          }
+        }
+      }
+    }
+  } catch {
+    // Ignorar errores de localStorage
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  // Empieza en TRUE para que F5 NO redirija al login mientras se restaura la sesión
   const [isLoading, setIsLoading] = useState(true);
   const [globalRoles, setGlobalRoles] = useState<any[]>([]);
+  const initDone = useRef(false);
 
   const fetchProfile = async (currentUser: User) => {
     try {
@@ -59,12 +96,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err) {
       console.error("fetchProfile error, using fallback:", err);
-      // Fallback usando los metadatos reales guardados en la creación de Auth
+      // Fallback: IMPORTANTE usar el rol de metadata si existe, para no perder permisos de Admin
+      const metaRole = currentUser.user_metadata?.role;
       setProfile({
         id: currentUser.id,
-        email: currentUser.email || "demo@fronteras.com", 
+        email: currentUser.email || "demo@fronteras.com",
         name: currentUser.user_metadata?.name || "Usuario de Sistema",
-        role: currentUser.user_metadata?.role || "operator", 
+        role: metaRole || "operator",
         branch: currentUser.user_metadata?.branch || "Bogotá",
         is_active: currentUser.user_metadata?.is_active ?? true,
         permissions: currentUser.user_metadata?.permissions || {}
@@ -73,44 +111,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Load existing session on mount
-    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+    // Si ya iniciamos, no hacer nada (previene errores de locks en Strict Mode)
+    if (initDone.current) return;
+    initDone.current = true;
+
+    // Paso 1: Limpiar tokens expirados/corruptos ANTES de intentar restaurar sesión
+    cleanStaleSupabaseTokens();
+
+    const currentInitStatus = { done: false };
+
+    // Paso 2: Timeout de seguridad — máximo 3 segundos esperando
+    const safetyTimeout = setTimeout(() => {
+      if (!currentInitStatus.done) {
+        console.warn("Auth: timeout de seguridad alcanzado, forzando fin de carga");
+        setIsLoading(false);
+        currentInitStatus.done = true;
+      }
+    }, 3000);
+
+    // Paso 3: Restaurar sesión existente
+    supabase.auth.getSession().then(async ({ data: { session: s }, error }) => {
       if (error) {
         console.error("Auth getSession error:", error);
+        cleanStaleSupabaseTokens();
       }
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
+      
+      setSession(s);
+      setUser(s?.user ?? null);
+      
+      if (s?.user) {
         try {
-          await fetchProfile(session.user);
+          await fetchProfile(s.user);
         } catch (err) {
           console.error("fetchProfile error:", err);
         }
       }
     }).catch(err => {
+      // Si el error es de locks, intentamos recuperar lo que haya en el cliente
+      if (err?.message?.includes("lock")) {
+        console.warn("Auth: Lock error detected, attempting to recover current user");
+        const currentUser = (supabase.auth as any).session?.user || null;
+        if (currentUser) setUser(currentUser);
+      }
       console.error("getSession catch error:", err);
+      cleanStaleSupabaseTokens();
     }).finally(() => {
-      setIsLoading(false);
+      if (!currentInitStatus.done) {
+        clearTimeout(safetyTimeout);
+        setIsLoading(false);
+        currentInitStatus.done = true;
+      }
     });
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // Paso 4: Escuchar cambios de autenticación
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       try {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user);
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        if (newSession?.user) {
+          await fetchProfile(newSession.user);
         } else {
           setProfile(null);
         }
       } catch (err) {
         console.error("onAuthStateChange error:", err);
-      } finally {
-        setIsLoading(false);
       }
     });
 
-    // Cargar roles globales de la BD usando cliente administrativo (Alta Seguridad)
+    // Cargar roles globales
     getAdminClient().from("app_roles").select("*").then(({ data, error }) => {
       if (!error && data && data.length > 0) {
         setGlobalRoles(data);
@@ -121,9 +189,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // Idle Timeout Logic (30 minutes)
+    // Idle Timeout (30 minutos)
     let idleTimer: any;
-    const IDLE_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+    const IDLE_TIMEOUT = 30 * 60 * 1000;
 
     const resetIdleTimer = () => {
       if (idleTimer) clearTimeout(idleTimer);
@@ -144,11 +212,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     activityEvents.forEach(event => {
       window.addEventListener(event, resetIdleTimer);
     });
-
     resetIdleTimer();
 
     return () => {
       subscription.unsubscribe();
+      clearTimeout(safetyTimeout);
       activityEvents.forEach(event => {
         window.removeEventListener(event, resetIdleTimer);
       });
@@ -182,18 +250,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    setIsLoading(true);
     try {
+      // Limpiar estado React PRIMERO para redirección inmediata
+      setUser(null);
+      setProfile(null);
+      setSession(null);
+
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) console.error("signOut API error:", error);
+
       toast({
         title: "Sesión cerrada",
         description: "Has cerrado sesión exitosamente.",
       });
     } catch (err) {
       console.error("Logout failed", err);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -208,7 +279,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (roleDef && roleDef.permissions?.includes(perm)) {
         return true;
       }
-      return false; // Bloquea si explícitamente no lo tiene
+      return false;
     }
 
     try {
@@ -224,7 +295,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Ignore
     }
-    
+
     return false;
   };
 
