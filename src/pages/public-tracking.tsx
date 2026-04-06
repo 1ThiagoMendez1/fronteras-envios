@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react"
+import { useLocation, Link } from "wouter"
+import { useAuth } from "@/hooks/use-auth"
 import {
   Search, Package, CheckCircle2, Clock, Truck, AlertTriangle,
   MapPin, ArrowRight, Shield, Zap, Globe, Phone, Mail,
-  ChevronRight, Star, Users, TrendingUp, Box
+  ChevronRight, Star, Users, TrendingUp, Box, LogIn
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -216,12 +218,25 @@ function TrackingResult({ tracking }: { tracking: any }) {
 }
 
 export default function PublicTracking() {
+  const [, setLocation] = useLocation()
+  const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth()
   const [guideInput, setGuideInput] = useState("")
   const [searchGuide, setSearchGuide] = useState("")
   const [minLoading, setMinLoading] = useState(false)
   const resultsRef = useRef<HTMLDivElement>(null)
 
   const { data: tracking, isLoading, error } = useGetShipmentByGuide(searchGuide)
+
+  // Redirección automática si ya está autenticado y entra a la HOME
+  useEffect(() => {
+    if (!isAuthLoading && isAuthenticated && user) {
+      if (user.user_metadata?.role === "operator") {
+        setLocation("/clients")
+      } else {
+        setLocation("/dashboard")
+      }
+    }
+  }, [isAuthenticated, isAuthLoading, user, setLocation])
 
   // Auto-read ?guide= param from URL (for WhatsApp tracking links)
   useEffect(() => {
@@ -269,6 +284,12 @@ export default function PublicTracking() {
         <div className="flex items-center gap-5">
           <a href="#servicios" className="hidden md:block text-sm font-medium text-blue-100 hover:text-white transition-colors">Servicios</a>
           <a href="#contacto" className="hidden md:block text-sm font-medium text-blue-100 hover:text-white transition-colors">Contacto</a>
+          <Link href="/login">
+            <Button variant="outline" className="bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20 rounded-xl px-6 font-bold shadow-lg shadow-black/10 gap-2">
+              <LogIn className="w-4 h-4" />
+              Acceso Personal
+            </Button>
+          </Link>
         </div>
       </nav>
 

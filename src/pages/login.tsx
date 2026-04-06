@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { useLocation, Link } from "wouter"
+import { useState, useEffect } from "react"
+import { Link } from "wouter"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,8 +8,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 
 export default function Login() {
-  const [, setLocation] = useLocation()
-  const { login } = useAuth()
+  const { login, isAuthenticated, isLoading: isAuthLoading, user } = useAuth()
   const { toast } = useToast()
 
   const [email, setEmail] = useState("")
@@ -17,6 +16,17 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false)
   const [failedAttempts, setFailedAttempts] = useState(0)
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null)
+
+  // Redirección automática si ya está autenticado
+  useEffect(() => {
+    if (!isAuthLoading && isAuthenticated && user) {
+      if (user.user_metadata?.role === "operator") {
+        window.location.href = "/clients"
+      } else {
+        window.location.href = "/dashboard"
+      }
+    }
+  }, [isAuthenticated, isAuthLoading, user])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,15 +44,15 @@ export default function Login() {
     setIsLoading(true)
 
     try {
-      const user = await login({ email, password })
+      const loggedUser = await login({ email, password })
       
       setFailedAttempts(0)
       setLockoutUntil(null)
 
-      if (user?.user_metadata?.role === "operator") {
-        setLocation("/clients")
+      if (loggedUser?.user_metadata?.role === "operator") {
+        window.location.href = "/clients"
       } else {
-        setLocation("/dashboard")
+        window.location.href = "/dashboard"
       }
     } catch (error) {
       console.error("Login failed:", error)
