@@ -22,10 +22,32 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const [location] = useLocation()
-  const { profile, logout, hasPermission } = useAuth()
+  const [location, setLocation] = useLocation()
+  const { profile, logout, hasPermission, isAuthenticated, isLoading } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(true)
+
+  useEffect(() => {
+    // Redirección forzada si no hay sesión JWT activa
+    if (!isLoading && !isAuthenticated) {
+      setLocation("/login")
+    }
+  }, [isAuthenticated, isLoading, setLocation])
+
+  // Mostrar un loader de alta fidelidad mientras se verifica la sesión
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4">
+        <div className="relative">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <img src="/logo-mark.png" alt="Loading" className="h-8 w-8 object-contain opacity-50" />
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 font-medium animate-pulse">Protegiendo su sesión...</p>
+      </div>
+    )
+  }
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, visible: hasPermission('dashboard') },

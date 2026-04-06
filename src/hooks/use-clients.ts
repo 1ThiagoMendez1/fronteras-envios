@@ -1,15 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createClient } from "@supabase/supabase-js";
+import { getAdminClient } from "@/lib/admin-client";
 import { useToast } from "./use-toast";
-
-const FORCE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q";
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-
-function getAdminClient() {
-  return createClient(SUPABASE_URL, FORCE_SERVICE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
 
 // ─── Default option lists (editable from the UI — stored in localStorage) ─────
 export const DEFAULT_TIPO_CLIENTE_OPTIONS   = ["NATURAL", "JURIDICA"];

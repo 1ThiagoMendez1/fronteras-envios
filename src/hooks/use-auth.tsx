@@ -101,7 +101,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Idle Timeout Logic (30 minutes)
+    let idleTimer: any;
+    const IDLE_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+
+    const resetIdleTimer = () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(async () => {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          logout();
+          toast({
+            title: "Sesión expirada",
+            description: "Tu sesión ha sido cerrada por inactividad.",
+            variant: "destructive"
+          });
+        }
+      }, IDLE_TIMEOUT);
+    };
+
+    const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+    activityEvents.forEach(event => {
+      window.addEventListener(event, resetIdleTimer);
+    });
+
+    resetIdleTimer();
+
+    return () => {
+      subscription.unsubscribe();
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, resetIdleTimer);
+      });
+      if (idleTimer) clearTimeout(idleTimer);
+    };
   }, []);
 
   const login = async (data: LoginRequest) => {

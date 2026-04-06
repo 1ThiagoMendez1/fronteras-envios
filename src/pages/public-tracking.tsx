@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import {
   Search, Package, CheckCircle2, Clock, Truck, AlertTriangle,
   MapPin, ArrowRight, Shield, Zap, Globe, Phone, Mail,
@@ -222,6 +222,20 @@ export default function PublicTracking() {
   const resultsRef = useRef<HTMLDivElement>(null)
 
   const { data: tracking, isLoading, error } = useGetShipmentByGuide(searchGuide)
+
+  // Auto-read ?guide= param from URL (for WhatsApp tracking links)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const guideParam = params.get("guide");
+    if (guideParam) {
+      const clean = guideParam.replace(/\D/g, '') || guideParam;
+      setGuideInput(clean);
+      setSearchGuide(clean);
+      setMinLoading(true);
+      setTimeout(() => setMinLoading(false), 2500);
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 600);
+    }
+  }, []);
 
   const showLoading = isLoading || minLoading;
   const showError = error && !showLoading;

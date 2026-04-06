@@ -6,7 +6,6 @@ const EVOLUTION_API_KEY = import.meta.env.VITE_EVOLUTION_API_KEY;
 function sanitizeBaseUrl(url: string): string {
   try {
     const parsed = new URL(url);
-    // Quitar cualquier path y dejar solo origin (protocolo + host + puerto)
     return parsed.origin;
   } catch {
     return url.replace(/\/(manager|dashboard|api|panel)\/?.*$/, "").replace(/\/$/, "");
@@ -29,16 +28,10 @@ export async function sendWhatsAppMessage(phone: string, text: string) {
     cleanPhone = '57' + cleanPhone;
   }
 
+  // Payload compatible con Evolution API v2
   const payload = {
     number: cleanPhone,
-    options: {
-      delay: 1200,
-      presence: "composing",
-      linkPreview: false
-    },
-    textMessage: {
-      text: text
-    }
+    text: text,
   };
 
   try {

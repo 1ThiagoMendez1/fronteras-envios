@@ -1,14 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createClient } from "@supabase/supabase-js";
-
-const FORCE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q";
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-
-function getAdminClient() {
-  return createClient(SUPABASE_URL, FORCE_SERVICE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
+import { getAdminClient } from "@/lib/admin-client";
 
 interface ListShipmentsOptions {
   status?: string;
@@ -78,16 +69,33 @@ export function useGetShipmentByGuide(guideNumber: string) {
     queryKey: ["shipments", "guide", guideNumber],
     queryFn: async () => {
       const adminClient = getAdminClient();
+
+      // 1. Fetch shipment (without join to avoid 406 if relation is not cached)
       const { data, error } = await adminClient
         .from("shipments")
-        .select("*, shipment_history(id, status, notes, created_at)")
+        .select("*")
         .eq("guide_number", guideNumber)
         .single();
 
       if (error) throw error;
-      return mapShipment(data);
+
+      // 2. Fetch history separately (graceful — won't fail the whole query)
+      let historyData: any[] = [];
+      try {
+        const { data: history } = await adminClient
+          .from("shipment_history")
+          .select("id, status, notes, changed_by, created_at")
+          .eq("shipment_id", data.id)
+          .order("created_at", { ascending: true });
+        historyData = history ?? [];
+      } catch {
+        // shipment_history table might not exist yet — that's ok
+      }
+
+      return mapShipment({ ...data, shipment_history: historyData });
     },
     enabled: !!guideNumber,
+    retry: 1,
   });
 }
 

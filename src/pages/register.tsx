@@ -20,12 +20,38 @@ export default function Register() {
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [name, setName] = useState("")
   const [role, setRole] = useState("admin")
   const [isLoading, setIsLoading] = useState(false)
 
+  const validatePassword = (pass: string) => {
+    const minLength = 8
+    const hasUpper = /[A-Z]/.test(pass)
+    const hasNumber = /[0-9]/.test(pass)
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass)
+    
+    if (pass.length < minLength) return "La contraseña debe tener al menos 8 caracteres."
+    if (!hasUpper) return "Debe incluir al menos una mayúscula."
+    if (!hasNumber) return "Debe incluir al menos un número."
+    if (!hasSpecial) return "Debe incluir al menos un carácter especial."
+    return null
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const passwordError = validatePassword(password)
+    if (passwordError) {
+      toast({ title: "Seguridad insuficiente", description: passwordError, variant: "destructive" })
+      return
+    }
+
+    if (password !== confirmPassword) {
+      toast({ title: "Error de validación", description: "Las contraseñas no coinciden.", variant: "destructive" })
+      return
+    }
+
     setIsLoading(true)
 
     try {
@@ -43,10 +69,6 @@ export default function Register() {
 
       if (error) throw error
 
-      // NOTA: Si RLS no permite insertar perfiles, esto puede requerir un trigger en la base de datos
-      // o utilizar la Service Role Key en el backend, pero como es frontend, dependemos de que el usuario
-      // pueda ser insertado en `profiles` por ser el dueño de sí mismo o por auth hooks.
-      
       toast({
         title: "Registro exitoso",
         description: "Tu cuenta ha sido creada. Ahora puedes iniciar sesión.",
@@ -148,11 +170,23 @@ export default function Register() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres, números y símbolos"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
+                  className="h-12 bg-white rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Repite tu contraseña"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
                   className="h-12 bg-white rounded-xl"
                 />
               </div>

@@ -1,15 +1,6 @@
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { createClient } from "@supabase/supabase-js";
+import { getAdminClient } from "@/lib/admin-client";
 import { useToast } from "./use-toast";
-
-const FORCE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q";
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-
-function getAdminClient() {
-  return createClient(SUPABASE_URL, FORCE_SERVICE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
 
 // ─── Create Shipment ──────────────────────────────────────────────────────────
 export function useCreateShipmentMutation() {
@@ -136,25 +127,67 @@ export function useCreateShipmentMutation() {
         const adminClient = getAdminClient();
         const { data: shipment } = await adminClient
           .from("shipments")
-          .select("*")
+          .select("*, drivers(name, phone)")
           .eq("id", result.id)
           .single();
 
         if (shipment && shipment.sender_phone) {
-          const numGuia = shipment.guide_number
-            ? `*FEX-${shipment.guide_number}*`
-            : `*#${shipment.id}*`;
+          const numGuia = shipment.guide_number || String(shipment.id);
+          const trackingUrl = `https://www.fronterasexpress.com/?guide=${numGuia}`;
+          const fecha = new Date(shipment.created_at).toLocaleDateString("es-CO", {
+            year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit"
+          });
 
           const messageText =
-            `¡Hola ${shipment.sender_name}! 👋\n\n` +
-            `Tu envío ha sido *REGISTRADO EXITOSAMENTE* con el número de guía ${numGuia}.\n\n` +
-            `📦 *Destinatario:* ${shipment.recipient_name}\n` +
-            `📍 *Destino:* ${shipment.recipient_city}\n` +
-            `💰 *Flete:* $${Number(shipment.shipping_cost).toLocaleString("es-CO")}\n\n` +
-            `_Fronteras Express — Siempre a tiempo 🚚_`;
+            `🚚 *FRONTERAS EXPRESS*\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n` +
+            `✅ *GUÍA REGISTRADA EXITOSAMENTE*\n\n` +
+            `📋 *Número de Guía:* ${numGuia}\n` +
+            `📅 *Fecha:* ${fecha}\n\n` +
+            `👤 *REMITENTE*\n` +
+            `• Nombre: ${shipment.sender_name}\n` +
+            `• Teléfono: ${shipment.sender_phone}\n` +
+            `• Ciudad: ${shipment.sender_city}\n` +
+            `• Dirección: ${shipment.sender_address}\n\n` +
+            `📦 *DESTINATARIO*\n` +
+            `• Nombre: ${shipment.recipient_name}\n` +
+            `• Teléfono: ${shipment.recipient_phone}\n` +
+            `• Ciudad: ${shipment.recipient_city}\n` +
+            `• Dirección: ${shipment.recipient_address}\n\n` +
+            `💰 *DETALLE DEL ENVÍO*\n` +
+            `• Peso: ${shipment.weight || 1} kg\n` +
+            `• Cantidad: ${shipment.quantity || 1} pieza(s)\n` +
+            `• Valor declarado: $${Number(shipment.declared_value || 0).toLocaleString("es-CO")}\n` +
+            `• Costo del flete: *$${Number(shipment.shipping_cost || 0).toLocaleString("es-CO")}*\n` +
+            `• Método de pago: ${shipment.payment_method || "Efectivo"}\n` +
+            (shipment.observations ? `• Observaciones: ${shipment.observations}\n` : ``) +
+            `\n` +
+            `🔍 *RASTREA TU ENVÍO EN TIEMPO REAL*\n` +
+            `👉 ${trackingUrl}\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n` +
+            `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
           const { sendWhatsAppMessage } = await import("@/lib/whatsapp");
           await sendWhatsAppMessage(shipment.sender_phone, messageText);
+
+          // También notificar al destinatario si tiene teléfono
+          if (shipment.recipient_phone && shipment.recipient_phone !== shipment.sender_phone) {
+            const recipientMessage =
+              `🚚 *FRONTERAS EXPRESS*\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n` +
+              `📦 *Tienes un paquete en camino*\n\n` +
+              `Hola *${shipment.recipient_name}*, te informamos que *${shipment.sender_name}* te ha enviado un paquete.\n\n` +
+              `📋 *Guía:* ${numGuia}\n` +
+              `📍 *Desde:* ${shipment.sender_city}\n` +
+              `📍 *Hacia:* ${shipment.recipient_city}\n` +
+              `🏠 *Dirección de entrega:* ${shipment.recipient_address}\n\n` +
+              `🔍 *Rastrea tu paquete aquí:*\n` +
+              `👉 ${trackingUrl}\n\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n` +
+              `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
+
+            await sendWhatsAppMessage(shipment.recipient_phone, recipientMessage);
+          }
         }
       } catch (err) {
         console.error("Error enviando notificación WhatsApp al crear guía:", err);

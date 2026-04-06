@@ -5,22 +5,40 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowRight, ShieldCheck } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+import { useToast } from "@/hooks/use-toast"
 
 export default function Login() {
   const [, setLocation] = useLocation()
   const { login } = useAuth()
+  const { toast } = useToast()
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [failedAttempts, setFailedAttempts] = useState(0)
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (lockoutUntil && Date.now() < lockoutUntil) {
+      const waitTime = Math.ceil((lockoutUntil - Date.now()) / 1000)
+      toast({
+        title: "Demasiados intentos",
+        description: `Por favor espera ${waitTime} segundos antes de intentar de nuevo.`,
+        variant: "destructive"
+      })
+      return
+    }
+
     setIsLoading(true)
 
-  try {
+    try {
       const user = await login({ email, password })
       
+      setFailedAttempts(0)
+      setLockoutUntil(null)
+
       if (user?.user_metadata?.role === "operator") {
         setLocation("/clients")
       } else {
@@ -28,7 +46,20 @@ export default function Login() {
       }
     } catch (error) {
       console.error("Login failed:", error)
-      setIsLoading(false) // Ensured loading state is reset
+      setIsLoading(false)
+      
+      const newAttempts = failedAttempts + 1
+      setFailedAttempts(newAttempts)
+      
+      if (newAttempts >= 3) {
+        const cooldown = Math.min(300, Math.pow(2, newAttempts - 3) * 30) // Progressive cooldown starting at 30s
+        setLockoutUntil(Date.now() + cooldown * 1000)
+        toast({
+          title: "Acceso bloqueado temporalmente",
+          description: `Demasiados intentos fallidos. Bloqueado por ${cooldown} segundos.`,
+          variant: "destructive"
+        })
+      }
     }
   }
 
