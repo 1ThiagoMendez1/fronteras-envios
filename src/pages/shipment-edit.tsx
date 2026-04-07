@@ -130,7 +130,7 @@ export default function EditShipment() {
         senderDocument: shipment.senderDocument || "",
         senderName: shipment.senderName || "",
         senderPhone: shipment.senderPhone || "",
-        senderAddress: shipment.senderAddress || "",
+        senderAddress: shipment.senderAddress || "TERMINAL",
         senderCity: userBranch,
         recipientDocument: shipment.recipientDocument || "",
         recipientName: shipment.recipientName || "",

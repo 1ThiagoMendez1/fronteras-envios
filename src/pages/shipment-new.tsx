@@ -144,6 +144,7 @@ export default function NewShipment() {
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
       senderDocument: "",
+      senderAddress: "TERMINAL",
       recipientDocument: "",
       weight: 1,
       quantity: 1,

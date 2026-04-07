@@ -240,6 +240,14 @@ export function useUpdateShipmentMutation(id: number) {
     mutationFn: async (payload: { data: Record<string, any> }) => {
       const d = payload.data;
       const adminClient = getAdminClient();
+
+      // ─── Obtener datos originales ANTES de actualizar ───
+      const { data: original } = await adminClient
+        .from("shipments")
+        .select("*")
+        .eq("id", id)
+        .single();
+
       // ─── UPSERT Clients (create if they don't exist, update if they do) ───
       if (d.senderDocument) {
         try {
@@ -318,15 +326,91 @@ export function useUpdateShipmentMutation(id: number) {
         .single();
 
       if (error) throw error;
-      return result;
+
+      // ─── Detectar cambios entre datos originales y nuevos ───
+      const changes: string[] = [];
+      if (original) {
+        const fieldMap: Record<string, { label: string; oldKey: string; format?: (v: any) => string }> = {
+          senderName:      { label: "Nombre remitente", oldKey: "sender_name" },
+          senderPhone:     { label: "Teléfono remitente", oldKey: "sender_phone" },
+          senderAddress:   { label: "Dirección remitente", oldKey: "sender_address" },
+          senderCity:      { label: "Ciudad origen", oldKey: "sender_city" },
+          recipientName:   { label: "Nombre destinatario", oldKey: "recipient_name" },
+          recipientPhone:  { label: "Teléfono destinatario", oldKey: "recipient_phone" },
+          recipientAddress:{ label: "Dirección destinatario", oldKey: "recipient_address" },
+          recipientCity:   { label: "Ciudad destino", oldKey: "recipient_city" },
+          weight:          { label: "Peso", oldKey: "weight", format: (v) => `${v} kg` },
+          quantity:        { label: "Cantidad", oldKey: "quantity", format: (v) => `${v} pieza(s)` },
+          declaredValue:   { label: "Valor declarado", oldKey: "declared_value", format: (v) => `$${Number(v).toLocaleString("es-CO")}` },
+          shippingCost:    { label: "Costo flete", oldKey: "shipping_cost", format: (v) => `$${Number(v).toLocaleString("es-CO")}` },
+          paymentMethod:   { label: "Método de pago", oldKey: "payment_method" },
+          observations:    { label: "Observaciones", oldKey: "observations" },
+          packageContents: { label: "Contenido", oldKey: "package_contents" },
+          branchOrigin:    { label: "Sede origen", oldKey: "branch_origin" },
+        };
+
+        for (const [newKey, cfg] of Object.entries(fieldMap)) {
+          const oldVal = original[cfg.oldKey];
+          const newVal = d[newKey];
+          // Comparar como strings para uniformidad
+          const oldStr = String(oldVal ?? "").trim();
+          const newStr = String(newVal ?? "").trim();
+          if (oldStr !== newStr && (oldStr || newStr)) {
+            const fmt = cfg.format || ((v: any) => String(v ?? "—"));
+            changes.push(`• *${cfg.label}:* ${fmt(oldVal)} → ${fmt(newVal)}`);
+          }
+        }
+      }
+
+      return { result, changes, original };
     },
-    onSuccess: () => {
+    onSuccess: async ({ result, changes }) => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
       queryClient.invalidateQueries({ queryKey: ["shipments", id] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["financial"] });
       toast({ title: "Éxito", description: "Envío actualizado correctamente" });
+
+      // ─── Notificación WhatsApp con las modificaciones ───
+      if (changes && changes.length > 0 && result) {
+        try {
+          const { sendWhatsAppMessage } = await import("@/lib/whatsapp");
+          const numGuia = result.guide_number || String(result.id);
+          const trackingUrl = `https://www.fronterasexpress.com/?guide=${numGuia}`;
+          const fecha = new Date().toLocaleDateString("es-CO", {
+            year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit"
+          });
+
+          const messageText =
+            `🚚 *FRONTERAS EXPRESS*\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n` +
+            `✏️ *ENVÍO MODIFICADO*\n\n` +
+            `📋 *Guía:* ${numGuia}\n` +
+            `📅 *Fecha de modificación:* ${fecha}\n\n` +
+            `🔄 *CAMBIOS REALIZADOS:*\n` +
+            changes.join("\n") + `\n\n` +
+            `👤 *Remitente:* ${result.sender_name}\n` +
+            `📦 *Destinatario:* ${result.recipient_name}\n` +
+            `📍 *Destino:* ${result.recipient_city}\n\n` +
+            `🔍 *Rastrea tu envío aquí:*\n` +
+            `👉 ${trackingUrl}\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n` +
+            `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
+
+          // Notificar al remitente
+          if (result.sender_phone) {
+            await sendWhatsAppMessage(result.sender_phone, messageText);
+          }
+
+          // Notificar al destinatario si tiene teléfono diferente
+          if (result.recipient_phone && result.recipient_phone !== result.sender_phone) {
+            await sendWhatsAppMessage(result.recipient_phone, messageText);
+          }
+        } catch (err) {
+          console.error("Error enviando WhatsApp al modificar envío:", err);
+        }
+      }
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message || "Error al actualizar envío", variant: "destructive" });
