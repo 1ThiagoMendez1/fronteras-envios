@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { getAdminClient } from "@/lib/admin-client";
+import { decodeJwtPayload } from "@/lib/jwt";
 import type { User, Session } from "@supabase/supabase-js";
 import { useToast } from "./use-toast";
 
@@ -15,6 +15,7 @@ interface Profile {
   name: string;
   role: "admin" | "operator" | "driver" | "client";
   is_active: boolean;
+  branch: string;
   permissions: Record<string, boolean>;
   last_login?: string;
 }
@@ -68,6 +69,51 @@ function cleanStaleSupabaseTokens() {
   }
 }
 
+/**
+ * Extrae el perfil del usuario a partir de los claims del JWT.
+ * Si el hook SQL está activo, lee app_role, app_is_active, etc.
+ * Si no, hace fallback a user_metadata.
+ */
+function buildProfileFromSession(currentUser: User, session: Session): Profile {
+  const token = session.access_token;
+  const claims = decodeJwtPayload(token);
+
+  // Claims personalizados inyectados por custom_access_token_hook
+  const hasCustomClaims = claims && 'app_role' in claims;
+
+  const role = hasCustomClaims
+    ? (claims.app_role as Profile["role"])
+    : (currentUser.user_metadata?.role || "operator");
+
+  const is_active = hasCustomClaims
+    ? (claims.app_is_active ?? true)
+    : (currentUser.user_metadata?.is_active ?? true);
+
+  const branch = hasCustomClaims
+    ? (claims.app_branch || "Bogotá")
+    : (currentUser.user_metadata?.branch || "Bogotá");
+
+  const permissions = hasCustomClaims
+    ? (claims.app_permissions || {})
+    : (currentUser.user_metadata?.permissions || {});
+
+  if (hasCustomClaims) {
+    console.info("✅ JWT claims activos — rol leído del token:", role);
+  } else {
+    console.info("⚠️ JWT claims no detectados — usando user_metadata fallback:", role);
+  }
+
+  return {
+    id: currentUser.id,
+    email: currentUser.email || "demo@fronteras.com",
+    name: currentUser.user_metadata?.name || "Usuario de Sistema",
+    role: role as Profile["role"],
+    is_active,
+    branch,
+    permissions,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
@@ -77,38 +123,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [globalRoles, setGlobalRoles] = useState<any[]>([]);
   const initDone = useRef(false);
-
-  const fetchProfile = async (currentUser: User) => {
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", currentUser.id)
-        .single()
-      if (!error && data) {
-        setProfile({
-          ...(data as any),
-          role: currentUser.user_metadata?.role || (data as any).role,
-          is_active: currentUser.user_metadata?.is_active ?? (data as any).is_active
-        } as Profile);
-      } else {
-        throw error || new Error("No data returned");
-      }
-    } catch (err) {
-      console.error("fetchProfile error, using fallback:", err);
-      // Fallback: IMPORTANTE usar el rol de metadata si existe, para no perder permisos de Admin
-      const metaRole = currentUser.user_metadata?.role;
-      setProfile({
-        id: currentUser.id,
-        email: currentUser.email || "demo@fronteras.com",
-        name: currentUser.user_metadata?.name || "Usuario de Sistema",
-        role: metaRole || "operator",
-        branch: currentUser.user_metadata?.branch || "Bogotá",
-        is_active: currentUser.user_metadata?.is_active ?? true,
-        permissions: currentUser.user_metadata?.permissions || {}
-      } as Profile);
-    }
-  };
 
   useEffect(() => {
     // Si ya iniciamos, no hacer nada (previene errores de locks en Strict Mode)
@@ -140,11 +154,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(s?.user ?? null);
       
       if (s?.user) {
-        try {
-          await fetchProfile(s.user);
-        } catch (err) {
-          console.error("fetchProfile error:", err);
-        }
+        // Construir perfil directamente desde JWT — sin query a DB
+        const prof = buildProfileFromSession(s.user, s);
+        setProfile(prof);
       }
     }).catch(err => {
       // Si el error es de locks, intentamos recuperar lo que haya en el cliente
@@ -169,7 +181,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(newSession);
         setUser(newSession?.user ?? null);
         if (newSession?.user) {
-          await fetchProfile(newSession.user);
+          // Construir perfil desde JWT — sin query a DB
+          const prof = buildProfileFromSession(newSession.user, newSession);
+          setProfile(prof);
         } else {
           setProfile(null);
         }
@@ -178,9 +192,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // Cargar roles globales
-    getAdminClient().from("app_roles").select("*").then(({ data, error }) => {
-      if (!error && data && data.length > 0) {
+    // Cargar roles globales (para hasPermission)
+    supabase.from("app_roles").select("*").then(({ data, error: rolesError }) => {
+      if (!rolesError && data && data.length > 0) {
         setGlobalRoles(data);
         localStorage.setItem("app_roles", JSON.stringify(data));
       } else {

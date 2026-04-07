@@ -70,6 +70,7 @@ const formSchema = z.object({
   declaredValue: z.coerce.number().min(0, "Requerido"),
   shippingCost: z.coerce.number().min(0, "Requerido"),
   driverPayment: z.coerce.number().min(0, "Requerido"),
+  packageContents: z.string().optional(),
   observations: z.string().optional(),
   driverId: z.coerce.number().optional(),
   branchOrigin: z.string().min(2, "Requerido").default("Bogotá"),
@@ -236,7 +237,14 @@ export default function NewShipment() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Ciudad de Origen</Label>
-                  <Input {...register("senderCity")} className="h-11 rounded-xl bg-slate-50" />
+                  <Select value={watch("senderCity")} onValueChange={(v) => setValue("senderCity", v, { shouldValidate: true })}>
+                    <SelectTrigger className="h-11 rounded-xl bg-slate-50"><SelectValue placeholder="Seleccionar sede" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Bogotá">Sede Bogotá</SelectItem>
+                      <SelectItem value="Medellín">Sede Medellín</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.senderCity && <p className="text-red-500 text-xs">{errors.senderCity.message}</p>}
                 </div>
                 <div className="col-span-2 space-y-1.5">
                   <Label>Dirección</Label>
@@ -389,7 +397,11 @@ export default function NewShipment() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Observaciones</Label>
+                <Label>Dice Contener</Label>
+                <Input {...register("packageContents")} placeholder="Ej. Ropa, documentos, electrónicos..." className="h-11 rounded-xl bg-slate-50" />
+              </div>
+              <div className="space-y-1.5">
+              <Label>Observaciones</Label>
                 <Input {...register("observations")} placeholder="Notas..." className="h-11 rounded-xl bg-slate-50" />
               </div>
             </div>

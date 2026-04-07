@@ -122,6 +122,7 @@ function mapShipment(row: any) {
     shippingCost: Number(row.shipping_cost || 0),
     driverPayment: Number(row.driver_payment || 0),
     observations: row.observations,
+    packageContents: row.package_contents,
     status: row.status,
     driverId: row.driver_id,
     driverSignature: row.driver_signature,

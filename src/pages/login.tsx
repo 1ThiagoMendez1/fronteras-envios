@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 
 export default function Login() {
-  const { login, isAuthenticated, isLoading: isAuthLoading, user } = useAuth()
+  const { login, isAuthenticated, isLoading: isAuthLoading, user, profile } = useAuth()
   const { toast } = useToast()
 
   const [email, setEmail] = useState("")
@@ -19,14 +19,14 @@ export default function Login() {
 
   // Redirección automática si ya está autenticado
   useEffect(() => {
-    if (!isAuthLoading && isAuthenticated && user) {
-      if (user.user_metadata?.role === "operator") {
+    if (!isAuthLoading && isAuthenticated && user && profile) {
+      if (profile.role === "operator") {
         window.location.href = "/clients"
       } else {
         window.location.href = "/dashboard"
       }
     }
-  }, [isAuthenticated, isAuthLoading, user])
+  }, [isAuthenticated, isAuthLoading, user, profile])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,7 +49,9 @@ export default function Login() {
       setFailedAttempts(0)
       setLockoutUntil(null)
 
-      if (loggedUser?.user_metadata?.role === "operator") {
+      // Redirigir inmediatamente según el rol
+      const role = profile?.role || loggedUser?.user_metadata?.role
+      if (role === "operator") {
         window.location.href = "/clients"
       } else {
         window.location.href = "/dashboard"
@@ -62,7 +64,7 @@ export default function Login() {
       setFailedAttempts(newAttempts)
       
       if (newAttempts >= 3) {
-        const cooldown = Math.min(300, Math.pow(2, newAttempts - 3) * 30) // Progressive cooldown starting at 30s
+        const cooldown = Math.min(300, Math.pow(2, newAttempts - 3) * 30)
         setLockoutUntil(Date.now() + cooldown * 1000)
         toast({
           title: "Acceso bloqueado temporalmente",

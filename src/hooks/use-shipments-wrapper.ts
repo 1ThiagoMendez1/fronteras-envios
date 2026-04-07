@@ -27,6 +27,7 @@ export function useCreateShipmentMutation() {
         shippingCost?: number;
         driverPayment?: number;
         observations?: string;
+        packageContents?: string;
         driverId?: number;
         branchOrigin?: string;
       };
@@ -74,6 +75,7 @@ export function useCreateShipmentMutation() {
           shipping_cost: d.shippingCost ?? 0,
           driver_payment: d.driverPayment ?? 0,
           observations: d.observations ?? null,
+          package_contents: d.packageContents ?? null,
           driver_id: d.driverId ?? null,
           branch_origin: d.branchOrigin ?? "Bogotá",
           status: d.driverId ? "assigned" : "created",
@@ -161,6 +163,7 @@ export function useCreateShipmentMutation() {
             `• Costo del flete: *$${Number(shipment.shipping_cost || 0).toLocaleString("es-CO")}*\n` +
             `• Método de pago: ${shipment.payment_method || "Efectivo"}\n` +
             (shipment.observations ? `• Observaciones: ${shipment.observations}\n` : ``) +
+            (shipment.package_contents ? `• Contenido: ${shipment.package_contents}\n` : ``) +
             `\n` +
             `🔍 *RASTREA TU ENVÍO EN TIEMPO REAL*\n` +
             `👉 ${trackingUrl}\n\n` +
@@ -249,6 +252,7 @@ export function useUpdateShipmentMutation(id: number) {
           shipping_cost: d.shippingCost,
           driver_payment: d.driverPayment,
           observations: d.observations,
+          package_contents: d.packageContents,
           driver_id: d.driverId ?? null,
           branch_origin: d.branchOrigin,
         })

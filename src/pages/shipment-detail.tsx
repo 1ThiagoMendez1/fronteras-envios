@@ -41,7 +41,7 @@ export default function ShipmentDetail() {
   const [localDriverId, setLocalDriverId] = useState<string | null>(null)
   const [isReassigning, setIsReassigning] = useState(false)
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false)
-  const [printMode, setPrintMode] = useState<"guia" | "rotulo">("guia")
+  const [printMode, setPrintMode] = useState<"guia" | "guia_conductor" | "rotulo">("guia")
   const [isRotuloDialogOpen, setIsRotuloDialogOpen] = useState(false)
   const [rotuloQuantity, setRotuloQuantity] = useState(shipment?.quantity || 1)
 
@@ -225,7 +225,10 @@ export default function ShipmentDetail() {
               <Package className="w-4 h-4 mr-2" /> Rótulos
             </Button>
             <Button variant="outline" onClick={() => { setPrintMode("guia"); setTimeout(handlePrint, 100); }} className="rounded-xl h-11 font-semibold border-primary text-slate-800 hover:bg-primary/5">
-              <Printer className="w-4 h-4 mr-2" /> Imprimir Guía
+              <Printer className="w-4 h-4 mr-2" /> Mostrar al Cliente
+            </Button>
+            <Button variant="outline" onClick={() => { setPrintMode("guia_conductor"); setTimeout(handlePrint, 100); }} className="rounded-xl h-11 font-semibold border-emerald-400 text-slate-800 hover:bg-emerald-50">
+              <Truck className="w-4 h-4 mr-2" /> Guía Conductor
             </Button>
 
             <Dialog open={isRotuloDialogOpen} onOpenChange={setIsRotuloDialogOpen}>
@@ -359,8 +362,14 @@ export default function ShipmentDetail() {
                   <p className="font-bold text-lg">{formatCurrency(shipment.driverPayment)}</p>
                 </div>
               </div>
+              {shipment.packageContents && (
+                <div className="mt-6 p-4 bg-blue-50 text-blue-900 rounded-xl text-sm border border-blue-100">
+                  <span className="font-bold block mb-1">Dice Contener:</span>
+                  {shipment.packageContents}
+                </div>
+              )}
               {shipment.observations && (
-                <div className="mt-6 p-4 bg-amber-50 text-amber-900 rounded-xl text-sm border border-amber-100">
+                <div className="mt-3 p-4 bg-amber-50 text-amber-900 rounded-xl text-sm border border-amber-100">
                   <span className="font-bold block mb-1">Observaciones:</span>
                   {shipment.observations}
                 </div>
@@ -542,7 +551,8 @@ export default function ShipmentDetail() {
             z-index: 99999 !important;
             background: white !important;
           }
-          #print-area.guia-mode {
+          #print-area.guia-mode,
+          #print-area.guia-conductor-mode {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
@@ -550,9 +560,155 @@ export default function ShipmentDetail() {
             overflow: hidden !important;
           }
           #print-area.rotulo-mode {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
+            display: block !important;
+            width: 100mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          #print-area.rotulo-mode .rotulo-page {
+            width: 100mm !important;
+            height: 150mm !important;
+            box-sizing: border-box !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            display: flex !important;
+            flex-direction: column !important;
+            padding: 2mm 3mm !important;
+            overflow: hidden !important;
+          }
+          #print-area.rotulo-mode .rotulo-item {
+            flex: 1 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            padding: 1.5mm 1mm !important;
+            box-sizing: border-box !important;
+          }
+          #print-area.rotulo-mode .rotulo-item:not(:last-child) {
+            border-bottom: 0.5mm dashed black !important;
+            margin-bottom: 1mm !important;
+            padding-bottom: 2mm !important;
+          }
+          #print-area.rotulo-mode .rotulo-header {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 2mm !important;
+          }
+          #print-area.rotulo-mode .rotulo-guide {
+            font-size: 7mm !important;
+            font-weight: 900 !important;
+            letter-spacing: -0.5mm !important;
+            line-height: 1 !important;
+            flex-shrink: 0 !important;
+          }
+          #print-area.rotulo-mode .rotulo-brand {
+            font-size: 2.5mm !important;
+            font-weight: 900 !important;
+            letter-spacing: 0.3mm !important;
+            text-transform: uppercase !important;
+            text-align: center !important;
+            line-height: 1.3 !important;
+            flex: 1 !important;
+          }
+          #print-area.rotulo-mode .rotulo-box {
+            background: black !important;
+            color: white !important;
+            padding: 1.5mm 3mm !important;
+            border-radius: 3mm !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex-shrink: 0 !important;
+            min-width: 22mm !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          #print-area.rotulo-mode .rotulo-box-letter {
+            font-size: 3.2mm !important;
+            font-weight: 900 !important;
+            letter-spacing: 0.5mm !important;
+            text-transform: uppercase !important;
+            line-height: 1 !important;
+          }
+          #print-area.rotulo-mode .rotulo-box-pza {
+            font-size: 2mm !important;
+            font-weight: 700 !important;
+            margin-top: 0.5mm !important;
+            text-transform: uppercase !important;
+            line-height: 1 !important;
+          }
+          #print-area.rotulo-mode .rotulo-divider {
+            border-bottom: 0.8mm solid black !important;
+            margin: 1mm 0 !important;
+          }
+          #print-area.rotulo-mode .rotulo-body {
+            display: flex !important;
+            gap: 2mm !important;
+            align-items: stretch !important;
+          }
+          #print-area.rotulo-mode .rotulo-dest {
+            flex: 1 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            min-width: 0 !important;
+          }
+          #print-area.rotulo-mode .rotulo-dest-label {
+            font-size: 2mm !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.3mm !important;
+            color: #666 !important;
+            margin-bottom: 0.5mm !important;
+          }
+          #print-area.rotulo-mode .rotulo-dest-name {
+            font-size: 3.5mm !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+            line-height: 1.2 !important;
+            margin-bottom: 0.5mm !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+          #print-area.rotulo-mode .rotulo-dest-city {
+            font-size: 2.5mm !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+            background: #e5e5e5 !important;
+            padding: 0.5mm 2mm !important;
+            border-radius: 2mm !important;
+            display: inline-block !important;
+            width: fit-content !important;
+            margin-bottom: 0.5mm !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          #print-area.rotulo-mode .rotulo-dest-addr,
+          #print-area.rotulo-mode .rotulo-dest-phone {
+            font-size: 2.5mm !important;
+            font-weight: 700 !important;
+            line-height: 1.3 !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+          #print-area.rotulo-mode .rotulo-qr {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex-shrink: 0 !important;
+          }
+          #print-area.rotulo-mode .rotulo-qr-label {
+            font-size: 1.8mm !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+            margin-top: 0.5mm !important;
           }
           .page-break {
             page-break-after: always;
@@ -563,8 +719,8 @@ export default function ShipmentDetail() {
           }
         }
       `}</style>
-      <div id="print-area" className={cn("hidden print:block text-black font-sans box-border bg-white", printMode === "guia" ? "guia-mode" : "rotulo-mode")}>
-        {printMode === "guia" ? (
+      <div id="print-area" className={cn("hidden print:block text-black font-sans box-border bg-white", printMode === "rotulo" ? "rotulo-mode" : printMode === "guia_conductor" ? "guia-conductor-mode" : "guia-mode")}>
+        {(printMode === "guia" || printMode === "guia_conductor") ? (
           <div className="flex flex-col w-[100vw] h-[100vh] px-2 pt-0 pb-1 box-border overflow-hidden bg-white">
             {/* Header */}
             <div className="flex items-center justify-between border-b-[3px] border-black pb-1 mb-2">
@@ -599,28 +755,49 @@ export default function ShipmentDetail() {
                 </div>
               </div>
               
-              {/* Details Row */}
+              {/* Details Row - differs between client and driver */}
               <div className="flex bg-gray-100">
                 <div className="flex-1 p-2 border-r-[3px] border-black text-center flex flex-col justify-center">
                   <span className="text-[10px] font-black uppercase block">Peso</span>
                   <span className="text-lg font-black leading-none mt-1">{shipment.weight} <span className="text-xs">kg</span></span>
                 </div>
-                <div className="flex-1 p-2 border-r-[3px] border-black text-center flex flex-col justify-center">
-                  <span className="text-[10px] font-black uppercase block">Declarado</span>
-                  <span className="text-sm font-bold leading-none mt-1">{formatCurrency(shipment.declaredValue)}</span>
-                </div>
-                <div className="flex-1 p-2 text-center flex flex-col justify-center text-black">
-                   <span className="text-[10px] font-black uppercase block">Total Flete</span>
-                   <span className="text-lg font-black leading-none mt-1 text-black">{formatCurrency(shipment.shippingCost)}</span>
-                </div>
+                {printMode === "guia" ? (
+                  <>
+                    <div className="flex-1 p-2 border-r-[3px] border-black text-center flex flex-col justify-center">
+                      <span className="text-[10px] font-black uppercase block">Declarado</span>
+                      <span className="text-sm font-bold leading-none mt-1">{formatCurrency(shipment.declaredValue)}</span>
+                    </div>
+                    <div className="flex-1 p-2 text-center flex flex-col justify-center text-black">
+                      <span className="text-[10px] font-black uppercase block">Total Flete</span>
+                      <span className="text-lg font-black leading-none mt-1 text-black">{formatCurrency(shipment.shippingCost)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex-1 p-2 border-r-[3px] border-black text-center flex flex-col justify-center">
+                      <span className="text-[10px] font-black uppercase block">Cantidad</span>
+                      <span className="text-lg font-black leading-none mt-1">{shipment.quantity || 1} <span className="text-xs">pza(s)</span></span>
+                    </div>
+                    <div className="flex-1 p-2 text-center flex flex-col justify-center text-black">
+                      <span className="text-[10px] font-black uppercase block">Dice Contener</span>
+                      <span className="text-[11px] font-bold leading-tight mt-1 text-black line-clamp-2">{shipment.packageContents || "—"}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
             {/* Observation & QR */}
             <div className="flex gap-3 mb-3 flex-1 bg-white">
               <div className="flex-1 border-[3px] border-black rounded-xl p-2 flex flex-col relative overflow-hidden">
-                <span className="text-[11px] font-black uppercase block border-b-2 border-black pb-1 mb-1 relative z-10 w-full bg-white">OBSERVACIONES</span>
-                <p className="text-[11px] leading-tight font-bold whitespace-pre-wrap overflow-hidden relative z-10">{shipment.observations || "Sin observaciones registradas."}</p>
+                <span className="text-[11px] font-black uppercase block border-b-2 border-black pb-1 mb-1 relative z-10 w-full bg-white">DICE CONTENER</span>
+                <p className="text-[11px] leading-tight font-bold whitespace-pre-wrap overflow-hidden relative z-10">{shipment.packageContents || "No especificado"}</p>
+                {shipment.observations && (
+                  <>
+                    <span className="text-[10px] font-black uppercase block border-t border-black pt-1 mt-1 relative z-10">OBS:</span>
+                    <p className="text-[10px] leading-tight font-medium whitespace-pre-wrap overflow-hidden relative z-10">{shipment.observations}</p>
+                  </>
+                )}
               </div>
               <div className="w-[120px] flex flex-col items-center justify-center p-2 border-[3px] border-black rounded-xl shrink-0">
                  <QRCodeSVG value={trackingUrl} size={90} level="M" />
@@ -633,32 +810,38 @@ export default function ShipmentDetail() {
             </div>
           </div>
         ) : (
-           <div className="flex flex-col w-full bg-white">
+           <div>
             {Array.from({ length: Math.max(1, Math.ceil(rotuloQuantity / 4)) }).map((_, pageIdx) => (
-              <div key={pageIdx} className="w-[100vw] h-[100vh] box-border page-break bg-white flex flex-col p-2">
+              <div key={pageIdx} className="rotulo-page">
                 {Array.from({ length: Math.max(1, Math.min(4, rotuloQuantity - pageIdx * 4)) }).map((_, itemIdx) => {
                   const absoluteIdx = pageIdx * 4 + itemIdx;
-                  const letter = String.fromCharCode(65 + (absoluteIdx % 26)); 
-                  const isLastItem = itemIdx === Math.min(4, rotuloQuantity - pageIdx * 4) - 1;
+                  const letter = String.fromCharCode(65 + (absoluteIdx % 26));
 
                   return (
-                    <div key={itemIdx} className={`flex flex-col flex-1 justify-center py-2 ${!isLastItem ? 'border-b-2 border-dashed border-black pb-3 mb-1' : ''}`}>
-                      <div className="flex justify-between items-center px-1">
-                        <span className="text-[32px] font-black leading-none tracking-tighter">{shipment.guideNumber}</span>
-                        <div className="bg-black text-white px-4 py-1.5 rounded-[16px] flex flex-col items-center justify-center min-w-[90px]">
-                          <span className="font-black text-[14px] uppercase tracking-widest leading-none">CAJA {letter}</span>
-                          <span className="text-[9px] font-bold leading-none mt-1 uppercase">PZA {absoluteIdx + 1}/{rotuloQuantity}</span>
+                    <div key={itemIdx} className="rotulo-item">
+                      <div className="rotulo-header">
+                        <span className="rotulo-guide">{shipment.guideNumber}</span>
+                        <span className="rotulo-brand">FRONTERAS<br/>EXPRESS</span>
+                        <div className="rotulo-box">
+                          <span className="rotulo-box-letter">CAJA {letter}</span>
+                          <span className="rotulo-box-pza">PZA {absoluteIdx + 1}/{rotuloQuantity}</span>
                         </div>
                       </div>
                       
-                      <div className="border-b-[3px] border-black mt-1 mb-2 mx-1"></div>
+                      <div className="rotulo-divider"></div>
                       
-                      <div className="flex flex-col px-1">
-                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest leading-none mb-1">DESTINATARIO</span>
-                        <span className="font-black text-[16px] leading-tight uppercase mb-1.5">{shipment.recipientName}</span>
-                        <span className="bg-gray-200/80 text-black px-2.5 py-1 rounded-full text-[10px] font-black w-fit mb-1.5 leading-none uppercase">{shipment.recipientCity}</span>
-                        <span className="text-[12px] font-bold text-black leading-tight">{shipment.recipientAddress}</span>
-                        <span className="text-[12px] font-bold text-black mt-0.5">Tel: {shipment.recipientPhone}</span>
+                      <div className="rotulo-body">
+                        <div className="rotulo-dest">
+                          <span className="rotulo-dest-label">DESTINATARIO</span>
+                          <span className="rotulo-dest-name">{shipment.recipientName}</span>
+                          <span className="rotulo-dest-city">{shipment.recipientCity}</span>
+                          <span className="rotulo-dest-addr">{shipment.recipientAddress}</span>
+                          <span className="rotulo-dest-phone">Tel: {shipment.recipientPhone}</span>
+                        </div>
+                        <div className="rotulo-qr">
+                          <QRCodeSVG value={trackingUrl} size={48} level="M" />
+                          <span className="rotulo-qr-label">RASTREAR</span>
+                        </div>
                       </div>
                     </div>
                   );

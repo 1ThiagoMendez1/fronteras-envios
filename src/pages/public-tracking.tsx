@@ -219,7 +219,7 @@ function TrackingResult({ tracking }: { tracking: any }) {
 
 export default function PublicTracking() {
   const [, setLocation] = useLocation()
-  const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth()
+  const { isAuthenticated, isLoading: isAuthLoading, profile } = useAuth()
   const [guideInput, setGuideInput] = useState("")
   const [searchGuide, setSearchGuide] = useState("")
   const [minLoading, setMinLoading] = useState(false)
@@ -229,14 +229,14 @@ export default function PublicTracking() {
 
   // Redirección automática si ya está autenticado y entra a la HOME
   useEffect(() => {
-    if (!isAuthLoading && isAuthenticated && user) {
-      if (user.user_metadata?.role === "operator") {
+    if (!isAuthLoading && isAuthenticated && profile) {
+      if (profile.role === "operator") {
         setLocation("/clients")
       } else {
         setLocation("/dashboard")
       }
     }
-  }, [isAuthenticated, isAuthLoading, user, setLocation])
+  }, [isAuthenticated, isAuthLoading, profile, setLocation])
 
   // Auto-read ?guide= param from URL (for WhatsApp tracking links)
   useEffect(() => {
