@@ -155,11 +155,13 @@ export default function NewShipment() {
     }
   })
 
+  // Fijar la ciudad de origen del remitente y la sede siempre desde la sesión del usuario
+  const userBranch = profile?.branch || user?.user_metadata?.branch || "Bogotá"
+
   useEffect(() => {
-    if (user?.user_metadata?.branch) {
-      setValue("branchOrigin", user.user_metadata.branch)
-    }
-  }, [user?.user_metadata?.branch, setValue])
+    setValue("branchOrigin", userBranch)
+    setValue("senderCity", userBranch, { shouldValidate: true })
+  }, [userBranch, setValue])
 
   const shippingCost = watch("shippingCost") || 0
   const driverPayment = watch("driverPayment") || 0
@@ -168,7 +170,7 @@ export default function NewShipment() {
   const fillSenderFromClient = (client: any) => {
     setValue("senderName", client.razonSocial ?? client.name ?? "", { shouldValidate: true })
     setValue("senderPhone", client.phone ?? "", { shouldValidate: true })
-    setValue("senderCity", client.city ?? "", { shouldValidate: true })
+    // No sobreescribir senderCity — siempre viene de la sesión del usuario
     setValue("senderAddress", client.address ?? "", { shouldValidate: true })
   }
 
@@ -237,13 +239,11 @@ export default function NewShipment() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Ciudad de Origen</Label>
-                  <Select value={watch("senderCity")} onValueChange={(v) => setValue("senderCity", v, { shouldValidate: true })}>
-                    <SelectTrigger className="h-11 rounded-xl bg-slate-50"><SelectValue placeholder="Seleccionar sede" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Bogotá">Sede Bogotá</SelectItem>
-                      <SelectItem value="Medellín">Sede Medellín</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={userBranch}
+                    disabled
+                    className="h-11 rounded-xl bg-slate-100 font-semibold text-slate-700 cursor-not-allowed"
+                  />
                   {errors.senderCity && <p className="text-red-500 text-xs">{errors.senderCity.message}</p>}
                 </div>
                 <div className="col-span-2 space-y-1.5">

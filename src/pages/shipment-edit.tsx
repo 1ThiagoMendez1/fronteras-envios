@@ -112,6 +112,7 @@ export default function EditShipment() {
   const { data: shipment, isLoading: isShipmentLoading } = useGetShipment(id)
   const { profile, isLoading: isAuthLoading } = useAuth()
   const isAdmin = profile?.role === "admin"
+  const userBranch = profile?.branch || "Bogotá"
   const updateMutation = useUpdateShipmentMutation(id)
   const { data: drivers } = useListDrivers({ onlyActive: true })
   const { getClientByDocument } = useClients()
@@ -130,7 +131,7 @@ export default function EditShipment() {
         senderName: shipment.senderName || "",
         senderPhone: shipment.senderPhone || "",
         senderAddress: shipment.senderAddress || "",
-        senderCity: shipment.senderCity || "",
+        senderCity: userBranch,
         recipientDocument: shipment.recipientDocument || "",
         recipientName: shipment.recipientName || "",
         recipientPhone: shipment.recipientPhone || "",
@@ -158,7 +159,7 @@ export default function EditShipment() {
   const fillSenderFromClient = (client: any) => {
     setValue("senderName", client.razonSocial ?? client.name ?? "", { shouldValidate: true })
     setValue("senderPhone", client.phone ?? "", { shouldValidate: true })
-    setValue("senderCity", client.city ?? "", { shouldValidate: true })
+    // No sobreescribir senderCity — siempre viene de la sesión del usuario
     setValue("senderAddress", client.address ?? "", { shouldValidate: true })
   }
 
@@ -237,13 +238,11 @@ export default function EditShipment() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Ciudad de Origen</Label>
-                  <Select value={watch("senderCity")} onValueChange={(v) => setValue("senderCity", v, { shouldValidate: true })}>
-                    <SelectTrigger className="h-11 rounded-xl bg-slate-50"><SelectValue placeholder="Seleccionar sede" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Bogotá">Sede Bogotá</SelectItem>
-                      <SelectItem value="Medellín">Sede Medellín</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={userBranch}
+                    disabled
+                    className="h-11 rounded-xl bg-slate-100 font-semibold text-slate-700 cursor-not-allowed"
+                  />
                   {errors.senderCity && <p className="text-red-500 text-xs">{errors.senderCity.message}</p>}
                 </div>
                 <div className="col-span-2 space-y-1.5">
