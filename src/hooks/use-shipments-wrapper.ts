@@ -329,10 +329,64 @@ export function useAssignDriverMutation(id: number) {
         notes: "Conductor asignado",
       });
     },
-    onSuccess: () => {
+    onSuccess: async (_, payload) => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
       queryClient.invalidateQueries({ queryKey: ["shipments", id] });
       toast({ title: "Conductor Asignado", description: "Se ha asignado el conductor al envío" });
+
+      try {
+        const adminClient = getAdminClient();
+        const { data: shipment } = await adminClient
+          .from("shipments")
+          .select("*, drivers!fk_shipments_drivers(name, phone, company, vehicle_type)")
+          .eq("id", id)
+          .single();
+
+        // Fallback or attempt to fetch if relation name is strict
+        let finalShipment = shipment;
+        if (!finalShipment || !finalShipment.drivers) {
+          const res = await adminClient.from("shipments").select("*, drivers(name, phone, company, vehicle_type)").eq("id", id).single();
+          if (res.data) finalShipment = res.data;
+        }
+
+        if (finalShipment && finalShipment.drivers && payload.driverId) {
+          const { sendWhatsAppMessage } = await import("@/lib/whatsapp");
+          const driver = finalShipment.drivers as any;
+          const numGuia = finalShipment.guide_number || String(finalShipment.id);
+          const trackingUrl = `https://www.fronterasexpress.com/?guide=${numGuia}`;
+          
+          const vehicleMap: Record<string, string> = {
+            'motorcycle': 'Motocicleta',
+            'car': 'Automóvil',
+            'van': 'Furgoneta',
+            'truck': 'Camión'
+          };
+          const vehicle = vehicleMap[driver.vehicle_type] || driver.vehicle_type;
+
+          const messageText = 
+            `🚚 *ACTUALIZACIÓN DE ENVÍO - FRONTERAS EXPRESS*\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n` +
+            `Tu paquete con guía *${numGuia}* ha sido asignado a un transportador y está próximo a ser recogido/entregado.\n\n` +
+            `👤 *DATOS DEL TRANSPORTADOR*\n` +
+            `• Nombre: ${driver.name}\n` +
+            `• Teléfono: ${driver.phone}\n` +
+            (driver.company ? `• Empresa: ${driver.company}\n` : '') +
+            `• Vehículo: ${vehicle}\n\n` +
+            `🔍 *RASTREA TU ENVÍO EN TIEMPO REAL*\n` +
+            `👉 ${trackingUrl}\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━\n` +
+            `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
+
+          if (finalShipment.sender_phone) {
+            await sendWhatsAppMessage(finalShipment.sender_phone, messageText);
+          }
+          if (finalShipment.recipient_phone && finalShipment.recipient_phone !== finalShipment.sender_phone) {
+            await sendWhatsAppMessage(finalShipment.recipient_phone, messageText);
+          }
+        }
+      } catch (err) {
+        console.error("Error enviando WhatsApp al asignar conductor:", err);
+      }
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message || "Error al asignar conductor", variant: "destructive" });

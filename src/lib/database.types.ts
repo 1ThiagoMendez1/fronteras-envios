@@ -218,6 +218,7 @@ export interface Database {
           cash_collected: number
           notes: string | null
           closed_by: string | null
+          status: 'pre_close' | 'completed'
           created_at: string
         }
         Insert: {
@@ -231,11 +232,17 @@ export interface Database {
           cash_collected?: number
           notes?: string | null
           closed_by?: string | null
+          status?: 'pre_close' | 'completed'
           created_at?: string
         }
         Update: {
           notes?: string | null
           cash_collected?: number
+          status?: 'pre_close' | 'completed'
+          total_shipments?: number
+          total_revenue?: number
+          total_driver_payments?: number
+          net_profit?: number
         }
       }
       financial_movements: {

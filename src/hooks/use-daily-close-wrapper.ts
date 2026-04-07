@@ -15,6 +15,7 @@ export function useCreateDailyCloseMutation() {
       totalDriverPayments: number;
       netProfit: number;
       cashCollected: number;
+      status?: "pre_close" | "completed";
       notes?: string;
     }) => {
       const adminClient = getAdminClient();
@@ -29,6 +30,7 @@ export function useCreateDailyCloseMutation() {
             total_driver_payments: payload.totalDriverPayments,
             net_profit: payload.netProfit,
             cash_collected: payload.cashCollected,
+            status: payload.status ?? 'completed',
             notes: payload.notes ?? null,
           },
           { onConflict: "close_date,branch" }

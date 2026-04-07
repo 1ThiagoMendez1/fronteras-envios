@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { formatCurrency, getStatusColor, getStatusLabel, cn, formatGuide } from "@/lib/utils"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { ArrowLeft, Printer, Truck, MapPin, Building, Phone, Package } from "lucide-react"
+import { ArrowLeft, Printer, Truck, MapPin, Building, Phone } from "lucide-react"
 import { useUpdateShipmentStatusMutation, useAssignDriverMutation } from "@/hooks/use-shipments-wrapper"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -41,9 +41,19 @@ export default function ShipmentDetail() {
   const [localDriverId, setLocalDriverId] = useState<string | null>(null)
   const [isReassigning, setIsReassigning] = useState(false)
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false)
-  const [printMode, setPrintMode] = useState<"guia" | "guia_conductor" | "rotulo">("guia")
-  const [isRotuloDialogOpen, setIsRotuloDialogOpen] = useState(false)
-  const [rotuloQuantity, setRotuloQuantity] = useState(shipment?.quantity || 1)
+  const [printMode, setPrintMode] = useState<"guia" | "guia_conductor" | "rotulos">("guia")
+
+  const quantityLabel = shipment?.quantity || 1;
+  const numLabels = quantityLabel > 1 ? quantityLabel - 1 : 0;
+  const labelPages = [];
+  for (let i = 0; i < numLabels; i += 4) {
+    const pageLabelsCount = Math.min(4, numLabels - i);
+    labelPages.push(
+      Array.from({ length: pageLabelsCount }, (_, index) => ({
+        number: i + index + 2
+      }))
+    );
+  }
 
   if (isLoading || !shipment) {
     return (
@@ -107,6 +117,7 @@ export default function ShipmentDetail() {
   const handlePrint = () => {
     window.print()
   }
+
 
   const handlePrintActa = () => {
     const printWindow = window.open('', '', 'width=800,height=800')
@@ -221,44 +232,15 @@ export default function ShipmentDetail() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => setIsRotuloDialogOpen(true)} className="rounded-xl h-11 font-semibold border-slate-300 text-slate-800">
-              <Package className="w-4 h-4 mr-2" /> Rótulos
-            </Button>
             <Button variant="outline" onClick={() => { setPrintMode("guia"); setTimeout(handlePrint, 100); }} className="rounded-xl h-11 font-semibold border-primary text-slate-800 hover:bg-primary/5">
               <Printer className="w-4 h-4 mr-2" /> Mostrar al Cliente
+            </Button>
+            <Button disabled={numLabels === 0} variant="outline" onClick={() => { setPrintMode("rotulos"); setTimeout(handlePrint, 100); }} className="rounded-xl h-11 font-semibold border-amber-400 text-slate-800 hover:bg-amber-50">
+              <Printer className="w-4 h-4 mr-2" /> Rótulos ({numLabels})
             </Button>
             <Button variant="outline" onClick={() => { setPrintMode("guia_conductor"); setTimeout(handlePrint, 100); }} className="rounded-xl h-11 font-semibold border-emerald-400 text-slate-800 hover:bg-emerald-50">
               <Truck className="w-4 h-4 mr-2" /> Guía Conductor
             </Button>
-
-            <Dialog open={isRotuloDialogOpen} onOpenChange={setIsRotuloDialogOpen}>
-              <DialogContent className="sm:max-w-sm rounded-3xl p-8">
-                <DialogHeader className="mb-4">
-                  <DialogTitle className="text-xl font-bold text-slate-900 text-center">Imprimir Rótulos de Cajas</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-6 text-center">
-                  <div className="text-left space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Cantidad de Cajas</label>
-                    <Input 
-                      type="number" 
-                      min="1" 
-                      value={rotuloQuantity} 
-                      onChange={(e) => setRotuloQuantity(parseInt(e.target.value) || 1)} 
-                      className="text-center rounded-2xl h-14 text-xl font-bold text-primary border-primary/30"
-                    />
-                  </div>
-                  <p className="text-sm text-slate-500">
-                    Se agruparán hasta 4 rótulos por hoja (100x150mm) para ahorrar papel.
-                  </p>
-                  <Button 
-                    className="w-full h-14 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-base" 
-                    onClick={() => { setPrintMode("rotulo"); setIsRotuloDialogOpen(false); setTimeout(handlePrint, 100); }}
-                  >
-                    <Printer className="w-5 h-5 mr-2" /> Imprimir {rotuloQuantity} Rótulo(s)
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
 
             <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
               <DialogTrigger asChild>
@@ -537,16 +519,22 @@ export default function ShipmentDetail() {
             size: 100mm 150mm;
             margin: 0mm !important;
           }
-          body, html {
+          html, body, #root {
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+            height: auto !important;
+            min-height: 100% !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow: visible !important;
           }
           #print-area {
-            width: 100vw !important;
-            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 auto !important;
             box-sizing: border-box !important;
             z-index: 99999 !important;
             background: white !important;
@@ -556,160 +544,38 @@ export default function ShipmentDetail() {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
-            height: 100vh !important;
+            height: auto !important;
             overflow: hidden !important;
+            width: 100vw !important;
           }
-          #print-area.rotulo-mode {
-            display: block !important;
-            width: 100mm !important;
+          #print-area.rotulos-mode {
+            position: relative !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            width: 100% !important;
+          }
+
+          .rotulos-page {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 100vh !important; 
+            max-height: 100vh !important;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            page-break-after: always;
+            page-break-inside: avoid;
+            overflow: hidden !important;
+            box-sizing: border-box;
+            background: white;
             margin: 0 !important;
-            padding: 0 !important;
           }
-          #print-area.rotulo-mode .rotulo-page {
-            width: 100mm !important;
-            height: 150mm !important;
-            box-sizing: border-box !important;
-            page-break-after: always !important;
-            break-after: page !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            display: flex !important;
-            flex-direction: column !important;
-            padding: 2mm 3mm !important;
-            overflow: hidden !important;
+          .rotulos-page:last-child {
+            page-break-after: auto !important;
           }
-          #print-area.rotulo-mode .rotulo-item {
-            flex: 1 !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: center !important;
-            padding: 1.5mm 1mm !important;
-            box-sizing: border-box !important;
-          }
-          #print-area.rotulo-mode .rotulo-item:not(:last-child) {
-            border-bottom: 0.5mm dashed black !important;
-            margin-bottom: 1mm !important;
-            padding-bottom: 2mm !important;
-          }
-          #print-area.rotulo-mode .rotulo-header {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-            gap: 2mm !important;
-          }
-          #print-area.rotulo-mode .rotulo-guide {
-            font-size: 7mm !important;
-            font-weight: 900 !important;
-            letter-spacing: -0.5mm !important;
-            line-height: 1 !important;
-            flex-shrink: 0 !important;
-          }
-          #print-area.rotulo-mode .rotulo-brand {
-            font-size: 2.5mm !important;
-            font-weight: 900 !important;
-            letter-spacing: 0.3mm !important;
-            text-transform: uppercase !important;
-            text-align: center !important;
-            line-height: 1.3 !important;
-            flex: 1 !important;
-          }
-          #print-area.rotulo-mode .rotulo-box {
-            background: black !important;
-            color: white !important;
-            padding: 1.5mm 3mm !important;
-            border-radius: 3mm !important;
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            justify-content: center !important;
-            flex-shrink: 0 !important;
-            min-width: 22mm !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          #print-area.rotulo-mode .rotulo-box-letter {
-            font-size: 3.2mm !important;
-            font-weight: 900 !important;
-            letter-spacing: 0.5mm !important;
-            text-transform: uppercase !important;
-            line-height: 1 !important;
-          }
-          #print-area.rotulo-mode .rotulo-box-pza {
-            font-size: 2mm !important;
-            font-weight: 700 !important;
-            margin-top: 0.5mm !important;
-            text-transform: uppercase !important;
-            line-height: 1 !important;
-          }
-          #print-area.rotulo-mode .rotulo-divider {
-            border-bottom: 0.8mm solid black !important;
-            margin: 1mm 0 !important;
-          }
-          #print-area.rotulo-mode .rotulo-body {
-            display: flex !important;
-            gap: 2mm !important;
-            align-items: stretch !important;
-          }
-          #print-area.rotulo-mode .rotulo-dest {
-            flex: 1 !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: center !important;
-            min-width: 0 !important;
-          }
-          #print-area.rotulo-mode .rotulo-dest-label {
-            font-size: 2mm !important;
-            font-weight: 700 !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.3mm !important;
-            color: #666 !important;
-            margin-bottom: 0.5mm !important;
-          }
-          #print-area.rotulo-mode .rotulo-dest-name {
-            font-size: 3.5mm !important;
-            font-weight: 900 !important;
-            text-transform: uppercase !important;
-            line-height: 1.2 !important;
-            margin-bottom: 0.5mm !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            white-space: nowrap !important;
-          }
-          #print-area.rotulo-mode .rotulo-dest-city {
-            font-size: 2.5mm !important;
-            font-weight: 900 !important;
-            text-transform: uppercase !important;
-            background: #e5e5e5 !important;
-            padding: 0.5mm 2mm !important;
-            border-radius: 2mm !important;
-            display: inline-block !important;
-            width: fit-content !important;
-            margin-bottom: 0.5mm !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          #print-area.rotulo-mode .rotulo-dest-addr,
-          #print-area.rotulo-mode .rotulo-dest-phone {
-            font-size: 2.5mm !important;
-            font-weight: 700 !important;
-            line-height: 1.3 !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            white-space: nowrap !important;
-          }
-          #print-area.rotulo-mode .rotulo-qr {
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            justify-content: center !important;
-            flex-shrink: 0 !important;
-          }
-          #print-area.rotulo-mode .rotulo-qr-label {
-            font-size: 1.8mm !important;
-            font-weight: 900 !important;
-            text-transform: uppercase !important;
-            margin-top: 0.5mm !important;
-          }
+
           .page-break {
             page-break-after: always;
             page-break-inside: avoid;
@@ -717,10 +583,28 @@ export default function ShipmentDetail() {
           .no-print {
             display: none !important;
           }
+          
+          /* Esconder barras laterales y header principal para evitar layouts raros */
+          nav, aside, header {
+             display: none !important;
+          }
+
+          /* Garantizar que los padres estructurales no empujen el contenido y generen hojas en blanco */
+          html, body, #root, #root > div, main, main > div {
+             padding: 0 !important;
+             margin: 0 !important;
+             min-height: 0 !important;
+             height: auto !important;
+          }
+
+          /* Eliminar el reloj de DashboardLayout y cualquier margen superior residual */
+          main > div:first-child {
+             display: none !important;
+          }
         }
       `}</style>
-      <div id="print-area" className={cn("hidden print:block text-black font-sans box-border bg-white", printMode === "rotulo" ? "rotulo-mode" : printMode === "guia_conductor" ? "guia-conductor-mode" : "guia-mode")}>
-        {(printMode === "guia" || printMode === "guia_conductor") ? (
+      <div id="print-area" className={cn("hidden print:block text-black font-sans box-border bg-white mx-auto", printMode === "guia_conductor" ? "guia-conductor-mode" : printMode === "rotulos" ? "rotulos-mode" : "guia-mode")}>
+        {(printMode === "guia" || printMode === "guia_conductor") && (
           <div className="flex flex-col w-[100vw] h-[100vh] px-2 pt-0 pb-1 box-border overflow-hidden bg-white">
             {/* Header */}
             <div className="flex items-center justify-between border-b-[3px] border-black pb-1 mb-2">
@@ -809,43 +693,45 @@ export default function ShipmentDetail() {
               Fronteras Express S.A.S. - El envío se rige por nuestras políticas.<br/>Consulte términos en www.fronterasexpress.com
             </div>
           </div>
-        ) : (
-           <div>
-            {Array.from({ length: Math.max(1, Math.ceil(rotuloQuantity / 4)) }).map((_, pageIdx) => (
-              <div key={pageIdx} className="rotulo-page">
-                {Array.from({ length: Math.max(1, Math.min(4, rotuloQuantity - pageIdx * 4)) }).map((_, itemIdx) => {
-                  const absoluteIdx = pageIdx * 4 + itemIdx;
-                  const letter = String.fromCharCode(65 + (absoluteIdx % 26));
-
-                  return (
-                    <div key={itemIdx} className="rotulo-item">
-                      <div className="rotulo-header">
-                        <span className="rotulo-guide">{shipment.guideNumber}</span>
-                        <span className="rotulo-brand">FRONTERAS<br/>EXPRESS</span>
-                        <div className="rotulo-box">
-                          <span className="rotulo-box-letter">CAJA {letter}</span>
-                          <span className="rotulo-box-pza">PZA {absoluteIdx + 1}/{rotuloQuantity}</span>
+        )}
+        {printMode === "rotulos" && (
+          <div className="w-full h-auto bg-white flex flex-col">
+            {labelPages.map((pageLabels, pageIdx) => (
+              <div key={pageIdx} className="rotulos-page">
+                {pageLabels.map((lbl, idx) => (
+                  <div key={idx} style={{ height: (100 / pageLabels.length) + "%" }} className="w-full flex justify-center items-center box-border pt-1.5 pb-0.5 px-3 relative flex-col overflow-hidden">
+                    <div className="flex flex-col flex-1 w-full border-[3.5px] border-black rounded-2xl relative box-border p-2 bg-white overflow-hidden">
+                      <div className="flex justify-between items-center border-b-[3px] border-black pb-1 mb-1 shrink-0">
+                        <div className="flex items-center gap-1.5 font-display font-black text-[13px] tracking-tight">
+                          <Truck className="w-5 h-5" strokeWidth={2.5} /> FRONTERAS EXPRESS
                         </div>
+                        <div className="text-right font-black text-2xl tracking-tight leading-none overflow-hidden">{formatGuide(shipment.guideNumber)}</div>
                       </div>
                       
-                      <div className="rotulo-divider"></div>
+                      <div className="flex-1 flex flex-col justify-center relative z-10 w-[70%]">
+                        <div className="text-[10px] font-black uppercase text-black mt-1">DESTINATARIO:</div>
+                        <div className="w-16 border-b-[1.5px] border-gray-300 mb-1 block shrink-0"></div>
+                        <div className="font-extrabold text-[15px] leading-tight uppercase line-clamp-1">{shipment.recipientName}</div>
+                        <div className="text-[12px] leading-snug line-clamp-2 mt-0.5 text-gray-700">{shipment.recipientAddress}</div>
+                        <div className="text-[14px] font-black uppercase mt-1 bg-gray-100 inline-block px-1.5 rounded self-start tracking-tight">{shipment.recipientCity}</div>
+                      </div>
                       
-                      <div className="rotulo-body">
-                        <div className="rotulo-dest">
-                          <span className="rotulo-dest-label">DESTINATARIO</span>
-                          <span className="rotulo-dest-name">{shipment.recipientName}</span>
-                          <span className="rotulo-dest-city">{shipment.recipientCity}</span>
-                          <span className="rotulo-dest-addr">{shipment.recipientAddress}</span>
-                          <span className="rotulo-dest-phone">Tel: {shipment.recipientPhone}</span>
-                        </div>
-                        <div className="rotulo-qr">
-                          <QRCodeSVG value={trackingUrl} size={48} level="M" />
-                          <span className="rotulo-qr-label">RASTREAR</span>
+                      <div className="absolute right-2 bottom-3 flex flex-col items-center shrink-0 z-20">
+                        <QRCodeSVG value={trackingUrl} size={42} level="L" marginSize={0} />
+                        <div className="text-[10px] font-black uppercase mt-2 bg-black text-white px-2 py-0.5 rounded-full leading-none tracking-widest whitespace-nowrap">
+                          CAJA {lbl.number} / {quantityLabel}
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                    {/* Intersecting line & telephone */}
+                    <div className="flex items-center w-full px-2 mt-1 shrink-0">
+                      <div className="text-[11px] font-bold tracking-tight whitespace-nowrap text-black z-10 bg-white pr-2">
+                        Tel: {shipment.recipientPhone}
+                      </div>
+                      <div className="flex-1 border-t-[2.5px] border-dashed border-gray-400"></div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>

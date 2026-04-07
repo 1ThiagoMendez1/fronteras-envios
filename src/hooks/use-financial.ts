@@ -139,6 +139,7 @@ export function useFinancialSummary(options: {
           cashCollected: Number(c.cash_collected || 0),
           notes: c.notes,
           closedBy: c.closed_by || "Sistema",
+          status: c.status || 'completed',
           createdAt: c.created_at,
           deliveredCount: Number(c.total_shipments || 0), // Fallback for real metrics
           incidentCount: 0,
@@ -218,6 +219,7 @@ export function useDailyCloseList(branch: string = "Todas las Sedes") {
         cashCollected: Number(c.cash_collected || 0),
         notes: c.notes,
         closedBy: c.closed_by || "Sistema",
+        status: c.status || 'completed',
         createdAt: c.created_at,
         deliveredCount: Number(c.total_shipments || 0),
         incidentCount: 0,
@@ -277,7 +279,7 @@ export function useUnclosedDays(branch: string = "Todas las Sedes") {
       const { data: shipments, error: sErr } = await sQuery;
       if (sErr) throw sErr;
       
-      let cQuery = adminClient.from("daily_close").select("close_date, branch");
+      let cQuery = adminClient.from("daily_close").select("close_date, branch, status");
       if (branch !== "Todas las Sedes") cQuery = cQuery.eq("branch", branch);
       const { data: closes, error: cErr } = await cQuery;
       if (cErr) throw cErr;
@@ -289,8 +291,9 @@ export function useUnclosedDays(branch: string = "Todas las Sedes") {
       const today = new Date().toISOString().split('T')[0];
       
       const unclosed = shipmentDays.filter(day => {
-         const hasClose = closes?.some((c: any) => c.close_date && c.close_date.startsWith(day));
-         return !hasClose && day < today;
+         const dayClose = closes?.find((c: any) => c.close_date && c.close_date.startsWith(day));
+         const isCompleted = dayClose && dayClose.status === 'completed';
+         return !isCompleted && day < today;
       }).sort((a,b) => b.localeCompare(a));
       
       return unclosed;

@@ -61,7 +61,7 @@ export default function DailyClosePage() {
     })
   }, [closes, historySearch])
 
-  const handleCreateClose = async () => {
+  const handleCreateClose = async (status: 'pre_close' | 'completed' = 'completed') => {
     if (!preCloseData) return;
     if (branch === "Todas las Sedes") {
       alert("Debe seleccionar una sede específica para hacer el cierre.");
@@ -75,6 +75,7 @@ export default function DailyClosePage() {
       totalDriverPayments: preCloseData.totalDriverPayments,
       netProfit: preCloseData.totalNetProfit,
       cashCollected: preCloseData.totalRevenue,
+      status: status,
       notes: closeNotes || `Cierre correspondiente al día ${targetCloseDate}`
     })
     setWizardStep('success')
@@ -92,6 +93,7 @@ export default function DailyClosePage() {
     const rows = [
       "Campo,Valor",
       `"Fecha","${format(new Date(close.closeDate), "dd/MM/yyyy")}"`,
+      `"Estado","${close.status === 'pre_close' ? 'Precierre' : 'Completado'}"`,
       `"Cerrado por","${close.closedBy}"`,
       `"Total envíos","${close.totalShipments}"`,
       `"Entregados","${close.deliveredCount}"`,
@@ -358,11 +360,16 @@ export default function DailyClosePage() {
                   <div className="bg-amber-50 text-amber-800 p-3 rounded-xl border border-amber-200 text-sm">
                     <strong>⚠️ Advertencia:</strong> Una vez ejecutado el cierre, no se podrán modificar las transacciones del día.
                   </div>
-                  <div className="flex gap-3">
-                    <Button variant="outline" className="flex-1 h-11 rounded-xl text-sm font-bold" onClick={() => setWizardStep('pre-close')}>← Volver</Button>
-                    <Button className="flex-1 h-11 rounded-xl text-sm font-bold bg-primary hover:bg-primary/90" onClick={handleCreateClose} disabled={createMutation.isPending}>
-                      {createMutation.isPending ? "Procesando..." : "Confirmar y Cerrar Día"}
-                    </Button>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button variant="outline" className="h-11 rounded-xl text-sm font-bold shrink-0" onClick={() => setWizardStep('pre-close')}>← Volver</Button>
+                    <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                      <Button variant="secondary" className="flex-1 h-11 rounded-xl text-sm font-bold bg-amber-100 text-amber-800 hover:bg-amber-200" onClick={() => handleCreateClose('pre_close')} disabled={createMutation.isPending}>
+                        Guardar Precierre
+                      </Button>
+                      <Button className="flex-1 h-11 rounded-xl text-sm font-bold bg-primary hover:bg-primary/90" onClick={() => handleCreateClose('completed')} disabled={createMutation.isPending}>
+                        {createMutation.isPending ? "Procesando..." : "Confirmar Cierre Completo"}
+                      </Button>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -484,6 +491,9 @@ export default function DailyClosePage() {
                             <h4 className="font-bold text-base text-slate-900 capitalize">{format(new Date(close.closeDate), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}</h4>
                             <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide", close.branch === "Medellín" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700")}>
                               {close.branch || "Bogotá"}
+                            </span>
+                            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide", close.status === 'pre_close' ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700")}>
+                              {close.status === 'pre_close' ? "Precierre" : "Completado"}
                             </span>
                           </div>
                           <div className="flex items-center gap-3 mt-1">

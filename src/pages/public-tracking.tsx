@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from "react"
-import { useLocation, Link } from "wouter"
+import { useLocation } from "wouter"
 import { useAuth } from "@/hooks/use-auth"
 import {
   Search, Package, CheckCircle2, Clock, Truck, AlertTriangle,
   MapPin, ArrowRight, Shield, Zap, Globe, Phone, Mail,
-  ChevronRight, Star, Users, TrendingUp, Box, LogIn
+  ChevronRight, Star, Users, TrendingUp, Box
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -284,12 +284,6 @@ export default function PublicTracking() {
         <div className="flex items-center gap-5">
           <a href="#servicios" className="hidden md:block text-sm font-medium text-blue-100 hover:text-white transition-colors">Servicios</a>
           <a href="#contacto" className="hidden md:block text-sm font-medium text-blue-100 hover:text-white transition-colors">Contacto</a>
-          <Link href="/login">
-            <Button variant="outline" className="bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20 rounded-xl px-6 font-bold shadow-lg shadow-black/10 gap-2">
-              <LogIn className="w-4 h-4" />
-              Acceso Personal
-            </Button>
-          </Link>
         </div>
       </nav>
 
