@@ -343,8 +343,7 @@ export default function NewShipment() {
                   <Input 
                     type="number" 
                     {...register("shippingCost")} 
-                    disabled={profile?.role !== "admin"}
-                    className="h-11 rounded-xl bg-primary/5 border-primary/30 pl-6 font-semibold text-primary disabled:opacity-70 disabled:cursor-not-allowed" 
+                    className="h-11 rounded-xl bg-primary/5 border-primary/30 pl-6 font-semibold text-primary" 
                   />
                 </div>
               </div>
