@@ -7,11 +7,12 @@ import { Card } from "@/components/ui/card"
 import { formatCurrency, getStatusColor, getStatusLabel, cn, formatGuide } from "@/lib/utils"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { Plus, Search, Filter, ChevronRight, Pencil, MessageSquareDot } from "lucide-react"
+import { Plus, Search, Filter, ChevronRight, Pencil, MessageSquareDot, Trash2 } from "lucide-react"
 import { Link } from "wouter"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useLocation } from "wouter"
 import { useAuth } from "@/hooks/use-auth"
+import { useDeleteShipmentMutation } from "@/hooks/use-shipments-wrapper"
 
 export default function Shipments() {
   const [, setLocation] = useLocation()
@@ -20,6 +21,8 @@ export default function Shipments() {
   const [search, setSearch] = useState("")
   const [unreadOnly, setUnreadOnly] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+
+  const deleteMutation = useDeleteShipmentMutation()
 
   const { data, isLoading } = useListShipments({
     status: statusFilter !== "all" ? statusFilter : undefined,
@@ -167,6 +170,16 @@ export default function Shipments() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {profile?.role === "admin" && (
+                              <Button variant="ghost" size="icon" className="rounded-full hover:bg-red-100 hover:text-red-600 focus:opacity-100" disabled={deleteMutation.isPending} onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm(`¿Estás seguro de que deseas eliminar la guía ${formatGuide(shipment.guideNumber)}? Esta acción no se puede deshacer.`)) {
+                                  deleteMutation.mutate(shipment.id);
+                                }
+                              }}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
                             <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-200" onClick={() => setLocation(`/shipments/${shipment.id}/edit`)}>
                               <Pencil className="w-4 h-4 text-slate-500" />
                             </Button>

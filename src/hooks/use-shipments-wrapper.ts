@@ -574,3 +574,34 @@ export function useAddShipmentChatMutation(id: number) {
     },
   });
 }
+
+// ─── Delete Shipment ──────────────────────────────────────────────────────────
+export function useDeleteShipmentMutation() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const adminClient = getAdminClient();
+      
+      // Eliminar registros relacionados para evitar errores de llave foránea
+      await adminClient.from("financial_movements").delete().eq("reference_type", "shipment").eq("reference_id", id);
+      await adminClient.from("shipment_history").delete().eq("shipment_id", id);
+      
+      const { error } = await adminClient.from("shipments").delete().eq("id", id);
+      if (error) throw error;
+      
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["financial"] });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      toast({ title: "Éxito", description: "Envío eliminado correctamente" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message || "Error al eliminar envío", variant: "destructive" });
+    },
+  });
+}
