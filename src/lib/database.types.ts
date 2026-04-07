@@ -80,7 +80,7 @@ export interface Database {
           phone: string
           email: string | null
           company: string | null
-          vehicle_type: 'motorcycle' | 'car' | 'van' | 'truck'
+          vehicle_type: 'motorcycle' | 'car' | 'van' | 'truck' | 'office'
           city: string
           rate_per_delivery: number
           is_active: boolean
@@ -93,7 +93,7 @@ export interface Database {
           phone: string
           email?: string | null
           company?: string | null
-          vehicle_type: 'motorcycle' | 'car' | 'van' | 'truck'
+          vehicle_type: 'motorcycle' | 'car' | 'van' | 'truck' | 'office'
           city: string
           rate_per_delivery?: number
           is_active?: boolean
@@ -105,7 +105,7 @@ export interface Database {
           phone?: string
           email?: string | null
           company?: string | null
-          vehicle_type?: 'motorcycle' | 'car' | 'van' | 'truck'
+          vehicle_type?: 'motorcycle' | 'car' | 'van' | 'truck' | 'office'
           city?: string
           rate_per_delivery?: number
           is_active?: boolean

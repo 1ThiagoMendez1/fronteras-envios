@@ -262,7 +262,7 @@ export default function ShipmentDetail() {
                       <SelectContent>
                         <SelectItem value="picked_up">Recogido</SelectItem>
                         <SelectItem value="in_transit">En Tránsito</SelectItem>
-                        <SelectItem value="out_for_delivery">En Entrega</SelectItem>
+                        <SelectItem value="out_for_delivery">Pendiente por Entregar</SelectItem>
                         <SelectItem value="delivered">Entregado</SelectItem>
                         <SelectItem value="incident">Incidencia (Problema)</SelectItem>
                       </SelectContent>
@@ -304,6 +304,9 @@ export default function ShipmentDetail() {
                 <p className="text-xl font-bold text-foreground">{shipment.senderCity}</p>
                 <div className="mt-4 space-y-2 text-sm">
                   <p className="font-medium text-slate-800">{shipment.senderName}</p>
+                  {shipment.senderDocument && (
+                    <p className="text-slate-600 font-medium">C.C/NIT: {shipment.senderDocument}</p>
+                  )}
                   <p className="text-slate-600 flex items-center gap-2"><Phone className="w-3.5 h-3.5"/> {shipment.senderPhone}</p>
                   <p className="text-slate-600 flex items-start gap-2"><Building className="w-3.5 h-3.5 mt-0.5"/> {shipment.senderAddress}</p>
                 </div>
@@ -317,6 +320,9 @@ export default function ShipmentDetail() {
                 <p className="text-xl font-bold text-blue-900">{shipment.recipientCity}</p>
                 <div className="mt-4 space-y-2 text-sm">
                   <p className="font-medium text-slate-800">{shipment.recipientName}</p>
+                  {shipment.recipientDocument && (
+                    <p className="text-slate-600 font-medium">C.C/NIT: {shipment.recipientDocument}</p>
+                  )}
                   <p className="text-slate-600 flex items-center gap-2"><Phone className="w-3.5 h-3.5"/> {shipment.recipientPhone}</p>
                   <p className="text-slate-600 flex items-start gap-2"><Building className="w-3.5 h-3.5 mt-0.5"/> {shipment.recipientAddress}</p>
                 </div>
@@ -624,7 +630,8 @@ export default function ShipmentDetail() {
                 {/* Sender */}
                 <div className="w-1/2 p-2 border-r-[3px] border-black border-b-[3px]">
                   <h3 className="text-[11px] font-black uppercase border-b-2 border-black pb-0.5 mb-1.5 text-black px-1 -mx-2 -mt-2">REMITENTE</h3>
-                  <p className="font-extrabold text-[13px] leading-tight line-clamp-2 uppercase text-black">{shipment.senderName}{shipment.senderDocument ? ` - C.C/NIT: ${shipment.senderDocument}` : ""}</p>
+                  <p className="font-extrabold text-[13px] leading-tight line-clamp-2 uppercase text-black">{shipment.senderName}</p>
+                  {shipment.senderDocument && <p className="text-[11px] font-bold text-black mt-0.5 leading-tight">C.C/NIT: {shipment.senderDocument}</p>}
                   <p className="text-[11px] mt-1 leading-tight line-clamp-2 text-black">{shipment.senderAddress}</p>
                   <p className="text-[12px] font-black mt-1 uppercase text-black">{shipment.senderCity}</p>
                   <p className="text-[11px] mt-0.5 font-bold text-black">Tel: {shipment.senderPhone}</p>
@@ -632,7 +639,8 @@ export default function ShipmentDetail() {
                 {/* Recipient */}
                 <div className="w-1/2 p-2 border-b-[3px] border-black">
                   <h3 className="text-[11px] font-black uppercase border-b-2 border-black pb-0.5 mb-1.5 text-black px-1 -mx-2 -mt-2">DESTINATARIO</h3>
-                  <p className="font-extrabold text-[14px] leading-tight line-clamp-2 uppercase text-black">{shipment.recipientName}{shipment.recipientDocument ? ` - C.C/NIT: ${shipment.recipientDocument}` : ""}</p>
+                  <p className="font-extrabold text-[14px] leading-tight line-clamp-2 uppercase text-black">{shipment.recipientName}</p>
+                  {shipment.recipientDocument && <p className="text-[11px] font-bold text-black mt-0.5 leading-tight">C.C/NIT: {shipment.recipientDocument}</p>}
                   <p className="text-[11px] mt-1 leading-tight line-clamp-3 text-black">{shipment.recipientAddress}</p>
                   <p className="text-[14px] font-black mt-1 uppercase text-black bg-gray-200 px-1 inline-block rounded">{shipment.recipientCity}</p>
                   <p className="text-[11px] mt-0.5 font-bold text-black">Tel: {shipment.recipientPhone}</p>

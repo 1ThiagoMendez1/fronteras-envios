@@ -11,9 +11,11 @@ import { Plus, Search, Filter, ChevronRight, Pencil, MessageSquareDot } from "lu
 import { Link } from "wouter"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useLocation } from "wouter"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function Shipments() {
   const [, setLocation] = useLocation()
+  const { profile } = useAuth()
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [search, setSearch] = useState("")
   const [unreadOnly, setUnreadOnly] = useState(false)
@@ -81,7 +83,7 @@ export default function Shipments() {
                 <SelectItem value="assigned">Asignado</SelectItem>
                 <SelectItem value="picked_up">Recogido</SelectItem>
                 <SelectItem value="in_transit">En Tránsito</SelectItem>
-                <SelectItem value="out_for_delivery">Pendiente por entregar</SelectItem>
+                <SelectItem value="out_for_delivery">Pendiente por Entregar</SelectItem>
                 <SelectItem value="delivered">Entregado</SelectItem>
                 <SelectItem value="incident">Incidencia</SelectItem>
               </SelectContent>
@@ -151,7 +153,9 @@ export default function Shipments() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="font-semibold text-slate-700">Flete: {formatCurrency(shipment.shippingCost)}</div>
-                          <div className="text-[11px] font-bold text-green-600 uppercase tracking-widest mt-0.5">Neto: {formatCurrency(shipment.shippingCost - (shipment.driverPayment || 0))}</div>
+                          {profile?.role === "admin" && (
+                            <div className="text-[11px] font-bold text-green-600 uppercase tracking-widest mt-0.5">Neto: {formatCurrency(shipment.shippingCost - (shipment.driverPayment || 0))}</div>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <span className={cn("px-3 py-1 rounded-full text-xs font-bold border inline-flex items-center", getStatusColor(shipment.status))}>

@@ -302,13 +302,15 @@ export default function EditShipment() {
             <div className="flex items-center gap-2 mb-5 pb-3 border-b">
               <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600"><Package className="w-4 h-4" /></div>
               <h3 className="font-bold text-base">Paquete y Tarifas</h3>
-              <div className={cn(
-                "ml-auto px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5",
-                margin >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"
-              )}>
-                <DollarSign className="w-3.5 h-3.5" />
-                Margen: {new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(margin)}
-              </div>
+              {isAdmin && (
+                <div className={cn(
+                  "ml-auto px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5",
+                  margin >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"
+                )}>
+                  <DollarSign className="w-3.5 h-3.5" />
+                  Margen: {new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(margin)}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-5">

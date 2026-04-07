@@ -23,7 +23,7 @@ const formSchema = z.object({
   phone: z.string().min(7, "Requerido"),
   email: z.string().optional(),
   company: z.string().optional(),
-  vehicleType: z.enum(["motorcycle", "car", "van", "truck"]),
+  vehicleType: z.enum(["motorcycle", "car", "van", "truck", "office"]),
   city: z.string().min(3, "Requerido"),
   ratePerDelivery: z.coerce.number().min(0, "Requerido")
 })
@@ -83,6 +83,7 @@ function DriverForm({
               <SelectItem value="car">Automóvil</SelectItem>
               <SelectItem value="van">Furgoneta / Van</SelectItem>
               <SelectItem value="truck">Camión</SelectItem>
+              <SelectItem value="office">Oficina</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -124,7 +125,7 @@ export default function Drivers() {
   ) || []
 
   const vehicleLabel: Record<string, string> = {
-    motorcycle: "Moto", car: "Auto", van: "Furgoneta", truck: "Camión"
+    motorcycle: "Moto", car: "Auto", van: "Furgoneta", truck: "Camión", office: "Oficina"
   }
 
   return (

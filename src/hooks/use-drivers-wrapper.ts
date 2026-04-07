@@ -27,7 +27,7 @@ export function useCreateDriverMutation() {
           phone: d.phone,
           email: d.email ?? null,
           company: d.company ?? null,
-          vehicle_type: d.vehicleType as 'motorcycle' | 'car' | 'van' | 'truck',
+          vehicle_type: d.vehicleType as 'motorcycle' | 'car' | 'van' | 'truck' | 'office',
           city: d.city,
           rate_per_delivery: d.ratePerDelivery ?? 0,
           is_active: true,
@@ -58,7 +58,7 @@ export function useUpdateDriverMutation(id: number) {
         phone?: string;
         email?: string;
         company?: string;
-        vehicleType?: 'motorcycle' | 'car' | 'van' | 'truck';
+        vehicleType?: 'motorcycle' | 'car' | 'van' | 'truck' | 'office';
         city?: string;
         ratePerDelivery?: number;
         isActive?: boolean;

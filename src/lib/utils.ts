@@ -34,7 +34,7 @@ export function getStatusLabel(status: string) {
     case 'assigned': return 'Asignado'
     case 'picked_up': return 'Recogido'
     case 'in_transit': return 'En Tránsito'
-    case 'out_for_delivery': return 'En Entrega'
+    case 'out_for_delivery': return 'Pendiente por Entregar'
     case 'delivered': return 'Entregado'
     case 'incident': return 'Incidencia'
     default: return status

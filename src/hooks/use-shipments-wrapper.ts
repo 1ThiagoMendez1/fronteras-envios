@@ -293,11 +293,59 @@ export function useUpdateShipmentStatusMutation(id: number) {
       if (error) throw error;
       return { status: payload.status };
     },
-    onSuccess: () => {
+    onSuccess: async (_, payload) => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
       queryClient.invalidateQueries({ queryKey: ["shipments", id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast({ title: "Estado Actualizado", description: "El estado del envío ha cambiado" });
+
+      if (payload.status === "delivered") {
+        try {
+          const adminClient = getAdminClient();
+          const { data: shipment } = await adminClient
+            .from("shipments")
+            .select("*")
+            .eq("id", id)
+            .single();
+
+          if (shipment) {
+            const { sendWhatsAppMessage } = await import("@/lib/whatsapp");
+            const numGuia = shipment.guide_number || String(shipment.id);
+            const trackingUrl = `https://www.fronterasexpress.com/?guide=${numGuia}`;
+
+            const messageText = 
+              `🚚 *FRONTERAS EXPRESS*\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n` +
+              `🥳 *¡TU PAQUETE HA SIDO ENTREGADO!*\n\n` +
+              `Hola *${shipment.recipient_name}*, nos complace informarte que tu paquete con guía *${numGuia}* ha sido entregado exitosamente.\n\n` +
+              `📍 *Dirección de entrega:* ${shipment.recipient_address}\n\n` +
+              `🙏 *¡Gracias por confiar en Fronteras Express!*\n` +
+              `Puedes revisar los detalles aquí:\n` +
+              `👉 ${trackingUrl}\n\n` +
+              `━━━━━━━━━━━━━━━━━━━━\n` +
+              `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
+
+            if (shipment.recipient_phone) {
+              await sendWhatsAppMessage(shipment.recipient_phone, messageText);
+            }
+            if (shipment.sender_phone && shipment.sender_phone !== shipment.recipient_phone) {
+              const senderMessageText = 
+                `🚚 *FRONTERAS EXPRESS*\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `🥳 *¡PAQUETE ENTREGADO EXITOSAMENTE!*\n\n` +
+                `Hola *${shipment.sender_name}*, el paquete que enviaste a *${shipment.recipient_name}* (Guía: *${numGuia}*) ha sido entregado en la dirección indicada.\n\n` +
+                `🙏 *¡Gracias por confiar en nosotros!*\n` +
+                `Consulta el estado de la guía aquí:\n` +
+                `👉 ${trackingUrl}\n\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
+              await sendWhatsAppMessage(shipment.sender_phone, senderMessageText);
+            }
+          }
+        } catch (err) {
+          console.error("Error enviando WhatsApp al marcar como entregado:", err);
+        }
+      }
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message || "Error al cambiar estado", variant: "destructive" });

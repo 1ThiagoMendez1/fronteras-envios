@@ -37,7 +37,7 @@ const STEP_LABELS: Record<string, string> = {
   assigned: "Asignado",
   picked_up: "Recogido",
   in_transit: "En Tránsito",
-  out_for_delivery: "En Entrega",
+  out_for_delivery: "Pendiente por Entregar",
   delivered: "Entregado",
 }
 
