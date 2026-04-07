@@ -112,6 +112,7 @@ export default function EditShipment() {
   const { data: shipment, isLoading: isShipmentLoading } = useGetShipment(id)
   const { profile, isLoading: isAuthLoading } = useAuth()
   const isAdmin = profile?.role === "admin"
+  const canEditPayment = isAdmin || profile?.role === "operator"
   const userBranch = profile?.branch || "Bogotá"
   const updateMutation = useUpdateShipmentMutation(id)
   const { data: drivers } = useListDrivers({ onlyActive: true })
@@ -352,7 +353,7 @@ export default function EditShipment() {
                   <Input 
                     type="number" 
                     {...register("driverPayment")} 
-                    disabled={!isAdmin}
+                    disabled={!canEditPayment}
                     className="h-11 rounded-xl bg-slate-50 pl-6 disabled:opacity-70 disabled:cursor-not-allowed" 
                   />
                 </div>
