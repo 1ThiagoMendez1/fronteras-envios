@@ -2,6 +2,53 @@ import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { getAdminClient } from "@/lib/admin-client";
 import { useToast } from "./use-toast";
 
+// ─── Helper: Guardar cliente si no existe ─────────────────────────────────────
+// Si el documento lleva guión (ej: 900123456-1) es NIT → JURIDICA
+// Si no tiene guión es CC → NATURAL (persona natural)
+// Usa UPSERT atómico por "document" para evitar problemas de secuencia de ID
+async function ensureClientExists(doc: string, name: string, phone: string, address: string, city: string) {
+  if (!doc || !doc.trim()) return; // nada que guardar
+
+  const adminClient = getAdminClient();
+  const isNit = doc.includes("-");
+  const tipoCliente = isNit ? "JURIDICA" : "NATURAL";
+  const tipoIdentificacion = isNit ? "NIT" : "CC";
+
+  try {
+    const row = {
+      document:            doc.trim(),
+      name:                name?.trim() || "SIN NOMBRE",
+      phone:               phone?.trim() || "0000000",
+      address:             address?.trim() || "",
+      city:                city?.trim() || "Bogotá",
+      tipo_cliente:        tipoCliente,
+      tipo_identificacion: tipoIdentificacion,
+      razon_social:        isNit ? (name?.trim() || null) : null,
+      apellido:            null as string | null,
+      responsable_iva:     null as string | null,
+      regimen:             null as string | null,
+      categoria:           "CLIENTE" as string | null,
+      email:               null as string | null,
+      departamento:        null as string | null,
+    };
+
+    // Upsert atómico: si el documento ya existe → actualiza; si no → inserta.
+    // Esto evita el problema de la secuencia de ID (SERIAL) desincronizada.
+    const { error } = await adminClient
+      .from("clients")
+      .upsert(row, { onConflict: "document", ignoreDuplicates: false });
+
+    if (error) {
+      console.error("[ensureClientExists] Error en upsert de cliente:", JSON.stringify(error));
+      console.error("[ensureClientExists] Datos enviados:", JSON.stringify(row));
+    } else {
+      console.log("[ensureClientExists] Cliente guardado exitosamente:", doc.trim(), tipoCliente, tipoIdentificacion);
+    }
+  } catch (err) {
+    console.error("[ensureClientExists] Error inesperado al guardar cliente:", err);
+  }
+}
+
 // ─── Create Shipment ──────────────────────────────────────────────────────────
 export function useCreateShipmentMutation() {
   const queryClient = useQueryClient();
@@ -34,53 +81,12 @@ export function useCreateShipmentMutation() {
     }) => {
       const { data: d } = payload;
       const adminClient = getAdminClient();
-      // ─── UPSERT Clients (create if they don't exist, update if they do) ───
+      // ─── Guardar remitente y destinatario como clientes si no existen ───
       if (d.senderDocument) {
-        try {
-          const { error: senderErr } = await adminClient.from("clients").upsert({
-            document: d.senderDocument,
-            name: d.senderName,
-            phone: d.senderPhone,
-            address: d.senderAddress,
-            city: d.senderCity,
-            tipo_cliente: 'NATURAL',
-            tipo_identificacion: 'CC',
-            apellido: null,
-            razon_social: null,
-            responsable_iva: 'NO',
-            regimen: 'ORDINARIO',
-            categoria: 'CLIENTE',
-            email: null,
-            departamento: null,
-          }, { onConflict: "document", ignoreDuplicates: false });
-          if (senderErr) console.error("Error al guardar remitente como cliente:", senderErr);
-        } catch (err) {
-          console.error("Error inesperado al guardar remitente:", err);
-        }
+        await ensureClientExists(d.senderDocument, d.senderName, d.senderPhone, d.senderAddress, d.senderCity);
       }
-
       if (d.recipientDocument) {
-        try {
-          const { error: recipientErr } = await adminClient.from("clients").upsert({
-            document: d.recipientDocument,
-            name: d.recipientName,
-            phone: d.recipientPhone,
-            address: d.recipientAddress,
-            city: d.recipientCity,
-            tipo_cliente: 'NATURAL',
-            tipo_identificacion: 'CC',
-            apellido: null,
-            razon_social: null,
-            responsable_iva: 'NO',
-            regimen: 'ORDINARIO',
-            categoria: 'CLIENTE',
-            email: null,
-            departamento: null,
-          }, { onConflict: "document", ignoreDuplicates: false });
-          if (recipientErr) console.error("Error al guardar destinatario como cliente:", recipientErr);
-        } catch (err) {
-          console.error("Error inesperado al guardar destinatario:", err);
-        }
+        await ensureClientExists(d.recipientDocument, d.recipientName, d.recipientPhone, d.recipientAddress, d.recipientCity);
       }
 
       const { data: result, error } = await adminClient
@@ -248,53 +254,12 @@ export function useUpdateShipmentMutation(id: number) {
         .eq("id", id)
         .single();
 
-      // ─── UPSERT Clients (create if they don't exist, update if they do) ───
+      // ─── Guardar remitente y destinatario como clientes si no existen ───
       if (d.senderDocument) {
-        try {
-          const { error: senderErr } = await adminClient.from("clients").upsert({
-            document: d.senderDocument,
-            name: d.senderName,
-            phone: d.senderPhone,
-            address: d.senderAddress,
-            city: d.senderCity,
-            tipo_cliente: 'NATURAL',
-            tipo_identificacion: 'CC',
-            apellido: null,
-            razon_social: null,
-            responsable_iva: 'NO',
-            regimen: 'ORDINARIO',
-            categoria: 'CLIENTE',
-            email: null,
-            departamento: null,
-          }, { onConflict: "document", ignoreDuplicates: false });
-          if (senderErr) console.error("Error al guardar remitente como cliente:", senderErr);
-        } catch (err) {
-          console.error("Error inesperado al guardar remitente:", err);
-        }
+        await ensureClientExists(d.senderDocument, d.senderName, d.senderPhone, d.senderAddress, d.senderCity);
       }
-
       if (d.recipientDocument) {
-        try {
-          const { error: recipientErr } = await adminClient.from("clients").upsert({
-            document: d.recipientDocument,
-            name: d.recipientName,
-            phone: d.recipientPhone,
-            address: d.recipientAddress,
-            city: d.recipientCity,
-            tipo_cliente: 'NATURAL',
-            tipo_identificacion: 'CC',
-            apellido: null,
-            razon_social: null,
-            responsable_iva: 'NO',
-            regimen: 'ORDINARIO',
-            categoria: 'CLIENTE',
-            email: null,
-            departamento: null,
-          }, { onConflict: "document", ignoreDuplicates: false });
-          if (recipientErr) console.error("Error al guardar destinatario como cliente:", recipientErr);
-        } catch (err) {
-          console.error("Error inesperado al guardar destinatario:", err);
-        }
+        await ensureClientExists(d.recipientDocument, d.recipientName, d.recipientPhone, d.recipientAddress, d.recipientCity);
       }
 
       const { data: result, error } = await adminClient
