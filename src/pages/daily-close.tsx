@@ -180,6 +180,7 @@ export default function DailyClosePage() {
               <tr>
                 <th className="px-4 py-3">Guía</th>
                 <th className="px-4 py-3">Destino</th>
+                <th className="px-4 py-3">Método Pago</th>
                 <th className="px-4 py-3 text-right">Flete (Ingreso)</th>
                 <th className="px-4 py-3 text-right">Pago Cond.</th>
                 <th className="px-4 py-3 text-right">Utilidad</th>
@@ -190,6 +191,7 @@ export default function DailyClosePage() {
                 <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-4 py-3 font-bold text-slate-700">{s.guideNumber}</td>
                   <td className="px-4 py-3 text-slate-600">{s.recipientName} ({s.recipientCity})</td>
+                  <td className="px-4 py-3 text-slate-600 font-medium">{s.paymentMethod}</td>
                   <td className="px-4 py-3 text-right font-medium text-emerald-600">{formatCurrency(s.shippingCost)}</td>
                   <td className="px-4 py-3 text-right font-medium text-orange-600">{formatCurrency(s.driverPayment)}</td>
                   <td className="px-4 py-3 text-right">

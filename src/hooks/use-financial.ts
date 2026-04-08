@@ -262,7 +262,8 @@ export function useDailyCloseShipments(date: string, branch: string = "Todas las
         driverPayment: Number(s.driver_payment || 0),
         profit: Number(s.shipping_cost || 0) - Number(s.driver_payment || 0),
         status: s.status,
-        createdAt: s.created_at
+        createdAt: s.created_at,
+        paymentMethod: s.payment_method || "Efectivo"
       }));
     },
     enabled: !!date,
