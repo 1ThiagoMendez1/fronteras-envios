@@ -1,5 +1,6 @@
 import { useDailyCloseList, useFinancialSummary, useDailyCloseShipments, useUnclosedDays } from "@/hooks/use-financial"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
+import { useAuth } from "@/hooks/use-auth"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card } from "@/components/ui/card"
@@ -17,7 +18,26 @@ import { Link } from "wouter"
 type WizardStep = 'idle' | 'pre-close' | 'confirm' | 'success'
 
 export default function DailyClosePage() {
-  const [branch, setBranch] = useState("Todas las Sedes")
+  const { profile } = useAuth()
+  
+  // Normalizar la sede del usuario para evitar desajustes por tildes o mayúsculas
+  const getBranchValue = (b?: string) => {
+    if (!b) return "Todas las Sedes";
+    const lower = b.toLowerCase();
+    if (lower.includes("bogot")) return "Bogotá";
+    if (lower.includes("medell")) return "Medellín";
+    return "Todas las Sedes";
+  };
+
+  const [branch, setBranch] = useState(getBranchValue(profile?.branch))
+
+  useEffect(() => {
+    const userBranch = getBranchValue(profile?.branch);
+    if (userBranch !== "Todas las Sedes" && branch === "Todas las Sedes") {
+      setBranch(userBranch);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.branch])
   const { data: closes, isLoading } = useDailyCloseList(branch)
   const { data: unclosedDays } = useUnclosedDays(branch)
   const [targetCloseDate, setTargetCloseDate] = useState(new Date().toISOString().split('T')[0])
@@ -56,7 +76,8 @@ export default function DailyClosePage() {
     if (!closes) return []
     if (!historySearch) return closes
     return closes.filter((c: any) => {
-      const dateStr = format(new Date(c.closeDate), "EEEE d MMMM yyyy", { locale: es }).toLowerCase()
+      const cDate = new Date(c.closeDate.split('T')[0] + 'T12:00:00')
+      const dateStr = format(cDate, "EEEE d MMMM yyyy", { locale: es }).toLowerCase()
       return dateStr.includes(historySearch.toLowerCase()) || c.closedBy.toLowerCase().includes(historySearch.toLowerCase())
     })
   }, [closes, historySearch])
@@ -88,11 +109,12 @@ export default function DailyClosePage() {
 
   // Export close report as CSV
   const handleExportCSV = (close: any) => {
+    const cDate = new Date(close.closeDate.split('T')[0] + 'T12:00:00')
     const marginPct = close.totalRevenue > 0 ? ((close.totalNetProfit / close.totalRevenue) * 100).toFixed(1) : '0'
     const deliveryRate = close.totalShipments > 0 ? ((close.deliveredCount / close.totalShipments) * 100).toFixed(1) : '0'
     const rows = [
       "Campo,Valor",
-      `"Fecha","${format(new Date(close.closeDate), "dd/MM/yyyy")}"`,
+      `"Fecha","${format(cDate, "dd/MM/yyyy")}"`,
       `"Estado","${close.status === 'pre_close' ? 'Precierre' : 'Completado'}"`,
       `"Cerrado por","${close.closedBy}"`,
       `"Total envíos","${close.totalShipments}"`,
@@ -110,7 +132,7 @@ export default function DailyClosePage() {
     const blob = new Blob([rows], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = `cierre_${format(new Date(close.closeDate), 'yyyy-MM-dd')}.csv`
+    link.download = `cierre_${format(cDate, 'yyyy-MM-dd')}.csv`
     link.click()
   }
 
@@ -245,15 +267,19 @@ export default function DailyClosePage() {
               <select 
                 title="Seleccionar Cierre"
                 className="text-xs p-2.5 rounded-xl border border-amber-300 bg-white shadow-sm font-semibold text-slate-700"
-                value={targetCloseDate}
+                value={unclosedDays.includes(targetCloseDate) ? targetCloseDate : unclosedDays[0]}
                 onChange={(e) => setTargetCloseDate(e.target.value)}
               >
-                <option value={new Date().toISOString().split('T')[0]}>Hoy ({format(new Date(), "dd/MM")})</option>
                 {unclosedDays.map((d: string) => (
                   <option key={d} value={d}>{format(new Date(d + 'T12:00:00'), "EEEE dd/MM", { locale: es })}</option>
                 ))}
               </select>
-               <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-5 shadow-sm" onClick={() => setWizardStep('pre-close')}>
+               <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-5 shadow-sm" onClick={() => {
+                 if (!unclosedDays.includes(targetCloseDate)) {
+                   setTargetCloseDate(unclosedDays[0]);
+                 }
+                 setWizardStep('pre-close');
+               }}>
                  Revisar y Cerrar
                </Button>
             </div>
@@ -381,7 +407,7 @@ export default function DailyClosePage() {
                   </div>
                   <div>
                     <h4 className="text-lg font-bold text-foreground">Cierre Exitoso</h4>
-                    <p className="text-sm text-muted-foreground mt-1">El cierre del día {format(new Date(), "d 'de' MMMM, yyyy", { locale: es })} ha sido registrado.</p>
+                    <p className="text-sm text-muted-foreground mt-1">El cierre del día {format(new Date(targetCloseDate + 'T12:00:00'), "d 'de' MMMM, yyyy", { locale: es })} ha sido registrado.</p>
                   </div>
 
                   {preCloseData && (
@@ -488,7 +514,7 @@ export default function DailyClosePage() {
                         <div className="bg-primary/10 p-3 rounded-xl text-primary"><CalendarCheck className="w-6 h-6" /></div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-base text-slate-900 capitalize">{format(new Date(close.closeDate), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}</h4>
+                            <h4 className="font-bold text-base text-slate-900 capitalize">{format(new Date(close.closeDate.split('T')[0] + 'T12:00:00'), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}</h4>
                             <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide", close.branch === "Medellín" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700")}>
                               {close.branch || "Bogotá"}
                             </span>
@@ -515,6 +541,21 @@ export default function DailyClosePage() {
                           <div><p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider mb-0.5">Utilidad</p><p className="font-bold text-sm text-primary">{formatCurrency(close.totalNetProfit)}</p></div>
                         </div>
                         <div className="flex items-center gap-2">
+                          {close.status === 'pre_close' && (
+                            <Button 
+                              size="sm" 
+                              variant="secondary"
+                              className="bg-amber-100 text-amber-800 hover:bg-amber-200 h-8 text-xs font-bold mr-2 shadow-sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setBranch(close.branch);
+                                setTargetCloseDate(close.closeDate.split('T')[0]);
+                                setWizardStep('pre-close');
+                              }}
+                            >
+                              Completar Cierre
+                            </Button>
+                          )}
                           <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary shrink-0" onClick={(e) => { e.stopPropagation(); handleExportCSV(close) }}>
                             <Download className="w-4 h-4" />
                           </Button>
