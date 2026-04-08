@@ -12,7 +12,7 @@ export function useFinancialSummary(options: {
       const adminClient = getAdminClient();
       let query = adminClient
         .from("shipments")
-        .select("shipping_cost, driver_payment, status, created_at, branch_origin, recipient_city");
+        .select("shipping_cost, driver_payment, status, created_at, branch_origin, recipient_city, payment_method");
 
       if (options.startDate) query = query.gte("created_at", options.startDate);
       if (options.endDate) query = query.lte("created_at", options.endDate);
@@ -55,6 +55,19 @@ export function useFinancialSummary(options: {
         .reduce((sum, m) => sum + Number(m.amount || 0), 0);
 
       // BI Aggregations
+      const revenueByPaymentMethod = Object.entries(
+        all.reduce<Record<string, number>>((acc, s) => {
+          const method = s.payment_method || "Efectivo";
+          if (!acc[method]) acc[method] = 0;
+          acc[method] += Number(s.shipping_cost || 0);
+          return acc;
+        }, {})
+      ).map(([method, amount]) => ({
+        method,
+        amount: Number(amount),
+        percentage: totalRevenue > 0 ? (Number(amount) / totalRevenue) * 100 : 0
+      })).sort((a, b) => b.amount - a.amount);
+
       const profitabilityByCity = Object.entries(
         all.reduce<Record<string, { revenue: number; costs: number }>>((acc, s) => {
           const city = s.recipient_city || "Desconocido";
@@ -109,6 +122,7 @@ export function useFinancialSummary(options: {
         totalExpenses,
         additionalIncome,
         finalProfit: netProfit + additionalIncome - totalExpenses,
+        revenueByPaymentMethod,
         profitabilityByCity,
         segmentAnalysis,
         dailyData,

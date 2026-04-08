@@ -230,10 +230,30 @@ export default function Financial() {
 
               <Card className="p-6 rounded-3xl shadow-sm border-slate-200 bg-white">
                 <h3 className="font-bold text-slate-900 mb-6 font-display uppercase tracking-wider text-sm flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" /> Clientes con Mayor Volumen
+                  <CreditCard className="w-4 h-4 text-primary" /> Ingresos por Método de Pago
                 </h3>
-                <div className="overflow-x-auto text-center py-10 text-slate-400 italic">
-                   La rentabilidad por cliente se calcula automáticamente en base a los envíos del mes.
+                <div className="space-y-6">
+                  {summary.revenueByPaymentMethod?.map((pm: any) => (
+                    <div key={pm.method} className="space-y-2">
+                      <div className="flex justify-between items-end">
+                        <span className="font-bold text-slate-700">{pm.method}</span>
+                        <span className="text-xs font-semibold text-slate-500">{pm.percentage.toFixed(1)}% del total</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }} 
+                          animate={{ width: `${pm.percentage}%` }} 
+                          className="h-full bg-indigo-500"
+                        />
+                      </div>
+                      <div className="flex justify-between text-[11px] font-bold">
+                        <span className="text-emerald-600">{formatCurrency(pm.amount)} ingresados</span>
+                      </div>
+                    </div>
+                  ))}
+                  {(!summary.revenueByPaymentMethod || summary.revenueByPaymentMethod.length === 0) && (
+                    <div className="text-center py-10 text-slate-400 italic">No hay ingresos registrados en este periodo.</div>
+                  )}
                 </div>
               </Card>
             </div>
