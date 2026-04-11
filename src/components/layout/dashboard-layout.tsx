@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { CashOnDeliveryAlert } from "@/components/cash-on-delivery-alert"
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -202,6 +203,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </main>
       </div>
+
+      <CashOnDeliveryAlert />
     </div>
   )
 }

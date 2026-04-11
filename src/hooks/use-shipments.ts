@@ -121,6 +121,8 @@ function mapShipment(row: any) {
     declaredValue: Number(row.declared_value || 0),
     shippingCost: Number(row.shipping_cost || 0),
     driverPayment: Number(row.driver_payment || 0),
+    cashOnDelivery: Number(row.cash_on_delivery || 0),
+    isCashOnDeliveryCollected: Boolean(row.is_cash_on_delivery_collected),
     observations: row.observations,
     packageContents: row.package_contents,
     status: row.status,
@@ -167,4 +169,28 @@ function deduplicateHistory(history: any[]) {
     }
   }
   return result;
+}
+
+export function usePendingCashOnDeliveryShipments(branch?: string) {
+  return useQuery({
+    queryKey: ["shipments", "pendingCashOnDelivery", branch],
+    queryFn: async () => {
+      const adminClient = getAdminClient();
+      let query = adminClient
+        .from("shipments")
+        .select("*")
+        .gt("cash_on_delivery", 0)
+        .eq("is_cash_on_delivery_collected", false);
+
+      if (branch) {
+        query = query.eq("branch_origin", branch);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data ?? []).map(mapShipment);
+    },
+    // Only refetch occasionally to not span the DB too much, or use standard stale time
+    staleTime: 5 * 60 * 1000, 
+  });
 }

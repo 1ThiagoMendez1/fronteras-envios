@@ -73,6 +73,7 @@ export function useCreateShipmentMutation() {
         declaredValue?: number;
         shippingCost?: number;
         driverPayment?: number;
+        cashOnDelivery?: number;
         observations?: string;
         packageContents?: string;
         driverId?: number;
@@ -108,6 +109,7 @@ export function useCreateShipmentMutation() {
           declared_value: d.declaredValue ?? 0,
           shipping_cost: d.shippingCost ?? 0,
           driver_payment: d.driverPayment ?? 0,
+          cash_on_delivery: d.cashOnDelivery ?? 0,
           observations: d.observations ?? null,
           package_contents: d.packageContents ?? null,
           driver_id: d.driverId ?? null,
@@ -203,6 +205,7 @@ export function useCreateShipmentMutation() {
             `🔍 *RASTREA TU ENVÍO EN TIEMPO REAL*\n` +
             `👉 ${trackingUrl}\n\n` +
             `━━━━━━━━━━━━━━━━━━━━\n` +
+            `*NIT: 901999613*\n` +
             `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
           const { sendWhatsAppMessage } = await import("@/lib/whatsapp");
@@ -222,6 +225,7 @@ export function useCreateShipmentMutation() {
               `🔍 *Rastrea tu paquete aquí:*\n` +
               `👉 ${trackingUrl}\n\n` +
               `━━━━━━━━━━━━━━━━━━━━\n` +
+              `*NIT: 901999613*\n` +
               `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
             await sendWhatsAppMessage(shipment.recipient_phone, recipientMessage);
@@ -281,6 +285,7 @@ export function useUpdateShipmentMutation(id: number) {
           declared_value: d.declaredValue,
           shipping_cost: d.shippingCost,
           driver_payment: d.driverPayment,
+          cash_on_delivery: d.cashOnDelivery,
           observations: d.observations,
           package_contents: d.packageContents,
           driver_id: d.driverId ?? null,
@@ -308,6 +313,7 @@ export function useUpdateShipmentMutation(id: number) {
           quantity:        { label: "Cantidad", oldKey: "quantity", format: (v) => `${v} pieza(s)` },
           declaredValue:   { label: "Valor declarado", oldKey: "declared_value", format: (v) => `$${Number(v).toLocaleString("es-CO")}` },
           shippingCost:    { label: "Costo flete", oldKey: "shipping_cost", format: (v) => `$${Number(v).toLocaleString("es-CO")}` },
+          cashOnDelivery:  { label: "Pago contra entrega", oldKey: "cash_on_delivery", format: (v) => `$${Number(v).toLocaleString("es-CO")}` },
           paymentMethod:   { label: "Método de pago", oldKey: "payment_method" },
           observations:    { label: "Observaciones", oldKey: "observations" },
           packageContents: { label: "Contenido", oldKey: "package_contents" },
@@ -361,6 +367,7 @@ export function useUpdateShipmentMutation(id: number) {
             `🔍 *Rastrea tu envío aquí:*\n` +
             `👉 ${trackingUrl}\n\n` +
             `━━━━━━━━━━━━━━━━━━━━\n` +
+            `*NIT: 901999613*\n` +
             `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
           // Notificar al remitente
@@ -429,6 +436,7 @@ export function useUpdateShipmentStatusMutation(id: number) {
               `Puedes revisar los detalles aquí:\n` +
               `👉 ${trackingUrl}\n\n` +
               `━━━━━━━━━━━━━━━━━━━━\n` +
+              `*NIT: 901999613*\n` +
               `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
             if (shipment.recipient_phone) {
@@ -444,6 +452,7 @@ export function useUpdateShipmentStatusMutation(id: number) {
                 `Consulta el estado de la guía aquí:\n` +
                 `👉 ${trackingUrl}\n\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
+                `*NIT: 901999613*\n` +
                 `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
               await sendWhatsAppMessage(shipment.sender_phone, senderMessageText);
             }
@@ -455,6 +464,35 @@ export function useUpdateShipmentStatusMutation(id: number) {
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message || "Error al cambiar estado", variant: "destructive" });
+    },
+  });
+}
+
+// ─── Collect Cash On Delivery ─────────────────────────────────────────────────
+export function useCollectCashOnDeliveryMutation() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const adminClient = getAdminClient();
+      const { error } = await adminClient
+        .from("shipments")
+        .update({ is_cash_on_delivery_collected: true })
+        .eq("id", id);
+      
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: (id) => {
+      queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      queryClient.invalidateQueries({ queryKey: ["shipments", id] });
+      // Invalidate the alerts cache
+      queryClient.invalidateQueries({ queryKey: ["shipments", "pendingCashOnDelivery"] });
+      toast({ title: "Recaudo Exitoso", description: "El pago contra entrega ha sido marcado como recibido." });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message || "Error al registrar el recaudo", variant: "destructive" });
     },
   });
 }
@@ -529,6 +567,7 @@ export function useAssignDriverMutation(id: number) {
             `🔍 *RASTREA TU ENVÍO EN TIEMPO REAL*\n` +
             `👉 ${trackingUrl}\n\n` +
             `━━━━━━━━━━━━━━━━━━━━\n` +
+            `*NIT: 901999613*\n` +
             `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
           if (finalShipment.sender_phone) {

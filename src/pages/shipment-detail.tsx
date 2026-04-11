@@ -692,7 +692,10 @@ export default function ShipmentDetail() {
                 )}
               </div>
               <div className="w-[120px] flex flex-col items-center justify-center p-2 border-[3px] border-black rounded-xl shrink-0">
-                 <QRCodeSVG value={trackingUrl} size={90} level="M" />
+                 {printMode === "guia" && (
+                   <span className="text-[8px] font-bold leading-none mb-1.5 text-black">NIT: 901999613</span>
+                 )}
+                 <QRCodeSVG value={trackingUrl} size={86} level="M" />
                  <p className="text-[9px] text-center mt-2 font-black w-full uppercase leading-tight bg-black text-white py-0.5 rounded">RASTREAR</p>
               </div>
             </div>

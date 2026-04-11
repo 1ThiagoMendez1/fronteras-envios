@@ -70,6 +70,7 @@ const formSchema = z.object({
   declaredValue: z.coerce.number().min(0, "Requerido"),
   shippingCost: z.coerce.number().min(0, "Requerido"),
   driverPayment: z.coerce.number().min(0, "Requerido"),
+  cashOnDelivery: z.coerce.number().min(0, "Requerido").default(0),
   packageContents: z.string().optional(),
   observations: z.string().optional(),
   driverId: z.coerce.number().optional(),
@@ -151,6 +152,7 @@ export default function NewShipment() {
       declaredValue: 0,
       shippingCost: 0,
       driverPayment: 0,
+      cashOnDelivery: 0,
       branchOrigin: "Bogotá",
       paymentMethod: "Efectivo",
     }
@@ -316,29 +318,29 @@ export default function NewShipment() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
-              <div className="space-y-1.5">
+            <div className="grid grid-cols-2 lg:grid-cols-6 gap-5">
+              <div className="space-y-1.5 lg:col-span-1">
                 <Label>Cantidad (Pzs)</Label>
                 <div className="relative">
                   <Input type="number" step="1" {...register("quantity")} className="h-11 rounded-xl bg-slate-50" />
                 </div>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 lg:col-span-1">
                 <Label>Peso (kg)</Label>
                 <div className="relative">
                   <Input type="number" step="0.1" {...register("weight")} className="h-11 rounded-xl bg-slate-50 pr-9" />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium">kg</span>
                 </div>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 lg:col-span-1">
                 <Label>Valor Declarado</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
                   <Input type="number" {...register("declaredValue")} className="h-11 rounded-xl bg-slate-50 pl-6" />
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-primary font-bold">Costo Flete (Cobro)</Label>
+              <div className="space-y-1.5 lg:col-span-1">
+                <Label className="text-primary font-bold">Costo Flete</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary text-sm font-bold">$</span>
                   <Input 
@@ -348,7 +350,18 @@ export default function NewShipment() {
                   />
                 </div>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 lg:col-span-1">
+                <Label className="text-amber-600 font-bold">Pago Contra Entrega</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-600 text-sm font-bold">$</span>
+                  <Input 
+                    type="number" 
+                    {...register("cashOnDelivery")} 
+                    className="h-11 rounded-xl bg-amber-50 border-amber-200 pl-6 font-semibold text-amber-700" 
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5 lg:col-span-1">
                 <Label>Pago Conductor</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
