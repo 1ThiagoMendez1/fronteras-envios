@@ -104,6 +104,7 @@ export default function Shipments() {
                   <th className="px-6 py-4">Sede Origen</th>
                   <th className="px-6 py-4">Destinatario</th>
                   <th className="px-6 py-4">Flete / Ganancia</th>
+                  <th className="px-6 py-4">Pago</th>
                   <th className="px-6 py-4">Estado</th>
                   <th className="px-6 py-4">Fecha</th>
                   <th className="px-6 py-4"></th>
@@ -112,13 +113,13 @@ export default function Shipments() {
               <tbody className="divide-y divide-slate-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center">
+                    <td colSpan={8} className="px-6 py-12 text-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                     </td>
                   </tr>
                 ) : filteredShipments.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
                       No se encontraron envíos que coincidan con la búsqueda.
                     </td>
                   </tr>
@@ -161,12 +162,23 @@ export default function Shipments() {
                           )}
                         </td>
                         <td className="px-6 py-4">
+                          <span className={cn(
+                            "inline-flex text-[11px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md", 
+                            shipment.paymentMethod === "Efectivo" ? "bg-emerald-50 text-emerald-700" :
+                            shipment.paymentMethod === "Nequi" ? "bg-purple-50 text-purple-700" :
+                            shipment.paymentMethod === "DaviPlata" ? "bg-red-50 text-red-700" : 
+                            "bg-blue-50 text-blue-700"
+                          )}>
+                            {shipment.paymentMethod || "Efectivo"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
                           <span className={cn("px-3 py-1 rounded-full text-xs font-bold border inline-flex items-center", getStatusColor(shipment.status))}>
                             {getStatusLabel(shipment.status)}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-slate-500">
-                          {format(new Date(shipment.createdAt), "d MMM yyyy", { locale: es })}
+                        <td className="px-6 py-4 text-slate-500 whitespace-nowrap">
+                          {format(new Date(shipment.createdAt), "d MMM yyyy, h:mm a", { locale: es })}
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

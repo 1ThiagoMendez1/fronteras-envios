@@ -59,13 +59,14 @@ export function useFinancialSummary(options: {
         all.reduce<Record<string, number>>((acc, s) => {
           const method = s.payment_method || "Efectivo";
           if (!acc[method]) acc[method] = 0;
-          acc[method] += Number(s.shipping_cost || 0);
+          const netAmount = Number(s.shipping_cost || 0) - Number(s.driver_payment || 0);
+          acc[method] += netAmount;
           return acc;
         }, {})
       ).map(([method, amount]) => ({
         method,
         amount: Number(amount),
-        percentage: totalRevenue > 0 ? (Number(amount) / totalRevenue) * 100 : 0
+        percentage: netProfit > 0 ? (Number(amount) / netProfit) * 100 : 0
       })).sort((a, b) => b.amount - a.amount);
 
       const profitabilityByCity = Object.entries(

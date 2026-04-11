@@ -230,7 +230,7 @@ export default function Financial() {
 
               <Card className="p-6 rounded-3xl shadow-sm border-slate-200 bg-white">
                 <h3 className="font-bold text-slate-900 mb-6 font-display uppercase tracking-wider text-sm flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-primary" /> Ingresos por Método de Pago
+                  <CreditCard className="w-4 h-4 text-primary" /> Dinero Neto por Método de Pago
                 </h3>
                 <div className="space-y-6">
                   {summary.revenueByPaymentMethod?.map((pm: any) => (
@@ -247,7 +247,7 @@ export default function Financial() {
                         />
                       </div>
                       <div className="flex justify-between text-[11px] font-bold">
-                        <span className="text-emerald-600">{formatCurrency(pm.amount)} ingresados</span>
+                        <span className="text-emerald-600">{formatCurrency(pm.amount)} netos (tras caja conductor)</span>
                       </div>
                     </div>
                   ))}

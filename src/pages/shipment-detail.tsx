@@ -332,7 +332,7 @@ export default function ShipmentDetail() {
             {/* Financial Details */}
             <Card className="p-6 rounded-2xl shadow-sm border-border/50 resize overflow-auto min-h-[150px] max-w-full">
               <h3 className="text-lg font-bold text-foreground mb-4">Detalles del Paquete</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1">Peso</p>
                   <p className="font-bold text-lg">{shipment.weight} kg</p>
@@ -348,6 +348,10 @@ export default function ShipmentDetail() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1">Pago Conductor</p>
                   <p className="font-bold text-lg">{formatCurrency(shipment.driverPayment)}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Método de Pago</p>
+                  <p className="font-bold text-lg">{shipment.paymentMethod}</p>
                 </div>
               </div>
               {shipment.packageContents && (

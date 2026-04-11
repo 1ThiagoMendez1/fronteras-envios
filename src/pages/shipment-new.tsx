@@ -408,9 +408,12 @@ export default function NewShipment() {
                 <Controller
                   name="paymentMethod"
                   control={control}
+                  defaultValue="Efectivo"
                   render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value || "Efectivo"}>
-                      <SelectTrigger ref={field.ref} className="h-11 rounded-xl bg-slate-50"><SelectValue /></SelectTrigger>
+                    <Select value={field.value || "Efectivo"} onValueChange={field.onChange}>
+                      <SelectTrigger className="h-11 rounded-xl bg-slate-50">
+                        <SelectValue placeholder="Efectivo 💵" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Efectivo">Efectivo 💵</SelectItem>
                         <SelectItem value="Nequi">Nequi 📱</SelectItem>

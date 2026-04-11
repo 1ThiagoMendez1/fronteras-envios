@@ -119,41 +119,38 @@ export default function EditShipment() {
   const { data: drivers } = useListDrivers({ onlyActive: true })
   const { getClientByDocument } = useClients()
 
-  const { register, handleSubmit, setValue, watch, reset, control, formState: { errors } } = useForm<FormData>({
+  const serverValues = shipment ? {
+    senderDocument: shipment.senderDocument || "",
+    senderName: shipment.senderName || "",
+    senderPhone: shipment.senderPhone || "",
+    senderAddress: shipment.senderAddress || "TERMINAL",
+    senderCity: userBranch,
+    recipientDocument: shipment.recipientDocument || "",
+    recipientName: shipment.recipientName || "",
+    recipientPhone: shipment.recipientPhone || "",
+    recipientAddress: shipment.recipientAddress || "",
+    recipientCity: shipment.recipientCity || "",
+    weight: shipment.weight || 1,
+    quantity: shipment.quantity || 1,
+    declaredValue: shipment.declaredValue || 0,
+    shippingCost: shipment.shippingCost || 0,
+    driverPayment: shipment.driverPayment || 0,
+    cashOnDelivery: shipment.cashOnDelivery || 0,
+    packageContents: shipment.packageContents || "",
+    observations: shipment.observations || "",
+    driverId: shipment.driverId || undefined,
+    branchOrigin: shipment.branchOrigin || "Bogotá",
+    paymentMethod: shipment.paymentMethod || "Efectivo"
+  } : undefined;
+
+  const { register, handleSubmit, setValue, watch, control, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
       senderDocument: "", recipientDocument: "", weight: 1, quantity: 1, declaredValue: 0, shippingCost: 0, driverPayment: 0, cashOnDelivery: 0, branchOrigin: "Bogotá", paymentMethod: "Efectivo"
-    }
+    },
+    values: serverValues,
+    resetOptions: { keepDirtyValues: true },
   })
-
-  useEffect(() => {
-    if (shipment) {
-      reset({
-        senderDocument: shipment.senderDocument || "",
-        senderName: shipment.senderName || "",
-        senderPhone: shipment.senderPhone || "",
-        senderAddress: shipment.senderAddress || "TERMINAL",
-        senderCity: userBranch,
-        recipientDocument: shipment.recipientDocument || "",
-        recipientName: shipment.recipientName || "",
-        recipientPhone: shipment.recipientPhone || "",
-        recipientAddress: shipment.recipientAddress || "",
-        recipientCity: shipment.recipientCity || "",
-        weight: shipment.weight || 1,
-        quantity: shipment.quantity || 1,
-        declaredValue: shipment.declaredValue || 0,
-        shippingCost: shipment.shippingCost || 0,
-        driverPayment: shipment.driverPayment || 0,
-        cashOnDelivery: shipment.cashOnDelivery || 0,
-        packageContents: shipment.packageContents || "",
-        observations: shipment.observations || "",
-        driverId: shipment.driverId || undefined,
-        branchOrigin: shipment.branchOrigin || "Bogotá",
-        paymentMethod: shipment.paymentMethod || "Efectivo"
-      })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shipment?.id, reset])
 
   const shippingCost = watch("shippingCost") || 0
   const driverPayment = watch("driverPayment") || 0
@@ -398,8 +395,10 @@ export default function EditShipment() {
                   name="paymentMethod"
                   control={control}
                   render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value || "Efectivo"}>
-                      <SelectTrigger ref={field.ref} className="h-11 rounded-xl bg-slate-50"><SelectValue /></SelectTrigger>
+                    <Select value={field.value || shipment?.paymentMethod || "Efectivo"} onValueChange={field.onChange}>
+                      <SelectTrigger className="h-11 rounded-xl bg-slate-50">
+                        <SelectValue placeholder="Efectivo 💵" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Efectivo">Efectivo 💵</SelectItem>
                         <SelectItem value="Nequi">Nequi 📱</SelectItem>
