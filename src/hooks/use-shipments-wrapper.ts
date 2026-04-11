@@ -332,6 +332,35 @@ export function useUpdateShipmentMutation(id: number) {
           }
         }
       }
+      // ─── Actualizar el registro financiero asociado si existe ───
+      if (d.shippingCost !== undefined) {
+        const { data: movement } = await adminClient
+          .from("financial_movements")
+          .select("id")
+          .eq("reference_type", "shipment")
+          .eq("reference_id", id)
+          .single();
+
+        if (movement) {
+          await adminClient.from("financial_movements").update({
+            amount: d.shippingCost,
+            branch: d.branchOrigin, 
+          }).eq("id", movement.id);
+        } else if (d.shippingCost > 0 && result) {
+          // Crearlo si no existía
+          await adminClient.from("financial_movements").insert({
+            type: 'income',
+            category: 'shipping',
+            amount: d.shippingCost,
+            description: `Ingreso por Guía ${result.guide_number}`,
+            recorded_by: 'Sistema',
+            movement_date: new Date().toISOString(),
+            reference_type: 'shipment',
+            reference_id: id,
+            branch: d.branchOrigin ?? "Bogotá"
+          });
+        }
+      }
 
       return { result, changes, original };
     },

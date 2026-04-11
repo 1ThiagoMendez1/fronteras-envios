@@ -405,7 +405,7 @@ export default function NewShipment() {
               </div>
               <div className="space-y-1.5">
                 <Label>Método de Pago</Label>
-                <Select defaultValue="Efectivo" onValueChange={(v) => setValue("paymentMethod", v)}>
+                <Select value={watch("paymentMethod") || "Efectivo"} onValueChange={(v) => setValue("paymentMethod", v, { shouldDirty: true })}>
                   <SelectTrigger className="h-11 rounded-xl bg-slate-50"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Efectivo">Efectivo 💵</SelectItem>

@@ -51,7 +51,7 @@ export function useFinancialSummary(options: {
         .filter((m) => m.type === "expense")
         .reduce((sum, m) => sum + Number(m.amount || 0), 0);
       const additionalIncome = (movements ?? [])
-        .filter((m) => m.type === "income")
+        .filter((m) => m.type === "income" && m.reference_type !== "shipment")
         .reduce((sum, m) => sum + Number(m.amount || 0), 0);
 
       // BI Aggregations
