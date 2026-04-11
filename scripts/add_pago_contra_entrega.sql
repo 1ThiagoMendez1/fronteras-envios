@@ -7,3 +7,6 @@ ALTER TABLE public.shipments ADD COLUMN IF NOT EXISTS is_cash_on_delivery_collec
 -- Opcional: comentar la tabla para entender mejor
 COMMENT ON COLUMN public.shipments.cash_on_delivery IS 'Monto a cobrar en modalidad contra entrega';
 COMMENT ON COLUMN public.shipments.is_cash_on_delivery_collected IS 'Indica si el dinero del contra entrega ya fue recaudado por la oficina';
+
+
+
