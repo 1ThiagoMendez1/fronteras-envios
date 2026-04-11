@@ -398,7 +398,7 @@ export default function EditShipment() {
                   name="paymentMethod"
                   control={control}
                   render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || "Efectivo"}>
                       <SelectTrigger ref={field.ref} className="h-11 rounded-xl bg-slate-50"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Efectivo">Efectivo 💵</SelectItem>
