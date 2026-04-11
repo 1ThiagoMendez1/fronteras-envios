@@ -279,7 +279,7 @@ export function useUpdateShipmentMutation(id: number) {
           recipient_phone: d.recipientPhone,
           recipient_address: d.recipientAddress,
           recipient_city: d.recipientCity,
-          payment_method: d.paymentMethod,
+          payment_method: d.paymentMethod ?? 'Efectivo',
           weight: d.weight,
           quantity: d.quantity,
           declared_value: d.declaredValue,

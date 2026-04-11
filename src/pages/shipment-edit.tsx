@@ -1,5 +1,5 @@
 import { useLocation, useRoute } from "wouter"
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
@@ -119,7 +119,7 @@ export default function EditShipment() {
   const { data: drivers } = useListDrivers({ onlyActive: true })
   const { getClientByDocument } = useClients()
 
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, watch, reset, control, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
       senderDocument: "", recipientDocument: "", weight: 1, quantity: 1, declaredValue: 0, shippingCost: 0, driverPayment: 0, cashOnDelivery: 0, branchOrigin: "Bogotá", paymentMethod: "Efectivo"
@@ -394,16 +394,22 @@ export default function EditShipment() {
               </div>
               <div className="space-y-1.5">
                 <Label>Método de Pago</Label>
-                <Select value={watch("paymentMethod") || "Efectivo"} onValueChange={(v) => setValue("paymentMethod", v, { shouldDirty: true })}>
-                  <SelectTrigger className="h-11 rounded-xl bg-slate-50"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Efectivo">Efectivo 💵</SelectItem>
-                    <SelectItem value="Nequi">Nequi 📱</SelectItem>
-                    <SelectItem value="DaviPlata">DaviPlata 📱</SelectItem>
-                    <SelectItem value="Transferencia">Transferencia 🏦</SelectItem>
-                    <SelectItem value="Tarjeta">Tarjeta 💳</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="paymentMethod"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger ref={field.ref} className="h-11 rounded-xl bg-slate-50"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Efectivo">Efectivo 💵</SelectItem>
+                        <SelectItem value="Nequi">Nequi 📱</SelectItem>
+                        <SelectItem value="DaviPlata">DaviPlata 📱</SelectItem>
+                        <SelectItem value="Transferencia">Transferencia 🏦</SelectItem>
+                        <SelectItem value="Tarjeta">Tarjeta 💳</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Dice Contener</Label>
