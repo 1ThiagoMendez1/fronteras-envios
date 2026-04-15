@@ -618,11 +618,17 @@ export default function ShipmentDetail() {
           <div className="flex flex-col w-[100vw] h-[100vh] px-2 pt-0 pb-1 box-border overflow-hidden bg-white">
             {/* Header */}
             <div className="flex items-center justify-between border-b-[3px] border-black pb-1 mb-2">
-              <div className="flex items-center gap-1 font-display font-black">
+              <div className="flex items-center gap-1 font-display font-black shrink-0">
                 <Truck className="w-8 h-8" />
                 <span className="leading-tight text-xl tracking-tighter">FRONTERAS<br/>EXPRESS</span>
               </div>
-              <div className="text-right flex-1 ml-2">
+              <div className="flex flex-col items-center justify-center text-center px-2 flex-1">
+                 <span className="text-[8px] font-bold uppercase text-gray-700 leading-tight">Fecha y hora de ingreso</span>
+                 <span className="text-[10px] font-black leading-tight text-black">
+                   {(() => { try { return format(new Date(shipment.createdAt), "dd/MM/yyyy HH:mm", { locale: es }) } catch { return shipment.createdAt ? String(shipment.createdAt).substring(0, 16) : "—" } })()}
+                 </span>
+              </div>
+              <div className="text-right shrink-0 ml-2">
                 <h2 className="text-3xl font-black uppercase tracking-tighter leading-none">{formatGuide(shipment.guideNumber)}</h2>
                 <p className="text-[10px] font-bold leading-tight mt-1 uppercase">Guía de Transporte</p>
               </div>
@@ -664,8 +670,11 @@ export default function ShipmentDetail() {
                       <span className="text-sm font-bold leading-none mt-1">{formatCurrency(shipment.declaredValue)}</span>
                     </div>
                     <div className="flex-1 p-2 text-center flex flex-col justify-center text-black">
-                      <span className="text-[10px] font-black uppercase block">Total Flete</span>
-                      <span className="text-lg font-black leading-none mt-1 text-black">{formatCurrency(shipment.shippingCost)}</span>
+                      <span className="text-[10px] font-black uppercase block leading-tight">
+                        Total Flete 
+                        {shipment.cashOnDelivery > 0 && <span className="block text-[8px] font-bold mt-0.5">(Contraentrega)</span>}
+                      </span>
+                      <span className="text-lg font-black leading-none mt-1 text-black">{formatCurrency(shipment.cashOnDelivery > 0 ? shipment.cashOnDelivery : shipment.shippingCost)}</span>
                     </div>
                   </>
                 ) : (

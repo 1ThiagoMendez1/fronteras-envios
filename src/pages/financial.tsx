@@ -247,7 +247,7 @@ export default function Financial() {
                         />
                       </div>
                       <div className="flex justify-between text-[11px] font-bold">
-                        <span className="text-emerald-600">{formatCurrency(pm.amount)} netos (tras caja conductor)</span>
+                        <span className="text-emerald-600">{formatCurrency(pm.amount)} {pm.method === "Nequi" ? "brutos (total flete)" : "netos (tras caja conductor)"}</span>
                       </div>
                     </div>
                   ))}

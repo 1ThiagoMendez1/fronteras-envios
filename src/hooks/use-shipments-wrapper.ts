@@ -114,20 +114,26 @@ export function useCreateShipmentMutation() {
           package_contents: d.packageContents ?? null,
           driver_id: d.driverId ?? null,
           branch_origin: d.branchOrigin ?? "Bogotá",
-          status: d.driverId ? "assigned" : "created",
+          status: d.driverId ? "in_transit" : "created",
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Note: Initial 'created' log is handled by the trigger in 001_initial_schema
-      // But we can be explicit if we want custom notes:
       await adminClient.from("shipment_history").insert({
         shipment_id: result.id,
         status: "created",
         notes: "Guía generada automáticamente",
       });
+
+      if (d.driverId) {
+        await adminClient.from("shipment_history").insert([
+          { shipment_id: result.id, status: "assigned", notes: "Conductor asignado automáticamente al crear" },
+          { shipment_id: result.id, status: "picked_up", notes: "Paquete recogido automáticamente" },
+          { shipment_id: result.id, status: "in_transit", notes: "En tránsito automáticamente" }
+        ]);
+      }
 
       // Increment client's shipment count atomically
       if (d.senderDocument) {
@@ -182,7 +188,7 @@ export function useCreateShipmentMutation() {
             `━━━━━━━━━━━━━━━━━━━━\n` +
             `✅ *GUÍA REGISTRADA EXITOSAMENTE*\n\n` +
             `📋 *Número de Guía:* ${numGuia}\n` +
-            `📅 *Fecha:* ${fecha}\n\n` +
+            `📅 *Fecha y hora de ingreso:* ${fecha}\n\n` +
             `👤 *REMITENTE*\n` +
             `• Nombre: ${shipment.sender_name}\n` +
             `• Teléfono: ${shipment.sender_phone}\n` +
@@ -197,7 +203,7 @@ export function useCreateShipmentMutation() {
             `• Peso: ${shipment.weight || 1} kg\n` +
             `• Cantidad: ${shipment.quantity || 1} pieza(s)\n` +
             `• Valor declarado: $${Number(shipment.declared_value || 0).toLocaleString("es-CO")}\n` +
-            `• Costo del flete: *$${Number(shipment.shipping_cost || 0).toLocaleString("es-CO")}*\n` +
+            `• ${shipment.cash_on_delivery > 0 ? 'Valor Contraentrega' : 'Costo del flete'}: *$${Number(shipment.cash_on_delivery > 0 ? shipment.cash_on_delivery : (shipment.shipping_cost || 0)).toLocaleString("es-CO")}*\n` +
             `• Método de pago: ${shipment.payment_method || "Efectivo"}\n` +
             (shipment.observations ? `• Observaciones: ${shipment.observations}\n` : ``) +
             (shipment.package_contents ? `• Contenido: ${shipment.package_contents}\n` : ``) +
@@ -538,17 +544,17 @@ export function useAssignDriverMutation(id: number) {
         .from("shipments")
         .update({ 
           driver_id: payload.driverId, 
-          status: "assigned",
+          status: "in_transit",
           driver_signature: payload.driverSignature || null
         })
         .eq("id", id);
       if (error) throw error;
 
-      await adminClient.from("shipment_history").insert({
-        shipment_id: id,
-        status: "assigned",
-        notes: "Conductor asignado",
-      });
+      await adminClient.from("shipment_history").insert([
+        { shipment_id: id, status: "assigned", notes: "Conductor asignado" },
+        { shipment_id: id, status: "picked_up", notes: "Paquete recogido automáticamente" },
+        { shipment_id: id, status: "in_transit", notes: "En tránsito automáticamente" }
+      ]);
     },
     onSuccess: async (_, payload) => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });

@@ -128,7 +128,7 @@ export default function Shipments() {
                     const hasUnreadChat = shipment.comentarios && shipment.comentarios.length > 0 && shipment.comentarios[shipment.comentarios.length - 1].sender === "user"
 
                     return (
-                      <tr key={shipment.id} className="hover:bg-slate-50 transition-colors group">
+                      <tr key={shipment.id} className={cn("transition-colors group", shipment.cashOnDelivery > 0 ? "bg-orange-50/50 hover:bg-orange-100/50" : "hover:bg-slate-50")}>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <Link href={`/shipments/${shipment.id}`} className="font-bold text-primary hover:underline">
@@ -156,21 +156,28 @@ export default function Shipments() {
                           <div className="text-xs text-slate-500">{shipment.recipientCity}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="font-semibold text-slate-700">Flete: {formatCurrency(shipment.shippingCost)}</div>
-                          {profile?.role === "admin" && (
+                          <div className="font-semibold text-slate-700">Flete: {formatCurrency(shipment.cashOnDelivery > 0 ? shipment.cashOnDelivery : shipment.shippingCost)}</div>
+                          {profile?.role === "admin" && shipment.paymentMethod !== "Nequi" && (
                             <div className="text-[11px] font-bold text-green-600 uppercase tracking-widest mt-0.5">Neto: {formatCurrency(shipment.shippingCost - (shipment.driverPayment || 0))}</div>
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          <span className={cn(
-                            "inline-flex text-[11px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md", 
-                            shipment.paymentMethod === "Efectivo" ? "bg-emerald-50 text-emerald-700" :
-                            shipment.paymentMethod === "Nequi" ? "bg-purple-50 text-purple-700" :
-                            shipment.paymentMethod === "DaviPlata" ? "bg-red-50 text-red-700" : 
-                            "bg-blue-50 text-blue-700"
-                          )}>
-                            {shipment.paymentMethod || "Efectivo"}
-                          </span>
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className={cn(
+                              "inline-flex text-[11px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md", 
+                              shipment.paymentMethod === "Efectivo" ? "bg-emerald-50 text-emerald-700" :
+                              shipment.paymentMethod === "Nequi" ? "bg-purple-50 text-purple-700" :
+                              shipment.paymentMethod === "DaviPlata" ? "bg-red-50 text-red-700" : 
+                              "bg-blue-50 text-blue-700"
+                            )}>
+                              {shipment.paymentMethod || "Efectivo"}
+                            </span>
+                            {shipment.cashOnDelivery > 0 && (
+                              <span className="inline-flex text-[10px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm bg-orange-500 text-white shadow-sm mt-0.5">
+                                CONTRAENTREGA
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <span className={cn("px-3 py-1 rounded-full text-xs font-bold border inline-flex items-center", getStatusColor(shipment.status))}>

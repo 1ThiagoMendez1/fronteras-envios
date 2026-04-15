@@ -55,19 +55,25 @@ export function useFinancialSummary(options: {
         .reduce((sum, m) => sum + Number(m.amount || 0), 0);
 
       // BI Aggregations
-      const revenueByPaymentMethod = Object.entries(
-        all.reduce<Record<string, number>>((acc, s) => {
-          const method = s.payment_method || "Efectivo";
-          if (!acc[method]) acc[method] = 0;
-          const netAmount = Number(s.shipping_cost || 0) - Number(s.driver_payment || 0);
-          acc[method] += netAmount;
-          return acc;
-        }, {})
-      ).map(([method, amount]) => ({
-        method,
-        amount: Number(amount),
-        percentage: netProfit > 0 ? (Number(amount) / netProfit) * 100 : 0
-      })).sort((a, b) => b.amount - a.amount);
+      const methodTotals = all.reduce<Record<string, number>>((acc, s) => {
+        const method = s.payment_method || "Efectivo";
+        if (!acc[method]) acc[method] = 0;
+        const amountToAdd = method === "Nequi" 
+          ? Number(s.shipping_cost || 0) 
+          : Number(s.shipping_cost || 0) - Number(s.driver_payment || 0);
+        acc[method] += amountToAdd;
+        return acc;
+      }, {});
+      
+      const totalMethodAmount = Object.values(methodTotals).reduce((sum, val) => sum + val, 0);
+
+      const revenueByPaymentMethod = Object.entries(methodTotals)
+        .map(([method, amount]) => ({
+          method,
+          amount: Number(amount),
+          percentage: totalMethodAmount > 0 ? (Number(amount) / totalMethodAmount) * 100 : 0
+        }))
+        .sort((a, b) => b.amount - a.amount);
 
       const profitabilityByCity = Object.entries(
         all.reduce<Record<string, { revenue: number; costs: number }>>((acc, s) => {
