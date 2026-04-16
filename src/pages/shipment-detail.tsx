@@ -690,6 +690,7 @@ export default function ShipmentDetail() {
                   </>
                 )}
               </div>
+              
             </div>
 
             {/* Observation & QR */}
