@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card"
 import { useUpdateShipmentMutation } from "@/hooks/use-shipments-wrapper"
 import { ArrowLeft, Package, MapPin, DollarSign, Loader2 } from "lucide-react"
 import { useClients } from "@/hooks/use-clients"
-import { useEffect, useState, useRef, useMemo } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useGetShipment } from "@/hooks/use-shipments"
 import { useListDrivers } from "@/hooks/use-drivers"
@@ -161,7 +161,7 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
     paymentMethod: shipment.paymentMethod || "Efectivo"
   };
 
-  const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, watch, control, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: serverValues
   })
