@@ -1,25 +1,10 @@
-const RAW_EVOLUTION_URL = (import.meta.env.VITE_EVOLUTION_API_URL || "") as string;
-const EVOLUTION_INSTANCE = import.meta.env.VITE_EVOLUTION_INSTANCE;
-const EVOLUTION_API_KEY = import.meta.env.VITE_EVOLUTION_API_KEY;
+import React from "react";
+import { toast } from "@/hooks/use-toast";
 
-// Limpia rutas de panel (/manager, /dashboard, /api, etc.) dejando solo el origen base
-function sanitizeBaseUrl(url: string): string {
-  try {
-    const parsed = new URL(url);
-    return parsed.origin;
-  } catch {
-    return url.replace(/\/(manager|dashboard|api|panel)\/?.*$/, "").replace(/\/$/, "");
-  }
-}
+// El sistema de envío por Evolution API ha sido desactivado temporalmente para evitar bloqueos.
+// Ahora se generarán enlaces para que el envío se realice de forma manual por el usuario.
 
-const EVOLUTION_URL = sanitizeBaseUrl(RAW_EVOLUTION_URL);
-
-export async function sendWhatsAppMessage(phone: string, text: string) {
-  if (!EVOLUTION_URL || !EVOLUTION_INSTANCE || !EVOLUTION_API_KEY) {
-    console.warn("Evolution API no está configurada. Revisa tus variables de entorno (.env).");
-    return false;
-  }
-
+export function getWhatsAppUrl(phone: string, text: string) {
   // Limpiar el teléfono para dejar solo números
   let cleanPhone = phone.replace(/[^\d]/g, '');
   
@@ -28,31 +13,52 @@ export async function sendWhatsAppMessage(phone: string, text: string) {
     cleanPhone = '57' + cleanPhone;
   }
 
-  // Payload compatible con Evolution API v2
-  const payload = {
-    number: cleanPhone,
-    text: text,
-  };
+  // Usar api.whatsapp.com en lugar de wa.me ayuda a mantener emojis sin romperse.
+  return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
+}
 
+export async function sendWhatsAppMessage(phone: string, text: string) {
+  const waUrl = getWhatsAppUrl(phone, text);
   try {
-    const res = await fetch(`${EVOLUTION_URL}/message/sendText/${EVOLUTION_INSTANCE}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": EVOLUTION_API_KEY
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) {
-      const err = await res.text();
-      console.error("Error en Evolution API:", err);
-      return false;
-    }
-
+    const a = document.createElement('a');
+    a.href = waUrl;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     return true;
   } catch (error) {
-    console.error("Excepción al contactar Evolution API:", error);
+    console.error("No se pudo abrir WhatsApp:", error);
     return false;
   }
+}
+
+export function handleWhatsAppMultiple(notifications: { label: string, phone: string, text: string }[]) {
+  if (notifications.length === 0) return;
+
+  // Mostramos un Toast persistente con botones para CADA notificación.
+  const elements = notifications.map((n, i) => 
+    React.createElement('a', {
+      key: i,
+      href: getWhatsAppUrl(n.phone, n.text),
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      className: 'bg-green-600 text-white px-3 py-2 rounded shadow text-center font-bold flex-1 w-full mt-2 hover:bg-green-700 block'
+    }, `Enviar a ${n.label}`)
+  );
+
+  toast({
+    title: "Notificaciones Listas",
+    description: React.createElement('div', { className: 'flex flex-col gap-2 mt-2 w-full' },
+      React.createElement('p', { className: 'text-sm opacity-90' }, "Da clic para abrir el chat (el segundo suele ser bloqueado por Chrome):"),
+      ...elements
+    ),
+    duration: 20000, // 20 segundos
+  });
+
+  // Intentamos abrir el primero automáticamente por comodidad
+  setTimeout(() => {
+    sendWhatsAppMessage(notifications[0].phone, notifications[0].text);
+  }, 500);
 }

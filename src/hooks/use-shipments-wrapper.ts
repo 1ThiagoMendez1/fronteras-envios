@@ -214,8 +214,8 @@ export function useCreateShipmentMutation() {
             `*NIT: 901999613*\n` +
             `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
-          const { sendWhatsAppMessage } = await import("@/lib/whatsapp");
-          await sendWhatsAppMessage(shipment.sender_phone, messageText);
+          const { handleWhatsAppMultiple } = await import("@/lib/whatsapp");
+          const notifications = [{ label: "Remitente", phone: shipment.sender_phone, text: messageText }];
 
           // También notificar al destinatario si tiene teléfono
           if (shipment.recipient_phone && shipment.recipient_phone !== shipment.sender_phone) {
@@ -234,8 +234,10 @@ export function useCreateShipmentMutation() {
               `*NIT: 901999613*\n` +
               `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
-            await sendWhatsAppMessage(shipment.recipient_phone, recipientMessage);
+            notifications.push({ label: "Destinatario", phone: shipment.recipient_phone, text: recipientMessage });
           }
+
+          handleWhatsAppMultiple(notifications);
         }
       } catch (err) {
         console.error("Error enviando notificación WhatsApp al crear guía:", err);
@@ -381,7 +383,7 @@ export function useUpdateShipmentMutation(id: number) {
       // ─── Notificación WhatsApp con las modificaciones ───
       if (changes && changes.length > 0 && result) {
         try {
-          const { sendWhatsAppMessage } = await import("@/lib/whatsapp");
+          const { handleWhatsAppMultiple } = await import("@/lib/whatsapp");
           const numGuia = result.guide_number || String(result.id);
           const trackingUrl = `https://www.fronterasexpress.com/?guide=${numGuia}`;
           const fecha = new Date().toLocaleDateString("es-CO", {
@@ -405,15 +407,11 @@ export function useUpdateShipmentMutation(id: number) {
             `*NIT: 901999613*\n` +
             `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
-          // Notificar al remitente
-          if (result.sender_phone) {
-            await sendWhatsAppMessage(result.sender_phone, messageText);
-          }
-
-          // Notificar al destinatario si tiene teléfono diferente
-          if (result.recipient_phone && result.recipient_phone !== result.sender_phone) {
-            await sendWhatsAppMessage(result.recipient_phone, messageText);
-          }
+          const notifications = [];
+          if (result.sender_phone) notifications.push({ label: "Remitente", phone: result.sender_phone, text: messageText });
+          if (result.recipient_phone && result.recipient_phone !== result.sender_phone) notifications.push({ label: "Destinatario", phone: result.recipient_phone, text: messageText });
+          
+          handleWhatsAppMultiple(notifications);
         } catch (err) {
           console.error("Error enviando WhatsApp al modificar envío:", err);
         }
@@ -457,7 +455,7 @@ export function useUpdateShipmentStatusMutation(id: number) {
             .single();
 
           if (shipment) {
-            const { sendWhatsAppMessage } = await import("@/lib/whatsapp");
+            const { handleWhatsAppMultiple } = await import("@/lib/whatsapp");
             const numGuia = shipment.guide_number || String(shipment.id);
             const trackingUrl = `https://www.fronterasexpress.com/?guide=${numGuia}`;
 
@@ -474,9 +472,8 @@ export function useUpdateShipmentStatusMutation(id: number) {
               `*NIT: 901999613*\n` +
               `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
-            if (shipment.recipient_phone) {
-              await sendWhatsAppMessage(shipment.recipient_phone, messageText);
-            }
+            const notifications = [];
+            if (shipment.recipient_phone) notifications.push({ label: "Destinatario", phone: shipment.recipient_phone, text: messageText });
             if (shipment.sender_phone && shipment.sender_phone !== shipment.recipient_phone) {
               const senderMessageText = 
                 `🚚 *FRONTERAS EXPRESS*\n` +
@@ -489,8 +486,9 @@ export function useUpdateShipmentStatusMutation(id: number) {
                 `━━━━━━━━━━━━━━━━━━━━\n` +
                 `*NIT: 901999613*\n` +
                 `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
-              await sendWhatsAppMessage(shipment.sender_phone, senderMessageText);
+              notifications.push({ label: "Remitente", phone: shipment.sender_phone, text: senderMessageText });
             }
+            handleWhatsAppMultiple(notifications);
           }
         } catch (err) {
           console.error("Error enviando WhatsApp al marcar como entregado:", err);
@@ -577,7 +575,7 @@ export function useAssignDriverMutation(id: number) {
         }
 
         if (finalShipment && finalShipment.drivers && payload.driverId) {
-          const { sendWhatsAppMessage } = await import("@/lib/whatsapp");
+          const { handleWhatsAppMultiple } = await import("@/lib/whatsapp");
           const driver = finalShipment.drivers as any;
           const numGuia = finalShipment.guide_number || String(finalShipment.id);
           const trackingUrl = `https://www.fronterasexpress.com/?guide=${numGuia}`;
@@ -606,12 +604,12 @@ export function useAssignDriverMutation(id: number) {
             `*NIT: 901999613*\n` +
             `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
-          if (finalShipment.sender_phone) {
-            await sendWhatsAppMessage(finalShipment.sender_phone, messageText);
-          }
+          const notifications = [];
+          if (finalShipment.sender_phone) notifications.push({ label: "Remitente", phone: finalShipment.sender_phone, text: messageText });
           if (finalShipment.recipient_phone && finalShipment.recipient_phone !== finalShipment.sender_phone) {
-            await sendWhatsAppMessage(finalShipment.recipient_phone, messageText);
+            notifications.push({ label: "Destinatario", phone: finalShipment.recipient_phone, text: messageText });
           }
+          handleWhatsAppMultiple(notifications);
         }
       } catch (err) {
         console.error("Error enviando WhatsApp al asignar conductor:", err);
