@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card"
 import { useUpdateShipmentMutation } from "@/hooks/use-shipments-wrapper"
 import { ArrowLeft, Package, MapPin, DollarSign, Loader2 } from "lucide-react"
 import { useClients } from "@/hooks/use-clients"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useGetShipment } from "@/hooks/use-shipments"
 import { useListDrivers } from "@/hooks/use-drivers"
@@ -106,12 +106,30 @@ function CitySearchCombobox({ value, onChange }: { value: string, onChange: (v: 
 }
 
 export default function EditShipment() {
-  const [, setLocation] = useLocation()
   const [, params] = useRoute("/shipments/:id/edit")
   const id = parseInt(params?.id || "0")
 
   const { data: shipment, isLoading: isShipmentLoading } = useGetShipment(id)
   const { profile, isLoading: isAuthLoading } = useAuth()
+
+  if (isShipmentLoading || isAuthLoading || !shipment) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-slate-500 text-sm animate-pulse">
+            {isAuthLoading ? "Verificando permisos..." : "Cargando envío..."}
+          </p>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  return <EditShipmentForm shipment={shipment} profile={profile} id={id} />
+}
+
+function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: any, id: number }) {
+  const [, setLocation] = useLocation()
   const isAdmin = profile?.role === "admin"
   const canEditPayment = isAdmin || profile?.role === "operator"
   const userBranch = profile?.branch || "Bogotá"
@@ -119,7 +137,7 @@ export default function EditShipment() {
   const { data: drivers } = useListDrivers({ onlyActive: true })
   const { getClientByDocument } = useClients()
 
-  const serverValues = shipment ? {
+  const serverValues = {
     senderDocument: shipment.senderDocument || "",
     senderName: shipment.senderName || "",
     senderPhone: shipment.senderPhone || "",
@@ -141,15 +159,11 @@ export default function EditShipment() {
     driverId: shipment.driverId || undefined,
     branchOrigin: shipment.branchOrigin || "Bogotá",
     paymentMethod: shipment.paymentMethod || "Efectivo"
-  } : undefined;
+  };
 
-  const { register, handleSubmit, setValue, watch, control, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema) as any,
-    defaultValues: {
-      senderDocument: "", recipientDocument: "", weight: 1, quantity: 1, declaredValue: 0, shippingCost: 0, driverPayment: 0, cashOnDelivery: 0, branchOrigin: "Bogotá", paymentMethod: "Efectivo"
-    },
-    values: serverValues,
-    resetOptions: { keepDirtyValues: true },
+    defaultValues: serverValues
   })
 
   const shippingCost = watch("shippingCost") || 0
@@ -176,19 +190,6 @@ export default function EditShipment() {
       await updateMutation.mutateAsync({ data })
       setLocation(`/shipments/${id}`)
     } catch (e) { /* handled */ }
-  }
-
-  if (isShipmentLoading || isAuthLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-slate-500 text-sm animate-pulse">
-            {isAuthLoading ? "Verificando permisos..." : "Cargando envío..."}
-          </p>
-        </div>
-      </DashboardLayout>
-    )
   }
 
   return (
@@ -395,7 +396,7 @@ export default function EditShipment() {
                   name="paymentMethod"
                   control={control}
                   render={({ field }) => (
-                    <Select value={field.value || shipment?.paymentMethod || "Efectivo"} onValueChange={field.onChange}>
+                    <Select value={field.value || "Efectivo"} onValueChange={field.onChange}>
                       <SelectTrigger className="h-11 rounded-xl bg-slate-50">
                         <SelectValue placeholder="Efectivo 💵" />
                       </SelectTrigger>

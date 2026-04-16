@@ -285,7 +285,7 @@ export function useUpdateShipmentMutation(id: number) {
           recipient_phone: d.recipientPhone,
           recipient_address: d.recipientAddress,
           recipient_city: d.recipientCity,
-          payment_method: d.paymentMethod ?? 'Efectivo',
+          payment_method: d.paymentMethod !== undefined ? d.paymentMethod : original?.payment_method ?? 'Efectivo',
           weight: d.weight,
           quantity: d.quantity,
           declared_value: d.declaredValue,
@@ -586,7 +586,8 @@ export function useAssignDriverMutation(id: number) {
             'motorcycle': 'Motocicleta',
             'car': 'Automóvil',
             'van': 'Furgoneta',
-            'truck': 'Camión'
+            'truck': 'Camión',
+            'bus': 'Bus'
           };
           const vehicle = vehicleMap[driver.vehicle_type] || driver.vehicle_type;
 
