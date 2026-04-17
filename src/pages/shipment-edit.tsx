@@ -148,7 +148,7 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
     recipientPhone: shipment.recipientPhone || "",
     recipientAddress: shipment.recipientAddress || "",
     recipientCity: shipment.recipientCity || "",
-    weight: shipment.weight || 1,
+    weight: shipment.weight || ("" as unknown as number),
     quantity: shipment.quantity || 1,
     declaredValue: shipment.declaredValue || ("" as unknown as number),
     shippingCost: shipment.shippingCost || ("" as unknown as number),
@@ -323,7 +323,7 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
               <div className="space-y-1.5 lg:col-span-1">
                 <Label>Peso (kg)</Label>
                 <div className="relative">
-                  <Input type="number" step="0.1" {...register("weight")} className="h-11 rounded-xl bg-slate-50 pr-9" />
+                  <Input type="number" step="0.1" {...register("weight")} placeholder="1" className="h-11 rounded-xl bg-slate-50 pr-9" />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium">kg</span>
                 </div>
               </div>
