@@ -668,7 +668,7 @@ export default function ShipmentDetail() {
                     <div className="flex-1 p-2 border-r-[3px] border-black text-center flex flex-col justify-center">
                       <span className="text-[10px] font-black uppercase block">Declarado</span>
 
-                      
+
                       <span className="text-sm font-bold leading-none mt-1">{formatCurrency(shipment.declaredValue)}</span>
                     </div>
                     <div className="flex-1 p-2 text-center flex flex-col justify-center text-black">
@@ -710,6 +710,7 @@ export default function ShipmentDetail() {
                  {printMode === "guia" && (
                    <span className="text-[8px] font-bold leading-none mb-1.5 text-black">NIT: 901999613</span>
                  )}
+                 
                  <QRCodeSVG value={trackingUrl} size={86} level="M" />
                  <p className="text-[9px] text-center mt-2 font-black w-full uppercase leading-tight bg-black text-white py-0.5 rounded">RASTREAR</p>
               </div>
