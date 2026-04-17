@@ -1,6 +1,7 @@
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { getAdminClient } from "@/lib/admin-client";
 import { useToast } from "./use-toast";
+import { handleWhatsAppMultiple } from "@/lib/whatsapp";
 
 // ─── Helper: Guardar cliente si no existe ─────────────────────────────────────
 // Si el documento lleva guión (ej: 900123456-1) es NIT → JURIDICA
@@ -383,7 +384,6 @@ export function useUpdateShipmentMutation(id: number) {
       // ─── Notificación WhatsApp con las modificaciones ───
       if (changes && changes.length > 0 && result) {
         try {
-          const { handleWhatsAppMultiple } = await import("@/lib/whatsapp");
           const numGuia = result.guide_number || String(result.id);
           const trackingUrl = `https://www.fronterasexpress.com/?guide=${numGuia}`;
           const fecha = new Date().toLocaleDateString("es-CO", {
