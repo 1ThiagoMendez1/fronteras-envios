@@ -667,6 +667,8 @@ export default function ShipmentDetail() {
                   <>
                     <div className="flex-1 p-2 border-r-[3px] border-black text-center flex flex-col justify-center">
                       <span className="text-[10px] font-black uppercase block">Declarado</span>
+
+                      
                       <span className="text-sm font-bold leading-none mt-1">{formatCurrency(shipment.declaredValue)}</span>
                     </div>
                     <div className="flex-1 p-2 text-center flex flex-col justify-center text-black">
