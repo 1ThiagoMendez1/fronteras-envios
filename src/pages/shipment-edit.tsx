@@ -150,10 +150,10 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
     recipientCity: shipment.recipientCity || "",
     weight: shipment.weight || 1,
     quantity: shipment.quantity || 1,
-    declaredValue: shipment.declaredValue || 0,
-    shippingCost: shipment.shippingCost || 0,
-    driverPayment: shipment.driverPayment || 0,
-    cashOnDelivery: shipment.cashOnDelivery || 0,
+    declaredValue: shipment.declaredValue || ("" as unknown as number),
+    shippingCost: shipment.shippingCost || ("" as unknown as number),
+    driverPayment: shipment.driverPayment || ("" as unknown as number),
+    cashOnDelivery: shipment.cashOnDelivery || ("" as unknown as number),
     packageContents: shipment.packageContents || "",
     observations: shipment.observations || "",
     driverId: shipment.driverId || undefined,
@@ -331,7 +331,7 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
                 <Label>Valor Declarado</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-                  <Input type="number" {...register("declaredValue")} className="h-11 rounded-xl bg-slate-50 pl-6" />
+                  <Input type="number" {...register("declaredValue")} placeholder="0" className="h-11 rounded-xl bg-slate-50 pl-6" />
                 </div>
               </div>
               <div className="space-y-1.5 lg:col-span-1">
@@ -341,6 +341,7 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
                   <Input 
                     type="number" 
                     {...register("shippingCost")} 
+                    placeholder="0"
                     disabled={!isAdmin}
                     className="h-11 rounded-xl bg-primary/5 border-primary/30 pl-6 font-semibold text-primary disabled:opacity-70 disabled:cursor-not-allowed" 
                   />
@@ -353,6 +354,7 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
                   <Input 
                     type="number" 
                     {...register("cashOnDelivery")} 
+                    placeholder="0"
                     className="h-11 rounded-xl bg-amber-50 border-amber-200 pl-6 font-semibold text-amber-700" 
                   />
                 </div>
@@ -364,6 +366,7 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
                   <Input 
                     type="number" 
                     {...register("driverPayment")} 
+                    placeholder="0"
                     disabled={!canEditPayment}
                     className="h-11 rounded-xl bg-slate-50 pl-6 disabled:opacity-70 disabled:cursor-not-allowed" 
                   />

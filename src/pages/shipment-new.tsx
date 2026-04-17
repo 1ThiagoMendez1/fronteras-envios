@@ -149,10 +149,10 @@ export default function NewShipment() {
       recipientDocument: "",
       weight: 1,
       quantity: 1,
-      declaredValue: 0,
-      shippingCost: 0,
-      driverPayment: 0,
-      cashOnDelivery: 0,
+      declaredValue: "" as unknown as number,
+      shippingCost: "" as unknown as number,
+      driverPayment: "" as unknown as number,
+      cashOnDelivery: "" as unknown as number,
       branchOrigin: "Bogotá",
       paymentMethod: "Efectivo",
     }
@@ -336,7 +336,7 @@ export default function NewShipment() {
                 <Label>Valor Declarado</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-                  <Input type="number" {...register("declaredValue")} className="h-11 rounded-xl bg-slate-50 pl-6" />
+                  <Input type="number" {...register("declaredValue")} placeholder="0" className="h-11 rounded-xl bg-slate-50 pl-6" />
                 </div>
               </div>
               <div className="space-y-1.5 lg:col-span-1">
@@ -346,6 +346,7 @@ export default function NewShipment() {
                   <Input 
                     type="number" 
                     {...register("shippingCost")} 
+                    placeholder="0"
                     className="h-11 rounded-xl bg-primary/5 border-primary/30 pl-6 font-semibold text-primary" 
                   />
                 </div>
@@ -357,6 +358,7 @@ export default function NewShipment() {
                   <Input 
                     type="number" 
                     {...register("cashOnDelivery")} 
+                    placeholder="0"
                     className="h-11 rounded-xl bg-amber-50 border-amber-200 pl-6 font-semibold text-amber-700" 
                   />
                 </div>
@@ -365,7 +367,7 @@ export default function NewShipment() {
                 <Label>Pago Conductor</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-                  <Input type="number" {...register("driverPayment")} className="h-11 rounded-xl bg-slate-50 pl-6" />
+                  <Input type="number" {...register("driverPayment")} placeholder="0" className="h-11 rounded-xl bg-slate-50 pl-6" />
                 </div>
               </div>
             </div>
