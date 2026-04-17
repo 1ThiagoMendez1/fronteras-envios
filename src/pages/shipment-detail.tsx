@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button"
 import { formatCurrency, getStatusColor, getStatusLabel, cn, formatGuide } from "@/lib/utils"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { ArrowLeft, Printer, Truck, MapPin, Building, Phone } from "lucide-react"
+import { ArrowLeft, Printer, Truck, MapPin, Building, Phone, Check, ChevronsUpDown } from "lucide-react"
 import { useUpdateShipmentStatusMutation, useAssignDriverMutation } from "@/hooks/use-shipments-wrapper"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { QRCodeSVG } from "qrcode.react"
@@ -31,6 +33,7 @@ export default function ShipmentDetail() {
   const [newStatus, setNewStatus] = useState<any>("")
   const [statusNote, setStatusNote] = useState("")
   const [driverId, setDriverId] = useState<string>("")
+  const [isDriverPopoverOpen, setIsDriverPopoverOpen] = useState(false)
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false)
   const [isSignatureDialogOpen, setIsSignatureDialogOpen] = useState(false)
   const sigCanvas = useRef<SignatureCanvas>(null)
@@ -408,16 +411,54 @@ export default function ShipmentDetail() {
                 </div>
               ) : (
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <Select onValueChange={setDriverId} value={driverId}>
-                    <SelectTrigger className="flex-1 h-12 rounded-xl">
-                      <SelectValue placeholder="Seleccionar conductor disponible..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {drivers?.filter(d => d.isActive).map(d => (
-                        <SelectItem key={d.id} value={d.id.toString()}>{d.name} - {d.vehicleType}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={isDriverPopoverOpen} onOpenChange={setIsDriverPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isDriverPopoverOpen}
+                        className="flex-1 h-12 rounded-xl justify-between px-4 font-normal border-slate-200 text-slate-700 bg-white"
+                      >
+                        <span className="truncate">
+                          {driverId && drivers 
+                            ? (drivers.find(d => d.id.toString() === driverId) 
+                                ? `${drivers.find(d => d.id.toString() === driverId)?.name} - ${drivers.find(d => d.id.toString() === driverId)?.vehicleType}` 
+                                : "Seleccionar conductor...") 
+                            : "Seleccionar conductor disponible..."}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 text-slate-400" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl" align="start">
+                      <Command>
+                        <CommandInput placeholder="Buscar conductor..." className="h-11" />
+                        <CommandList className="max-h-[250px] overflow-y-auto">
+                          <CommandEmpty>No se encontraron conductores.</CommandEmpty>
+                          <CommandGroup>
+                            {drivers?.filter(d => d.isActive).map(d => (
+                              <CommandItem
+                                key={d.id}
+                                value={`${d.name} ${d.vehicleType}`}
+                                onSelect={() => {
+                                  setDriverId(d.id.toString())
+                                  setIsDriverPopoverOpen(false)
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4 text-primary",
+                                    driverId === d.id.toString() ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {d.name} - {d.vehicleType}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   
                   <Dialog open={isSignatureDialogOpen} onOpenChange={(open) => {
                     setIsSignatureDialogOpen(open);
