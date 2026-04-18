@@ -16,6 +16,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { QRCodeSVG } from "qrcode.react"
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ChatBox } from "@/components/chat-box"
 import { useToast } from "@/hooks/use-toast"
@@ -751,7 +752,7 @@ export default function ShipmentDetail() {
                  {printMode === "guia" && (
                    <span className="text-[8px] font-bold leading-none mb-1.5 text-black">NIT: 901999613</span>
                  )}
-                 
+
                  <QRCodeSVG value={trackingUrl} size={86} level="M" />
                  <p className="text-[9px] text-center mt-2 font-black w-full uppercase leading-tight bg-black text-white py-0.5 rounded">RASTREAR</p>
               </div>

@@ -13,8 +13,12 @@ export function getWhatsAppUrl(phone: string, text: string) {
     cleanPhone = '57' + cleanPhone;
   }
 
+  // Generar un sufijo aleatorio para evitar bloqueo por spam
+  const randomRef = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const antiSpamText = `${text}\n\n[Ref: ${randomRef}]`;
+
   // Usar api.whatsapp.com en lugar de wa.me ayuda a mantener emojis sin romperse.
-  return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
+  return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(antiSpamText)}`;
 }
 
 export async function sendWhatsAppMessage(phone: string, text: string) {
