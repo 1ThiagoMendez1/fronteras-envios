@@ -154,6 +154,7 @@ export default function NewShipment() {
       driverPayment: "" as unknown as number,
       cashOnDelivery: "" as unknown as number,
       branchOrigin: "Bogotá",
+      senderCity: "Bogotá",
       paymentMethod: "Efectivo",
     }
   })
@@ -245,8 +246,8 @@ export default function NewShipment() {
                 <div className="space-y-1.5">
                   <Label>Ciudad de Origen</Label>
                   <Input
-                    value={userBranch}
-                    disabled
+                    {...register("senderCity")}
+                    readOnly
                     className="h-11 rounded-xl bg-slate-100 font-semibold text-slate-700 cursor-not-allowed"
                   />
                   {errors.senderCity && <p className="text-red-500 text-xs">{errors.senderCity.message}</p>}
