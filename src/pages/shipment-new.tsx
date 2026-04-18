@@ -159,7 +159,9 @@ export default function NewShipment() {
   })
 
   // Fijar la ciudad de origen del remitente y la sede siempre desde la sesión del usuario
-  const userBranch = profile?.branch || user?.user_metadata?.branch || "Bogotá"
+  const rawBranch = profile?.branch || user?.user_metadata?.branch || "Bogotá"
+  const userBranch = rawBranch.toLowerCase().includes("medell") ? "Medellín" : 
+                     rawBranch.toLowerCase().includes("bogot") ? "Bogotá" : rawBranch;
 
   useEffect(() => {
     setValue("branchOrigin", userBranch)
@@ -384,23 +386,18 @@ export default function NewShipment() {
               <div className="space-y-1.5">
                 <Label>Sede de Origen</Label>
                 <Select 
-                  value={watch("branchOrigin")} 
+                  value={watch("branchOrigin") || userBranch} 
                   onValueChange={(v) => setValue("branchOrigin", v)}
                   disabled={profile?.role !== "admin"}
                 >
                   <SelectTrigger className="h-11 rounded-xl bg-slate-50 opacity-100 disabled:bg-slate-100 disabled:opacity-100 disabled:cursor-auto disabled:text-slate-700 font-semibold">
-                    <SelectValue />
+                    <SelectValue placeholder={`Sede ${userBranch}`} />
                   </SelectTrigger>
                   <SelectContent>
-                    {profile?.role === "admin" ? (
-                      <>
-                        <SelectItem value="Bogotá">Sede Bogotá</SelectItem>
-                        <SelectItem value="Medellín">Sede Medellín</SelectItem>
-                      </>
-                    ) : (
-                      <SelectItem value={user?.user_metadata?.branch || "Bogotá"}>
-                        Sede {user?.user_metadata?.branch || "Bogotá"}
-                      </SelectItem>
+                    <SelectItem value="Bogotá">Sede Bogotá</SelectItem>
+                    <SelectItem value="Medellín">Sede Medellín</SelectItem>
+                    {userBranch !== "Bogotá" && userBranch !== "Medellín" && (
+                      <SelectItem value={userBranch}>Sede {userBranch}</SelectItem>
                     )}
                   </SelectContent>
                 </Select>

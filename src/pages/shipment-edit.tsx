@@ -132,10 +132,18 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
   const [, setLocation] = useLocation()
   const isAdmin = profile?.role === "admin"
   const canEditPayment = isAdmin || profile?.role === "operator"
-  const userBranch = profile?.branch || "Bogotá"
+  
+  const rawBranch = profile?.branch || "Bogotá"
+  const userBranch = rawBranch.toLowerCase().includes("medell") ? "Medellín" : 
+                     rawBranch.toLowerCase().includes("bogot") ? "Bogotá" : rawBranch;
+                     
   const updateMutation = useUpdateShipmentMutation(id)
   const { data: drivers } = useListDrivers({ onlyActive: true })
   const { getClientByDocument } = useClients()
+
+  const rawShipmentBranch = shipment.branchOrigin || "Bogotá"
+  const shipmentBranch = rawShipmentBranch.toLowerCase().includes("medell") ? "Medellín" : 
+                         rawShipmentBranch.toLowerCase().includes("bogot") ? "Bogotá" : rawShipmentBranch;
 
   const serverValues = {
     senderDocument: shipment.senderDocument || "",
@@ -157,7 +165,7 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
     packageContents: shipment.packageContents || "",
     observations: shipment.observations || "",
     driverId: shipment.driverId || undefined,
-    branchOrigin: shipment.branchOrigin || "Bogotá",
+    branchOrigin: shipmentBranch,
     paymentMethod: shipment.paymentMethod || "Efectivo"
   };
 
@@ -385,11 +393,20 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
               </div>
               <div className="space-y-1.5">
                 <Label>Sede de Origen</Label>
-                <Select value={shipment?.branchOrigin || "Bogotá"} onValueChange={(v) => setValue("branchOrigin", v)}>
-                  <SelectTrigger className="h-11 rounded-xl bg-slate-50"><SelectValue /></SelectTrigger>
+                <Select 
+                  value={watch("branchOrigin")} 
+                  onValueChange={(v) => setValue("branchOrigin", v)}
+                  disabled={!isAdmin}
+                >
+                  <SelectTrigger className="h-11 rounded-xl bg-slate-50 opacity-100 disabled:bg-slate-100 disabled:opacity-100 disabled:cursor-auto disabled:text-slate-700 font-semibold">
+                    <SelectValue placeholder={`Sede ${watch("branchOrigin") || "Bogotá"}`} />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Bogotá">Sede Bogotá</SelectItem>
                     <SelectItem value="Medellín">Sede Medellín</SelectItem>
+                    {watch("branchOrigin") !== "Bogotá" && watch("branchOrigin") !== "Medellín" && watch("branchOrigin") && (
+                      <SelectItem value={watch("branchOrigin")}>Sede {watch("branchOrigin")}</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
