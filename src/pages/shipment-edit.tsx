@@ -393,22 +393,28 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
               </div>
               <div className="space-y-1.5">
                 <Label>Sede de Origen</Label>
-                <Select 
-                  value={watch("branchOrigin")} 
-                  onValueChange={(v) => setValue("branchOrigin", v)}
-                  disabled={!isAdmin}
-                >
-                  <SelectTrigger className="h-11 rounded-xl bg-slate-50 opacity-100 disabled:bg-slate-100 disabled:opacity-100 disabled:cursor-auto disabled:text-slate-700 font-semibold">
-                    <SelectValue placeholder={`Sede ${watch("branchOrigin") || "Bogotá"}`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Bogotá">Sede Bogotá</SelectItem>
-                    <SelectItem value="Medellín">Sede Medellín</SelectItem>
-                    {watch("branchOrigin") !== "Bogotá" && watch("branchOrigin") !== "Medellín" && watch("branchOrigin") && (
-                      <SelectItem value={watch("branchOrigin")}>Sede {watch("branchOrigin")}</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="branchOrigin"
+                  control={control}
+                  render={({ field }) => (
+                    <Select 
+                      value={field.value} 
+                      onValueChange={field.onChange}
+                      disabled={!isAdmin}
+                    >
+                      <SelectTrigger className="h-11 rounded-xl bg-slate-50 opacity-100 disabled:bg-slate-100 disabled:opacity-100 disabled:cursor-auto disabled:text-slate-700 font-semibold">
+                        <SelectValue placeholder={`Sede ${field.value || "Bogotá"}`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Bogotá">Sede Bogotá</SelectItem>
+                        <SelectItem value="Medellín">Sede Medellín</SelectItem>
+                        {field.value !== "Bogotá" && field.value !== "Medellín" && field.value && (
+                          <SelectItem value={field.value}>Sede {field.value}</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Método de Pago</Label>

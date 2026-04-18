@@ -18,6 +18,7 @@ export default function Shipments() {
   const [, setLocation] = useLocation()
   const { profile } = useAuth()
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [branchFilter, setBranchFilter] = useState<string>("all")
   const [search, setSearch] = useState("")
   const [unreadOnly, setUnreadOnly] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -26,6 +27,7 @@ export default function Shipments() {
 
   const { data, isLoading } = useListShipments({
     status: statusFilter !== "all" ? statusFilter : undefined,
+    branch: branchFilter !== "all" ? branchFilter : undefined,
     search: search || undefined,
     page: currentPage,
     pageSize: 50
@@ -77,7 +79,7 @@ export default function Shipments() {
             </Button>
             <Filter className="w-5 h-5 text-muted-foreground mr-1 ml-2" />
             <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
-              <SelectTrigger className="w-full md:w-[200px] h-12 rounded-xl bg-white border-slate-200">
+              <SelectTrigger className="w-full md:w-[180px] h-12 rounded-xl bg-white border-slate-200">
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
@@ -91,6 +93,17 @@ export default function Shipments() {
                 <SelectItem value="incident">Incidencia</SelectItem>
               </SelectContent>
             </Select>
+
+            <Select value={branchFilter} onValueChange={(v) => { setBranchFilter(v); setCurrentPage(1); }}>
+              <SelectTrigger className="w-full md:w-[150px] h-12 rounded-xl bg-white border-slate-200">
+                <SelectValue placeholder="Sede" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las sedes</SelectItem>
+                <SelectItem value="Bogotá">Bogotá</SelectItem>
+                <SelectItem value="Medellín">Medellín</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </Card>
 
@@ -101,7 +114,7 @@ export default function Shipments() {
                 <tr>
                   <th className="px-6 py-4">Guía</th>
                   <th className="px-6 py-4">Remitente</th>
-                  <th className="px-6 py-4">Sede Origen</th>
+                  <th className="px-6 py-4">Sede Emisora</th>
                   <th className="px-6 py-4">Destinatario</th>
                   <th className="px-6 py-4">Flete / Ganancia</th>
                   <th className="px-6 py-4">Pago</th>
@@ -147,7 +160,12 @@ export default function Shipments() {
                           <div className="text-xs text-slate-500">{shipment.senderCity}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-xs font-semibold text-slate-700">
+                          <span className={cn(
+                            "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                            (shipment.branchOrigin || "Bogotá") === "Medellín" 
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
+                              : "bg-blue-50 text-blue-700 border-blue-100"
+                          )}>
                             {shipment.branchOrigin || "Bogotá"}
                           </span>
                         </td>

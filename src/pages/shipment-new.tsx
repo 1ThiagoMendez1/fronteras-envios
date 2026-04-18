@@ -137,9 +137,9 @@ function CitySearchCombobox({ value, onChange }: { value: string, onChange: (v: 
 export default function NewShipment() {
   const [, setLocation] = useLocation()
   const { user, profile } = useAuth()
-  const createMutation = useCreateShipmentMutation()
-  const { data: drivers } = useListDrivers({ onlyActive: true })
-  const { getClientByDocument } = useClients()
+  const rawBranch = profile?.branch || user?.user_metadata?.branch || "Bogotá"
+  const userBranch = rawBranch.toLowerCase().includes("medell") ? "Medellín" : 
+                     rawBranch.toLowerCase().includes("bogot") ? "Bogotá" : rawBranch;
 
   const { register, handleSubmit, setValue, watch, control, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema) as any,
@@ -153,20 +153,22 @@ export default function NewShipment() {
       shippingCost: "" as unknown as number,
       driverPayment: "" as unknown as number,
       cashOnDelivery: "" as unknown as number,
-      branchOrigin: "Bogotá",
-      senderCity: "Bogotá",
+      branchOrigin: userBranch || "Bogotá",
+      senderCity: userBranch || "Bogotá",
       paymentMethod: "Efectivo",
     }
   })
 
-  // Fijar la ciudad de origen del remitente y la sede siempre desde la sesión del usuario
-  const rawBranch = profile?.branch || user?.user_metadata?.branch || "Bogotá"
-  const userBranch = rawBranch.toLowerCase().includes("medell") ? "Medellín" : 
-                     rawBranch.toLowerCase().includes("bogot") ? "Bogotá" : rawBranch;
+  const createMutation = useCreateShipmentMutation()
+  const { data: drivers } = useListDrivers({ onlyActive: true })
+  const { getClientByDocument } = useClients()
+
 
   useEffect(() => {
-    setValue("branchOrigin", userBranch)
-    setValue("senderCity", userBranch, { shouldValidate: true })
+    if (userBranch) {
+      setValue("branchOrigin", userBranch, { shouldValidate: true })
+      setValue("senderCity", userBranch, { shouldValidate: true })
+    }
   }, [userBranch, setValue])
 
   const shippingCost = watch("shippingCost") || 0
@@ -386,22 +388,29 @@ export default function NewShipment() {
               </div>
               <div className="space-y-1.5">
                 <Label>Sede de Origen</Label>
-                <Select 
-                  value={watch("branchOrigin") || userBranch} 
-                  onValueChange={(v) => setValue("branchOrigin", v)}
-                  disabled={profile?.role !== "admin"}
-                >
-                  <SelectTrigger className="h-11 rounded-xl bg-slate-50 opacity-100 disabled:bg-slate-100 disabled:opacity-100 disabled:cursor-auto disabled:text-slate-700 font-semibold">
-                    <SelectValue placeholder={`Sede ${userBranch}`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Bogotá">Sede Bogotá</SelectItem>
-                    <SelectItem value="Medellín">Sede Medellín</SelectItem>
-                    {userBranch !== "Bogotá" && userBranch !== "Medellín" && (
-                      <SelectItem value={userBranch}>Sede {userBranch}</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="branchOrigin"
+                  control={control}
+                  render={({ field }) => (
+                    <Select 
+                      value={field.value} 
+                      onValueChange={field.onChange}
+                      disabled={profile?.role !== "admin"}
+                    >
+                      <SelectTrigger className="h-11 rounded-xl bg-slate-50 opacity-100 disabled:bg-slate-100 disabled:opacity-100 disabled:cursor-auto disabled:text-slate-700 font-semibold">
+                        <SelectValue placeholder="Seleccione sede..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Bogotá">Sede Bogotá</SelectItem>
+                        <SelectItem value="Medellín">Sede Medellín</SelectItem>
+                        {userBranch !== "Bogotá" && userBranch !== "Medellín" && userBranch && (
+                          <SelectItem value={userBranch}>Sede {userBranch}</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.branchOrigin && <p className="text-red-500 text-xs">{errors.branchOrigin.message}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label>Método de Pago</Label>

@@ -5,15 +5,16 @@ interface ListShipmentsOptions {
   status?: string;
   search?: string;
   senderDocument?: string;
+  branch?: string;
   page?: number;
   pageSize?: number;
 }
 
 export function useListShipments(options: ListShipmentsOptions = {}) {
-  const { status, search, senderDocument, page = 1, pageSize = 50 } = options;
+  const { status, search, senderDocument, branch, page = 1, pageSize = 50 } = options;
 
   return useQuery({
-    queryKey: ["shipments", { status, search, senderDocument, page }],
+    queryKey: ["shipments", { status, search, senderDocument, branch, page }],
     queryFn: async () => {
       const adminClient = getAdminClient();
       let query = adminClient
@@ -30,6 +31,10 @@ export function useListShipments(options: ListShipmentsOptions = {}) {
         query = query.or(
           `guide_number.ilike.%${search}%,sender_name.ilike.%${search}%,recipient_name.ilike.%${search}%`
         );
+      }
+
+      if (branch && branch !== "all") {
+        query = query.eq("branch_origin", branch);
       }
 
       if (senderDocument) {
