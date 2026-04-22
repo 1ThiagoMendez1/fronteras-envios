@@ -1,7 +1,7 @@
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { getAdminClient } from "@/lib/admin-client";
 import { useToast } from "./use-toast";
-import { handleWhatsAppMultiple } from "@/lib/whatsapp";
+import { handleWhatsAppMultiple, getHumanizedGreeting } from "@/lib/whatsapp";
 
 // ─── Helper: Guardar cliente si no existe ─────────────────────────────────────
 // Si el documento lleva guión (ej: 900123456-1) es NIT → JURIDICA
@@ -187,6 +187,7 @@ export function useCreateShipmentMutation() {
           const messageText =
             `🚚 *FRONTERAS EXPRESS*\n` +
             `━━━━━━━━━━━━━━━━━━━━\n` +
+            `${getHumanizedGreeting(shipment.sender_name)}\n\n` +
             `✅ *GUÍA REGISTRADA EXITOSAMENTE*\n\n` +
             `📋 *Número de Guía:* ${numGuia}\n` +
             `📅 *Fecha y hora de ingreso:* ${fecha}\n\n` +
@@ -215,7 +216,6 @@ export function useCreateShipmentMutation() {
             `*NIT: 901999613*\n` +
             `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
-          const { handleWhatsAppMultiple } = await import("@/lib/whatsapp");
           const notifications = [{ label: "Remitente", phone: shipment.sender_phone, text: messageText }];
 
           // También notificar al destinatario si tiene teléfono
@@ -223,8 +223,9 @@ export function useCreateShipmentMutation() {
             const recipientMessage =
               `🚚 *FRONTERAS EXPRESS*\n` +
               `━━━━━━━━━━━━━━━━━━━━\n` +
+              `${getHumanizedGreeting(shipment.recipient_name)}\n\n` +
               `📦 *Tienes un paquete en camino*\n\n` +
-              `Hola *${shipment.recipient_name}*, te informamos que *${shipment.sender_name}* te ha enviado un paquete.\n\n` +
+              `Te informamos que *${shipment.sender_name}* te ha enviado un paquete.\n\n` +
               `📋 *Guía:* ${numGuia}\n` +
               `📍 *Desde:* ${shipment.sender_city}\n` +
               `📍 *Hacia:* ${shipment.recipient_city}\n` +
@@ -393,6 +394,7 @@ export function useUpdateShipmentMutation(id: number) {
           const messageText =
             `🚚 *FRONTERAS EXPRESS*\n` +
             `━━━━━━━━━━━━━━━━━━━━\n` +
+            `${getHumanizedGreeting(result.sender_name)}\n\n` +
             `✏️ *ENVÍO MODIFICADO*\n\n` +
             `📋 *Guía:* ${numGuia}\n` +
             `📅 *Fecha de modificación:* ${fecha}\n\n` +
@@ -455,15 +457,15 @@ export function useUpdateShipmentStatusMutation(id: number) {
             .single();
 
           if (shipment) {
-            const { handleWhatsAppMultiple } = await import("@/lib/whatsapp");
             const numGuia = shipment.guide_number || String(shipment.id);
             const trackingUrl = `https://www.fronterasexpress.com/?guide=${numGuia}`;
 
             const messageText = 
               `🚚 *FRONTERAS EXPRESS*\n` +
               `━━━━━━━━━━━━━━━━━━━━\n` +
+              `${getHumanizedGreeting(shipment.recipient_name)}\n\n` +
               `🥳 *¡TU PAQUETE HA SIDO ENTREGADO!*\n\n` +
-              `Hola *${shipment.recipient_name}*, nos complace informarte que tu paquete con guía *${numGuia}* ha sido entregado exitosamente.\n\n` +
+              `Nos complace informarte que tu paquete con guía *${numGuia}* ha sido entregado exitosamente.\n\n` +
               `📍 *Dirección de entrega:* ${shipment.recipient_address}\n\n` +
               `🙏 *¡Gracias por confiar en Fronteras Express!*\n` +
               `Puedes revisar los detalles aquí:\n` +
@@ -478,8 +480,9 @@ export function useUpdateShipmentStatusMutation(id: number) {
               const senderMessageText = 
                 `🚚 *FRONTERAS EXPRESS*\n` +
                 `━━━━━━━━━━━━━━━━━━━━\n` +
+                `${getHumanizedGreeting(shipment.sender_name)}\n\n` +
                 `🥳 *¡PAQUETE ENTREGADO EXITOSAMENTE!*\n\n` +
-                `Hola *${shipment.sender_name}*, el paquete que enviaste a *${shipment.recipient_name}* (Guía: *${numGuia}*) ha sido entregado en la dirección indicada.\n\n` +
+                `El paquete que enviaste a *${shipment.recipient_name}* (Guía: *${numGuia}*) ha sido entregado en la dirección indicada.\n\n` +
                 `🙏 *¡Gracias por confiar en nosotros!*\n` +
                 `Consulta el estado de la guía aquí:\n` +
                 `👉 ${trackingUrl}\n\n` +
@@ -575,7 +578,6 @@ export function useAssignDriverMutation(id: number) {
         }
 
         if (finalShipment && finalShipment.drivers && payload.driverId) {
-          const { handleWhatsAppMultiple } = await import("@/lib/whatsapp");
           const driver = finalShipment.drivers as any;
           const numGuia = finalShipment.guide_number || String(finalShipment.id);
           const trackingUrl = `https://www.fronterasexpress.com/?guide=${numGuia}`;
@@ -592,6 +594,7 @@ export function useAssignDriverMutation(id: number) {
           const messageText = 
             `🚚 *ACTUALIZACIÓN DE ENVÍO - FRONTERAS EXPRESS*\n` +
             `━━━━━━━━━━━━━━━━━━━━\n` +
+            `${getHumanizedGreeting(finalShipment.sender_name)}\n\n` +
             `Tu paquete con guía *${numGuia}* ha sido asignado a un transportador y está próximo a ser recogido/entregado.\n\n` +
             `👤 *DATOS DEL TRANSPORTADOR*\n` +
             `• Nombre: ${driver.name}\n` +
