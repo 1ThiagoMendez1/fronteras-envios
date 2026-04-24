@@ -191,25 +191,8 @@ export function useCreateShipmentMutation() {
             `✅ *GUÍA REGISTRADA EXITOSAMENTE*\n\n` +
             `📋 *Número de Guía:* ${numGuia}\n` +
             `📅 *Fecha y hora de ingreso:* ${fecha}\n\n` +
-            `👤 *REMITENTE*\n` +
-            `• Nombre: ${shipment.sender_name}\n` +
-            `• Teléfono: ${shipment.sender_phone}\n` +
-            `• Ciudad: ${shipment.sender_city}\n` +
-            `• Dirección: ${shipment.sender_address}\n\n` +
-            `📦 *DESTINATARIO*\n` +
-            `• Nombre: ${shipment.recipient_name}\n` +
-            `• Teléfono: ${shipment.recipient_phone}\n` +
-            `• Ciudad: ${shipment.recipient_city}\n` +
-            `• Dirección: ${shipment.recipient_address}\n\n` +
-            `💰 *DETALLE DEL ENVÍO*\n` +
-            `• Peso: ${shipment.weight || 1} kg\n` +
-            `• Cantidad: ${shipment.quantity || 1} pieza(s)\n` +
-            `• Valor declarado: $${Number(shipment.declared_value || 0).toLocaleString("es-CO")}\n` +
-            `• ${shipment.cash_on_delivery > 0 ? 'Valor Contraentrega' : 'Costo del flete'}: *$${Number(shipment.cash_on_delivery > 0 ? shipment.cash_on_delivery : (shipment.shipping_cost || 0)).toLocaleString("es-CO")}*\n` +
-            `• Método de pago: ${shipment.payment_method || "Efectivo"}\n` +
-            (shipment.observations ? `• Observaciones: ${shipment.observations}\n` : ``) +
-            (shipment.package_contents ? `• Contenido: ${shipment.package_contents}\n` : ``) +
-            `\n` +
+            `👤 *Remitente:* ${shipment.sender_name}\n` +
+            `📦 *Destinatario:* ${shipment.recipient_name}\n\n` +
             `🔍 *RASTREA TU ENVÍO EN TIEMPO REAL*\n` +
             `👉 ${trackingUrl}\n\n` +
             `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -226,10 +209,7 @@ export function useCreateShipmentMutation() {
               `${getHumanizedGreeting(shipment.recipient_name)}\n\n` +
               `📦 *Tienes un paquete en camino*\n\n` +
               `Te informamos que *${shipment.sender_name}* te ha enviado un paquete.\n\n` +
-              `📋 *Guía:* ${numGuia}\n` +
-              `📍 *Desde:* ${shipment.sender_city}\n` +
-              `📍 *Hacia:* ${shipment.recipient_city}\n` +
-              `🏠 *Dirección de entrega:* ${shipment.recipient_address}\n\n` +
+              `📋 *Guía:* ${numGuia}\n\n` +
               `🔍 *Rastrea tu paquete aquí:*\n` +
               `👉 ${trackingUrl}\n\n` +
               `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -398,11 +378,8 @@ export function useUpdateShipmentMutation(id: number) {
             `✏️ *ENVÍO MODIFICADO*\n\n` +
             `📋 *Guía:* ${numGuia}\n` +
             `📅 *Fecha de modificación:* ${fecha}\n\n` +
-            `🔄 *CAMBIOS REALIZADOS:*\n` +
-            changes.join("\n") + `\n\n` +
             `👤 *Remitente:* ${result.sender_name}\n` +
-            `📦 *Destinatario:* ${result.recipient_name}\n` +
-            `📍 *Destino:* ${result.recipient_city}\n\n` +
+            `📦 *Destinatario:* ${result.recipient_name}\n\n` +
             `🔍 *Rastrea tu envío aquí:*\n` +
             `👉 ${trackingUrl}\n\n` +
             `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -466,7 +443,8 @@ export function useUpdateShipmentStatusMutation(id: number) {
               `${getHumanizedGreeting(shipment.recipient_name)}\n\n` +
               `🥳 *¡TU PAQUETE HA SIDO ENTREGADO!*\n\n` +
               `Nos complace informarte que tu paquete con guía *${numGuia}* ha sido entregado exitosamente.\n\n` +
-              `📍 *Dirección de entrega:* ${shipment.recipient_address}\n\n` +
+              `👤 *Remitente:* ${shipment.sender_name}\n` +
+              `📦 *Destinatario:* ${shipment.recipient_name}\n\n` +
               `🙏 *¡Gracias por confiar en Fronteras Express!*\n` +
               `Puedes revisar los detalles aquí:\n` +
               `👉 ${trackingUrl}\n\n` +
@@ -482,7 +460,7 @@ export function useUpdateShipmentStatusMutation(id: number) {
                 `━━━━━━━━━━━━━━━━━━━━\n` +
                 `${getHumanizedGreeting(shipment.sender_name)}\n\n` +
                 `🥳 *¡PAQUETE ENTREGADO EXITOSAMENTE!*\n\n` +
-                `El paquete que enviaste a *${shipment.recipient_name}* (Guía: *${numGuia}*) ha sido entregado en la dirección indicada.\n\n` +
+                `El paquete que enviaste a *${shipment.recipient_name}* (Guía: *${numGuia}*) ha sido entregado.\n\n` +
                 `🙏 *¡Gracias por confiar en nosotros!*\n` +
                 `Consulta el estado de la guía aquí:\n` +
                 `👉 ${trackingUrl}\n\n` +
@@ -595,12 +573,9 @@ export function useAssignDriverMutation(id: number) {
             `🚚 *ACTUALIZACIÓN DE ENVÍO - FRONTERAS EXPRESS*\n` +
             `━━━━━━━━━━━━━━━━━━━━\n` +
             `${getHumanizedGreeting(finalShipment.sender_name)}\n\n` +
-            `Tu paquete con guía *${numGuia}* ha sido asignado a un transportador y está próximo a ser recogido/entregado.\n\n` +
-            `👤 *DATOS DEL TRANSPORTADOR*\n` +
-            `• Nombre: ${driver.name}\n` +
-            `• Teléfono: ${driver.phone}\n` +
-            (driver.company ? `• Empresa: ${driver.company}\n` : '') +
-            `• Vehículo: ${vehicle}\n\n` +
+            `Tu paquete con guía *${numGuia}* ha sido asignado a un transportador.\n\n` +
+            `👤 *Remitente:* ${finalShipment.sender_name}\n` +
+            `📦 *Destinatario:* ${finalShipment.recipient_name}\n\n` +
             `🔍 *RASTREA TU ENVÍO EN TIEMPO REAL*\n` +
             `👉 ${trackingUrl}\n\n` +
             `━━━━━━━━━━━━━━━━━━━━\n` +
