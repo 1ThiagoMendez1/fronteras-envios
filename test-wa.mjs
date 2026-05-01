@@ -15,9 +15,9 @@ const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_SERVICE_R
 
 const testData = {
   phone: "573102951743",
-  template_name: "hello_world",
-  params: [],
-  lang: "en_US"
+  template_name: "guia_generada",
+  params: ["24/04/2026", "1194", "Bogotá", "Medellín", "Nequi", "$55.000", "Repuesto"],
+  lang: "es_CO"
 };
 
 async function runTest() {

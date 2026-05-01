@@ -9,7 +9,10 @@ import { supabase } from "@/lib/supabase";
 export interface WhatsAppTemplateConfig {
   name: string;
   languageCode?: string;
-  parameters: string[];
+  headerParameters?: string[];
+  bodyParameters?: string[];
+  buttonParameters?: string[]; // Para botones con URLs dinámicas
+  parameters?: string[]; // Backwards compatibility if needed
 }
 
 export function getWhatsAppUrl(phone: string, text: string) {
@@ -97,11 +100,40 @@ export async function sendWhatsAppCloudTemplate(phone: string, config: WhatsAppT
   }
 
   try {
+    const components = [];
+    if (config.headerParameters && config.headerParameters.length > 0) {
+      components.push({
+        type: "header",
+        parameters: config.headerParameters.map(text => ({ type: "text", text }))
+      });
+    }
+
+    if (config.bodyParameters && config.bodyParameters.length > 0) {
+      components.push({
+        type: "body",
+        parameters: config.bodyParameters.map(text => ({ type: "text", text }))
+      });
+    } else if (config.parameters && config.parameters.length > 0) {
+      components.push({
+        type: "body",
+        parameters: config.parameters.map(text => ({ type: "text", text }))
+      });
+    }
+
+    if (config.buttonParameters && config.buttonParameters.length > 0) {
+      components.push({
+        type: "button",
+        sub_type: "url",
+        index: "0",
+        parameters: config.buttonParameters.map(text => ({ type: "text", text }))
+      });
+    }
+
     // @ts-ignore
-    const { data, error } = await supabase.rpc('send_whatsapp_template_sql', {
+    const { data, error } = await supabase.rpc('send_whatsapp_components_sql', {
       phone: cleanPhone,
       template_name: config.name,
-      params: config.parameters,
+      components: components,
       lang: config.languageCode || "es_CO"
     });
 
@@ -184,15 +216,20 @@ export function getShipmentTemplateConfig(shipment: any, overrideName?: string):
   return {
     name: "guia_generada",
     languageCode: "es_CO",
-    parameters: [
-      overrideName || shipment.sender_name || "Cliente",  // {{1}} Hola [Nombre]
-      fecha,                                             // {{2}} Fecha y hora
-      shipment.guide_number || String(shipment.id),      // {{3}} Guía
-      shipment.sender_city || "Ciudad",                  // {{4}} Origen
-      shipment.recipient_city || "Ciudad",               // {{5}} Destino
-      shipment.payment_method || "Efectivo",             // {{6}} Método de pago
-      fleteFmt,                                          // {{7}} Costo flete
-      shipment.package_contents || "Mercancía"           // {{8}} Dice contener
+    headerParameters: [
+      String(overrideName || shipment.sender_name || "Cliente") // {{1}} Header
+    ],
+    bodyParameters: [
+      String(fecha),                                             // {{1}} Body
+      String(shipment.guide_number || shipment.id || "0"),       // {{2}} Body
+      String(shipment.sender_city || "Ciudad"),                  // {{3}} Body
+      String(shipment.recipient_city || "Ciudad"),               // {{4}} Body
+      String(shipment.payment_method || "Efectivo"),             // {{5}} Body
+      String(fleteFmt),                                          // {{6}} Body
+      String(shipment.package_contents || "Mercancía")           // {{7}} Body
+    ],
+    buttonParameters: [
+      `?guide=${shipment.guide_number || shipment.id || "0"}`        // {{1}} Button (URL Rastrear)
     ]
   };
 }
@@ -221,14 +258,19 @@ export function getDriverAssignedTemplateConfig(shipment: any, overrideName?: st
   return {
     name: "conductor_asignado",
     languageCode: "es_CO",
-    parameters: [
-      overrideName || shipment.sender_name || "Cliente", // {{1}} Nombre del cliente
-      shipment.guide_number || String(shipment.id),      // {{2}} Guía
-      fecha,                                             // {{3}} Fecha y hora de asignación
-      driver.name || "Conductor",                        // {{4}} Nombre conductor
-      driver.phone || "No registrado",                   // {{5}} Teléfono conductor
-      vehicleData,                                       // {{6}} Datos vehículo
-      shipment.observations || "Ninguna"                 // {{7}} Observaciones
+    headerParameters: [
+      String(overrideName || shipment.sender_name || "Cliente")  // {{1}} Header
+    ],
+    bodyParameters: [
+      String(shipment.guide_number || shipment.id || "0"),       // {{1}} Body
+      String(fecha),                                             // {{2}} Body
+      String(driver.name || "Conductor"),                        // {{3}} Body
+      String(driver.phone || "No registrado"),                   // {{4}} Body
+      String(vehicleData),                                       // {{5}} Body
+      String(shipment.observations || "Ninguna")                 // {{6}} Body
+    ],
+    buttonParameters: [
+      `?guide=${shipment.guide_number || shipment.id || "0"}`        // {{1}} Button (URL Rastrear)
     ]
   };
 }
