@@ -20,7 +20,7 @@ import { QRCodeSVG } from "qrcode.react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ChatBox } from "@/components/chat-box"
 import { useToast } from "@/hooks/use-toast"
-import { sendWhatsAppCloudTemplate, getShipmentTemplateConfig } from "@/lib/whatsapp"
+
 
 export default function ShipmentDetail() {
   const [, params] = useRoute("/shipments/:id")

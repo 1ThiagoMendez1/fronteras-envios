@@ -1,4 +1,4 @@
-import React from "react";
+
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 
