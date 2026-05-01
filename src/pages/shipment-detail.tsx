@@ -254,25 +254,6 @@ export default function ShipmentDetail() {
                 </Button>
               </DialogTrigger>
 
-              <Button 
-                variant="outline" 
-                className="rounded-xl h-11 font-semibold border-purple-500 text-purple-600 hover:bg-purple-50"
-                onClick={async () => {
-                  if (!shipment.recipientPhone) {
-                    toast({ title: "Atención", description: "El destinatario no tiene teléfono." })
-                    return;
-                  }
-                  const config = getShipmentTemplateConfig(shipment, shipment.recipientName);
-                  const success = await sendWhatsAppCloudTemplate(shipment.recipientPhone, config);
-                  if (success) {
-                    toast({ title: "API Oficial OK", description: "Plantilla 'guia_generada' enviada correctamente" });
-                  } else {
-                    toast({ title: "Error API Oficial", description: "Revisa la consola para ver el error de Meta", variant: "destructive" });
-                  }
-                }}
-              >
-                Test API Oficial
-              </Button>
               <DialogContent className="sm:max-w-md rounded-2xl">
                 <DialogHeader>
                   <DialogTitle>Actualizar Estado del Envío</DialogTitle>

@@ -159,28 +159,6 @@ export async function sendWhatsAppCloudTemplate(phone: string, config: WhatsAppT
 export async function handleWhatsAppMultiple(notifications: { label: string, phone: string, text: string, template?: WhatsAppTemplateConfig }[]) {
   if (notifications.length === 0) return;
 
-  // Mostramos un Toast persistente con botones para CADA notificación.
-  const elements = notifications.map((n, i) => 
-    React.createElement('a', {
-      key: i,
-      href: getWhatsAppUrl(n.phone, n.text),
-      target: '_blank',
-      rel: 'noopener noreferrer',
-      className: 'bg-green-600 text-white px-3 py-2 rounded shadow text-center font-bold flex-1 w-full mt-2 hover:bg-green-700 block'
-    }, `Re-enviar Manual a ${n.label}`)
-  );
-
-  toast({
-    title: "Notificaciones WhatsApp",
-    description: React.createElement('div', { className: 'flex flex-col gap-2 mt-2 w-full' },
-      React.createElement('p', { className: 'text-sm opacity-90' }, "Intentando envío automático vía API oficial..."),
-      React.createElement('p', { className: 'text-xs opacity-70 italic' }, "Si no se envía solo, usa los botones manuales:"),
-      ...elements
-    ),
-    duration: 20000,
-  });
-
-  // Intentamos enviar todos automáticamente vía Cloud API (si falla, no pasa nada, quedan los botones)
   for (const n of notifications) {
     let sent = false;
     if (n.template) {
@@ -190,9 +168,20 @@ export async function handleWhatsAppMultiple(notifications: { label: string, pho
     }
 
     if (sent) {
+      toast({
+        title: "Mensaje Enviado",
+        description: `Notificación automática enviada a ${n.label}`,
+        duration: 3000,
+      });
       console.log(`Mensaje enviado exitosamente a ${n.label} vía API`);
     } else {
-      console.warn(`No se pudo enviar automáticamente a ${n.label}, se requiere acción manual.`);
+      toast({
+        title: "Error de Envío",
+        description: `No se pudo enviar la notificación a ${n.label}. Revisa la consola para más detalles.`,
+        variant: "destructive",
+        duration: 5000,
+      });
+      console.warn(`No se pudo enviar automáticamente a ${n.label}.`);
     }
   }
 }
