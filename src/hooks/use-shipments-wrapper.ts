@@ -572,15 +572,6 @@ export function useAssignDriverMutation(id: number) {
           const numGuia = finalShipment.guide_number || String(finalShipment.id);
           const trackingUrl = `https://www.fronterasexpress.com/?guide=${numGuia}`;
           
-          const vehicleMap: Record<string, string> = {
-            'motorcycle': 'Motocicleta',
-            'car': 'Automóvil',
-            'van': 'Furgoneta',
-            'truck': 'Camión',
-            'bus': 'Bus'
-          };
-          const vehicle = vehicleMap[driver.vehicle_type] || driver.vehicle_type;
-
           const messageText = 
             `🚚 *ACTUALIZACIÓN DE ENVÍO - FRONTERAS EXPRESS*\n` +
             `━━━━━━━━━━━━━━━━━━━━\n` +

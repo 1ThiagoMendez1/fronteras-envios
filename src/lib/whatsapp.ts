@@ -5,8 +5,6 @@ import { supabase } from "@/lib/supabase";
 // El sistema de envío por Evolution API ha sido desactivado temporalmente para evitar bloqueos.
 // Ahora se utiliza la WhatsApp Cloud API (Oficial) como método principal y enlaces manuales como respaldo.
 
-const WA_TOKEN = import.meta.env.VITE_WHATSAPP_TOKEN;
-const WA_PHONE_NUMBER_ID = import.meta.env.VITE_WHATSAPP_NUMBER_ID;
 
 export interface WhatsAppTemplateConfig {
   name: string;
@@ -63,6 +61,7 @@ export async function sendWhatsAppCloudMessage(phone: string, text: string) {
   try {
     // Llamamos a la función RPC que creamos en Supabase
     // Esto evita bloqueos de CORS y mantiene el Token seguro en el servidor
+    // @ts-ignore
     const { data, error } = await supabase.rpc('send_whatsapp_sql', {
       phone: cleanPhone,
       message: text
@@ -98,6 +97,7 @@ export async function sendWhatsAppCloudTemplate(phone: string, config: WhatsAppT
   }
 
   try {
+    // @ts-ignore
     const { data, error } = await supabase.rpc('send_whatsapp_template_sql', {
       phone: cleanPhone,
       template_name: config.name,
