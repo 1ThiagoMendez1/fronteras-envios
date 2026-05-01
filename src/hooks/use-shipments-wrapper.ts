@@ -1,7 +1,7 @@
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { getAdminClient } from "@/lib/admin-client";
 import { useToast } from "./use-toast";
-import { handleWhatsAppMultiple, getHumanizedGreeting } from "@/lib/whatsapp";
+import { handleWhatsAppMultiple, getHumanizedGreeting, getShipmentTemplateConfig, getDriverAssignedTemplateConfig } from "@/lib/whatsapp";
 
 // ─── Helper: Guardar cliente si no existe ─────────────────────────────────────
 // Si el documento lleva guión (ej: 900123456-1) es NIT → JURIDICA
@@ -199,27 +199,39 @@ export function useCreateShipmentMutation() {
             `*NIT: 901999613*\n` +
             `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
-          const notifications = [{ label: "Remitente", phone: shipment.sender_phone, text: messageText }];
+            const notifications = [
+              { 
+                label: "Remitente", 
+                phone: shipment.sender_phone, 
+                text: messageText, 
+                template: getShipmentTemplateConfig(shipment, shipment.sender_name) 
+              }
+            ];
 
-          // También notificar al destinatario si tiene teléfono
-          if (shipment.recipient_phone && shipment.recipient_phone !== shipment.sender_phone) {
-            const recipientMessage =
-              `🚚 *FRONTERAS EXPRESS*\n` +
-              `━━━━━━━━━━━━━━━━━━━━\n` +
-              `${getHumanizedGreeting(shipment.recipient_name)}\n\n` +
-              `📦 *Tienes un paquete en camino*\n\n` +
-              `Te informamos que *${shipment.sender_name}* te ha enviado un paquete.\n\n` +
-              `📋 *Guía:* ${numGuia}\n\n` +
-              `🔍 *Rastrea tu paquete aquí:*\n` +
-              `👉 ${trackingUrl}\n\n` +
-              `━━━━━━━━━━━━━━━━━━━━\n` +
-              `*NIT: 901999613*\n` +
-              `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
+            // También notificar al destinatario si tiene teléfono
+            if (shipment.recipient_phone && shipment.recipient_phone !== shipment.sender_phone) {
+              const recipientMessage =
+                `🚚 *FRONTERAS EXPRESS*\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `${getHumanizedGreeting(shipment.recipient_name)}\n\n` +
+                `📦 *Tienes un paquete en camino*\n\n` +
+                `Te informamos que *${shipment.sender_name}* te ha enviado un paquete.\n\n` +
+                `📋 *Guía:* ${numGuia}\n\n` +
+                `🔍 *Rastrea tu paquete aquí:*\n` +
+                `👉 ${trackingUrl}\n\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `*NIT: 901999613*\n` +
+                `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
-            notifications.push({ label: "Destinatario", phone: shipment.recipient_phone, text: recipientMessage });
-          }
+              notifications.push({ 
+                label: "Destinatario", 
+                phone: shipment.recipient_phone, 
+                text: recipientMessage,
+                template: getShipmentTemplateConfig(shipment, shipment.recipient_name)
+              });
+            }
 
-          handleWhatsAppMultiple(notifications);
+            handleWhatsAppMultiple(notifications);
         }
       } catch (err) {
         console.error("Error enviando notificación WhatsApp al crear guía:", err);
@@ -583,9 +595,21 @@ export function useAssignDriverMutation(id: number) {
             `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
           const notifications = [];
-          if (finalShipment.sender_phone) notifications.push({ label: "Remitente", phone: finalShipment.sender_phone, text: messageText });
+          if (finalShipment.sender_phone) {
+            notifications.push({ 
+              label: "Remitente", 
+              phone: finalShipment.sender_phone, 
+              text: messageText,
+              template: getDriverAssignedTemplateConfig(finalShipment, finalShipment.sender_name)
+            });
+          }
           if (finalShipment.recipient_phone && finalShipment.recipient_phone !== finalShipment.sender_phone) {
-            notifications.push({ label: "Destinatario", phone: finalShipment.recipient_phone, text: messageText });
+            notifications.push({ 
+              label: "Destinatario", 
+              phone: finalShipment.recipient_phone, 
+              text: messageText,
+              template: getDriverAssignedTemplateConfig(finalShipment, finalShipment.recipient_name)
+            });
           }
           handleWhatsAppMultiple(notifications);
         }
