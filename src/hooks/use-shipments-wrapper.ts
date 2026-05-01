@@ -568,7 +568,6 @@ export function useAssignDriverMutation(id: number) {
         }
 
         if (finalShipment && finalShipment.drivers && payload.driverId) {
-          const driver = finalShipment.drivers as any;
           const numGuia = finalShipment.guide_number || String(finalShipment.id);
           const trackingUrl = `https://www.fronterasexpress.com/?guide=${numGuia}`;
           
