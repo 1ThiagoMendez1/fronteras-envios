@@ -264,6 +264,46 @@ export function getDriverAssignedTemplateConfig(shipment: any, overrideName?: st
   };
 }
 
+/**
+ * Mapea la entrega de un envío a los parámetros de la plantilla 'envio_entregado'
+ * Estructura de la plantilla (aprobada en Meta):
+ *   Header : {{1}} → Nombre del destinatario
+ *   Body   : {{1}} → Número de guía
+ *            {{2}} → Fecha y hora de entrega
+ *            {{3}} → Dirección / sede de entrega
+ *   Button : {{1}} → Sufijo de URL para rastreo (?guide=XXXX)
+ */
+export function getDeliveredTemplateConfig(shipment: any): WhatsAppTemplateConfig {
+  const now = new Date();
+  const fechaEntrega = now.toLocaleDateString("es-CO", {
+    year: "numeric", month: "2-digit", day: "2-digit"
+  }) + ", " + now.toLocaleTimeString("es-CO", {
+    hour: "2-digit", minute: "2-digit", hour12: true
+  });
+
+  // La dirección de entrega: si tiene dirección del destinatario la usamos,
+  // si no, usamos la ciudad + "Sede" como indica la plantilla de ejemplo.
+  const direccionEntrega = shipment.recipient_address
+    ? shipment.recipient_address
+    : `Sede ${shipment.recipient_city || "destino"}`;
+
+  return {
+    name: "envio_entregado",
+    languageCode: "es_CO",
+    headerParameters: [
+      String(shipment.recipient_name || shipment.recipientName || "Cliente")  // {{1}} Header
+    ],
+    bodyParameters: [
+      String(shipment.guide_number || shipment.guideNumber || shipment.id || "0"), // {{1}} Body - Guía
+      String(fechaEntrega),                                                          // {{2}} Body - Fecha/hora entrega
+      String(direccionEntrega),                                                      // {{3}} Body - Dirección entrega
+    ],
+    buttonParameters: [
+      `?guide=${shipment.guide_number || shipment.guideNumber || shipment.id || "0"}` // {{1}} Button URL
+    ]
+  };
+}
+
 export function getHumanizedGreeting(name?: string): string {
   const now = new Date();
   const hour = now.getHours();

@@ -20,6 +20,7 @@ import { QRCodeSVG } from "qrcode.react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ChatBox } from "@/components/chat-box"
 import { useToast } from "@/hooks/use-toast"
+import { sendWhatsAppCloudTemplate, getDeliveredTemplateConfig } from "@/lib/whatsapp"
 
 
 export default function ShipmentDetail() {
@@ -76,6 +77,31 @@ export default function ShipmentDetail() {
       status: newStatus,
       notes: statusNote || undefined
     })
+
+    // Al marcar como entregado, notificar al destinatario vía plantilla oficial Meta
+    if (newStatus === "delivered" && shipment?.recipientPhone) {
+      try {
+        const templateConfig = getDeliveredTemplateConfig(shipment)
+        const sent = await sendWhatsAppCloudTemplate(shipment.recipientPhone, templateConfig)
+        if (sent) {
+          toast({
+            title: "✅ Notificación enviada",
+            description: `Se notificó a ${shipment.recipientName} sobre la entrega de su paquete.`,
+            duration: 4000,
+          })
+        } else {
+          toast({
+            title: "⚠️ Notificación no enviada",
+            description: "El estado fue actualizado, pero no se pudo enviar el WhatsApp al destinatario.",
+            variant: "destructive",
+            duration: 5000,
+          })
+        }
+      } catch (err) {
+        console.error("Error enviando plantilla envio_entregado:", err)
+      }
+    }
+
     setIsStatusDialogOpen(false)
     setNewStatus("")
     setStatusNote("")
