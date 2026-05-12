@@ -20,7 +20,6 @@ import { QRCodeSVG } from "qrcode.react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { ChatBox } from "@/components/chat-box"
 import { useToast } from "@/hooks/use-toast"
-import { sendWhatsAppCloudTemplate, getDeliveredTemplateConfig } from "@/lib/whatsapp"
 
 
 export default function ShipmentDetail() {
