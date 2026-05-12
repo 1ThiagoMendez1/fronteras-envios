@@ -399,8 +399,22 @@ export function useUpdateShipmentMutation(id: number) {
             `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
           const notifications = [];
-          if (result.sender_phone) notifications.push({ label: "Remitente", phone: result.sender_phone, text: messageText });
-          if (result.recipient_phone && result.recipient_phone !== result.sender_phone) notifications.push({ label: "Destinatario", phone: result.recipient_phone, text: messageText });
+          if (result.sender_phone) {
+            notifications.push({ 
+              label: "Remitente", 
+              phone: result.sender_phone, 
+              text: messageText,
+              template: getShipmentTemplateConfig(result, result.sender_name)
+            });
+          }
+          if (result.recipient_phone && result.recipient_phone !== result.sender_phone) {
+            notifications.push({ 
+              label: "Destinatario", 
+              phone: result.recipient_phone, 
+              text: messageText,
+              template: getShipmentTemplateConfig(result, result.recipient_name)
+            });
+          }
           
           handleWhatsAppMultiple(notifications);
         } catch (err) {
@@ -465,7 +479,14 @@ export function useUpdateShipmentStatusMutation(id: number) {
               `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
 
             const notifications = [];
-            if (shipment.recipient_phone) notifications.push({ label: "Destinatario", phone: shipment.recipient_phone, text: messageText });
+            if (shipment.recipient_phone) {
+              notifications.push({ 
+                label: "Destinatario", 
+                phone: shipment.recipient_phone, 
+                text: messageText,
+                template: getDeliveredTemplateConfig(shipment, shipment.recipient_name)
+              });
+            }
             if (shipment.sender_phone && shipment.sender_phone !== shipment.recipient_phone) {
               const senderMessageText = 
                 `🚚 *FRONTERAS EXPRESS*\n` +
@@ -479,7 +500,13 @@ export function useUpdateShipmentStatusMutation(id: number) {
                 `━━━━━━━━━━━━━━━━━━━━\n` +
                 `*NIT: 901999613*\n` +
                 `_Fronteras Express — Más que rápido, siempre a tiempo_ ✨`;
-              notifications.push({ label: "Remitente", phone: shipment.sender_phone, text: senderMessageText });
+              
+              notifications.push({ 
+                label: "Remitente", 
+                phone: shipment.sender_phone, 
+                text: senderMessageText,
+                template: getDeliveredTemplateConfig(shipment, shipment.sender_name) // Usamos la misma plantilla pero con el nombre del remitente
+              });
             }
             handleWhatsAppMultiple(notifications);
           }

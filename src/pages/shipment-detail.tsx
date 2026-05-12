@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { QRCodeSVG } from "qrcode.react"
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { ChatBox } from "@/components/chat-box"
 import { useToast } from "@/hooks/use-toast"
 import { sendWhatsAppCloudTemplate, getDeliveredTemplateConfig } from "@/lib/whatsapp"
@@ -78,29 +78,8 @@ export default function ShipmentDetail() {
       notes: statusNote || undefined
     })
 
-    // Al marcar como entregado, notificar al destinatario vía plantilla oficial Meta
-    if (newStatus === "delivered" && shipment?.recipientPhone) {
-      try {
-        const templateConfig = getDeliveredTemplateConfig(shipment)
-        const sent = await sendWhatsAppCloudTemplate(shipment.recipientPhone, templateConfig)
-        if (sent) {
-          toast({
-            title: "✅ Notificación enviada",
-            description: `Se notificó a ${shipment.recipientName} sobre la entrega de su paquete.`,
-            duration: 4000,
-          })
-        } else {
-          toast({
-            title: "⚠️ Notificación no enviada",
-            description: "El estado fue actualizado, pero no se pudo enviar el WhatsApp al destinatario.",
-            variant: "destructive",
-            duration: 5000,
-          })
-        }
-      } catch (err) {
-        console.error("Error enviando plantilla envio_entregado:", err)
-      }
-    }
+    // La notificación ahora se maneja automáticamente en useUpdateShipmentStatusMutation (onSuccess)
+    // para evitar duplicidad y asegurar que se use la plantilla oficial de Meta.
 
     setIsStatusDialogOpen(false)
     setNewStatus("")
@@ -283,6 +262,9 @@ export default function ShipmentDetail() {
               <DialogContent className="sm:max-w-md rounded-2xl">
                 <DialogHeader>
                   <DialogTitle>Actualizar Estado del Envío</DialogTitle>
+                  <DialogDescription>
+                    Selecciona el nuevo estado del paquete y agrega una observación si es necesario.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
@@ -694,9 +676,14 @@ export default function ShipmentDetail() {
               </div>
               <div className="flex flex-col items-center justify-center text-center px-2 flex-1">
                  <span className="text-[8px] font-bold uppercase text-gray-700 leading-tight">Fecha y hora de ingreso</span>
-                 <span className="text-[10px] font-black leading-tight text-black">
-                   {(() => { try { return format(new Date(shipment.createdAt), "dd/MM/yyyy HH:mm", { locale: es }) } catch { return shipment.createdAt ? String(shipment.createdAt).substring(0, 16) : "—" } })()}
-                 </span>
+                  <span className="text-[10px] font-black leading-tight text-black">
+                    {(() => { try { return format(new Date(shipment.createdAt), "dd/MM/yyyy HH:mm", { locale: es }) } catch { return shipment.createdAt ? String(shipment.createdAt).substring(0, 16) : "—" } })()}
+                  </span>
+                  <div className="mt-1 flex items-center gap-1 text-[9px] font-black uppercase text-gray-600 bg-gray-100 px-1 rounded">
+                    <span>{shipment.senderCity}</span>
+                    <span className="text-[11px] leading-none text-gray-400">→</span>
+                    <span>{shipment.recipientCity}</span>
+                  </div>
               </div>
               <div className="text-right shrink-0 ml-2">
                 <h2 className="text-3xl font-black uppercase tracking-tighter leading-none">{formatGuide(shipment.guideNumber)}</h2>
@@ -806,6 +793,11 @@ export default function ShipmentDetail() {
                       </div>
                       
                       <div className="flex-1 flex flex-col justify-center relative z-10 w-[70%]">
+                        <div className="flex items-center gap-1 text-[9px] font-bold uppercase text-gray-500 mb-1">
+                          <span className="shrink-0">{shipment.senderCity}</span>
+                          <span className="text-[11px] font-black text-gray-300">→</span>
+                          <span className="shrink-0 text-gray-800 font-black">{shipment.recipientCity}</span>
+                        </div>
                         <div className="text-[10px] font-black uppercase text-black mt-1">DESTINATARIO:</div>
                         <div className="w-16 border-b-[1.5px] border-gray-300 mb-1 block shrink-0"></div>
                         <div className="font-extrabold text-[15px] leading-tight uppercase line-clamp-1">{shipment.recipientName}</div>

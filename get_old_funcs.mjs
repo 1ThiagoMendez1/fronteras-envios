@@ -12,18 +12,12 @@ envContent.split("\n").forEach(line => {
 
 const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_SERVICE_ROLE_KEY);
 
-async function getFunctions() {
-  const funcs = ['send_whatsapp_sql', 'send_whatsapp_template_sql', 'send_whatsapp_components_sql'];
+async function run() {
+  // En PostgreSQL, podemos consultar pg_proc para ver el código fuente de las funciones.
+  // Vamos a usar un query RESTful si tenemos acceso, o un RPC genérico si existe.
+  // Como no tenemos acceso directo, intentaremos usar la tabla de base de datos usando PostgREST.
   
-  for (const func of funcs) {
-    console.log(`\n--- ${func} ---`);
-    const { data, error } = await supabase.rpc('get_function_def', { func_name: func });
-    if (error) {
-      console.error(`Error fetching ${func}:`, error.message);
-    } else {
-      console.log(data);
-    }
-  }
+  // Vamos a imprimir la ayuda
+  console.log("Necesito ver las funciones antiguas.");
 }
-
-getFunctions();
+run();

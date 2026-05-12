@@ -18,7 +18,7 @@ export interface WhatsAppTemplateConfig {
 export function getWhatsAppUrl(phone: string, text: string) {
   // Limpiar el teléfono para dejar solo números
   let cleanPhone = phone.replace(/[^\d]/g, '');
-  
+
   // Asignar prefijo de Colombia por defecto si el número tiene 10 dígitos (estándar celular Col)
   if (cleanPhone.length === 10 && !cleanPhone.startsWith('57')) {
     cleanPhone = '57' + cleanPhone;
@@ -35,7 +35,7 @@ export function getWhatsAppUrl(phone: string, text: string) {
 export async function sendWhatsAppMessage(phone: string, text: string) {
   // Intentar envío automático vía Cloud API primero
   const success = await sendWhatsAppCloudMessage(phone, text);
-  
+
   if (success) return true;
 
   // Si falla el envío automático (CORS, Token inválido, ventana 24h cerrada), fallback al manual
@@ -90,8 +90,8 @@ export async function sendWhatsAppCloudMessage(phone: string, text: string) {
 
 /**
  * Envía un mensaje basado en plantilla vía WhatsApp Cloud API (Meta).
- * NOTA: Requiere que crees otra función RPC en Supabase llamada 'send_whatsapp_template_sql'
- * con parámetros: phone (text), template_name (text), params (jsonb)
+ * NOTA: Requiere que crees otra función RPC en Supabase llamada 'send_whatsapp_components_sql'
+ * con parámetros: phone (text), template_name (text), components (jsonb), lang (text)
  */
 export async function sendWhatsAppCloudTemplate(phone: string, config: WhatsAppTemplateConfig) {
   let cleanPhone = phone.replace(/[^\d]/g, '');
@@ -196,10 +196,10 @@ export function getShipmentTemplateConfig(shipment: any, overrideName?: string):
     hour: "2-digit", minute: "2-digit", hour12: true
   });
 
-  const fleteFmt = new Intl.NumberFormat("es-CO", { 
-    style: "currency", 
-    currency: "COP", 
-    maximumFractionDigits: 0 
+  const fleteFmt = new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0
   }).format(shipment.shipping_cost || 0);
 
   return {
@@ -248,10 +248,10 @@ export function getDriverAssignedTemplateConfig(shipment: any, overrideName?: st
     name: "conductor_asignado",
     languageCode: "es_CO",
     headerParameters: [
-      String(overrideName || shipment.sender_name || "Cliente")  // {{1}} Header
+      String(overrideName || shipment.sender_name || shipment.senderName || "Cliente")  // {{1}} Header
     ],
     bodyParameters: [
-      String(shipment.guide_number || shipment.id || "0"),       // {{1}} Body
+      String(shipment.guide_number || shipment.guideNumber || shipment.id || "0"),       // {{1}} Body
       String(fecha),                                             // {{2}} Body
       String(driver.name || "Conductor"),                        // {{3}} Body
       String(driver.phone || "No registrado"),                   // {{4}} Body
@@ -259,7 +259,7 @@ export function getDriverAssignedTemplateConfig(shipment: any, overrideName?: st
       String(shipment.observations || "Ninguna")                 // {{6}} Body
     ],
     buttonParameters: [
-      `?guide=${shipment.guide_number || shipment.id || "0"}`        // {{1}} Button (URL Rastrear)
+      `?guide=${shipment.guide_number || shipment.guideNumber || shipment.id || "0"}`        // {{1}} Button (URL Rastrear)
     ]
   };
 }
@@ -273,7 +273,7 @@ export function getDriverAssignedTemplateConfig(shipment: any, overrideName?: st
  *            {{3}} → Dirección / sede de entrega
  *   Button : {{1}} → Sufijo de URL para rastreo (?guide=XXXX)
  */
-export function getDeliveredTemplateConfig(shipment: any): WhatsAppTemplateConfig {
+export function getDeliveredTemplateConfig(shipment: any, overrideName?: string): WhatsAppTemplateConfig {
   const now = new Date();
   const fechaEntrega = now.toLocaleDateString("es-CO", {
     year: "numeric", month: "2-digit", day: "2-digit"
@@ -283,15 +283,15 @@ export function getDeliveredTemplateConfig(shipment: any): WhatsAppTemplateConfi
 
   // La dirección de entrega: si tiene dirección del destinatario la usamos,
   // si no, usamos la ciudad + "Sede" como indica la plantilla de ejemplo.
-  const direccionEntrega = shipment.recipient_address
-    ? shipment.recipient_address
-    : `Sede ${shipment.recipient_city || "destino"}`;
+  const direccionEntrega = shipment.recipient_address || shipment.recipientAddress
+    ? (shipment.recipient_address || shipment.recipientAddress)
+    : `Sede ${shipment.recipient_city || shipment.recipientCity || "destino"}`;
 
   return {
     name: "envio_entregado",
     languageCode: "es_CO",
     headerParameters: [
-      String(shipment.recipient_name || shipment.recipientName || "Cliente")  // {{1}} Header
+      String(overrideName || shipment.recipient_name || shipment.recipientName || "Cliente")  // {{1}} Header
     ],
     bodyParameters: [
       String(shipment.guide_number || shipment.guideNumber || shipment.id || "0"), // {{1}} Body - Guía
@@ -307,7 +307,7 @@ export function getDeliveredTemplateConfig(shipment: any): WhatsAppTemplateConfi
 export function getHumanizedGreeting(name?: string): string {
   const now = new Date();
   const hour = now.getHours();
-  
+
   // Calcular la semana del año
   const start = new Date(now.getFullYear(), 0, 1);
   const diff = now.getTime() - start.getTime();
