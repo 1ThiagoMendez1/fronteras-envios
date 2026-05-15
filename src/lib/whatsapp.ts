@@ -212,7 +212,7 @@ export function getShipmentTemplateConfig(shipment: any, overrideName?: string):
       String(fecha),                                             // {{1}} Body
       String(shipment.guide_number || shipment.id || "0"),       // {{2}} Body
       String(shipment.sender_city || "Ciudad"),                  // {{3}} Body
-      String(shipment.recipient_city || "Ciudad"),               // {{4}} Body
+      String(shipment.recipient_address || shipment.recipientAddress || "Dirección"), // {{4}} Body
       String(shipment.payment_method || "Efectivo"),             // {{5}} Body
       String(fleteFmt),                                          // {{6}} Body
       String(shipment.package_contents || "Mercancía")           // {{7}} Body
