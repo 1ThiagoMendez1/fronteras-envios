@@ -203,19 +203,20 @@ export function getShipmentTemplateConfig(shipment: any, overrideName?: string):
   }).format(shipment.shipping_cost || 0);
 
   return {
-    name: "guia_generada",
+    name: "guia_creada",
     languageCode: "es_CO",
     headerParameters: [
       String(overrideName || shipment.sender_name || "Cliente") // {{1}} Header
     ],
     bodyParameters: [
-      String(fecha),                                             // {{1}} Body
-      String(shipment.guide_number || shipment.id || "0"),       // {{2}} Body
-      String(shipment.sender_city || "Ciudad"),                  // {{3}} Body
-      String(shipment.recipient_address || shipment.recipientAddress || "Dirección"), // {{4}} Body
-      String(shipment.payment_method || "Efectivo"),             // {{5}} Body
-      String(fleteFmt),                                          // {{6}} Body
-      String(shipment.package_contents || "Mercancía")           // {{7}} Body
+      String(fecha),                                             // {{1}} Body (Fecha y hora de ingreso)
+      String(shipment.guide_number || shipment.id || "0"),       // {{2}} Body (Guía)
+      String(shipment.sender_city || "Ciudad"),                  // {{3}} Body (Origen)
+      String(shipment.recipient_city || shipment.recipientCity || "Ciudad"), // {{4}} Body (Destino)
+      String(shipment.payment_method || "Efectivo"),             // {{5}} Body (Método de pago)
+      String(fleteFmt),                                          // {{6}} Body (Costo del flete)
+      String(shipment.package_contents || "Mercancía"),          // {{7}} Body (Dice contener)
+      String(shipment.sender_address || shipment.senderAddress || "Dirección") // {{8}} Body (Dirección de recojida)
     ],
     buttonParameters: [
       `?guide=${shipment.guide_number || shipment.id || "0"}`        // {{1}} Button (URL Rastrear)
