@@ -6,7 +6,7 @@ WORKDIR /app
 # Copiar el package.json y package-lock.json primero
 # (esto aprovecha el caché de Docker para acelerar instalaciones futuras)
 COPY package*.json ./
-RUN npm install
+RUN npm install --network-timeout=100000
 
 # Copiar el resto del código
 COPY . .
