@@ -247,11 +247,21 @@ export default function NewShipment() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Ciudad de Origen</Label>
-                  <Input
-                    {...register("senderCity")}
-                    readOnly
-                    className="h-11 rounded-xl bg-slate-100 font-semibold text-slate-700 cursor-not-allowed"
-                  />
+                  {profile?.role === "admin" ? (
+                    <>
+                      <input type="hidden" {...register("senderCity")} />
+                      <CitySearchCombobox
+                        value={watch("senderCity")}
+                        onChange={(v) => setValue("senderCity", v, { shouldValidate: true })}
+                      />
+                    </>
+                  ) : (
+                    <Input
+                      {...register("senderCity")}
+                      readOnly
+                      className="h-11 rounded-xl bg-slate-100 font-semibold text-slate-700 cursor-not-allowed"
+                    />
+                  )}
                   {errors.senderCity && <p className="text-red-500 text-xs">{errors.senderCity.message}</p>}
                 </div>
                 <div className="col-span-2 space-y-1.5">

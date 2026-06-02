@@ -150,7 +150,7 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
     senderName: shipment.senderName || "",
     senderPhone: shipment.senderPhone || "",
     senderAddress: shipment.senderAddress || "TERMINAL",
-    senderCity: userBranch,
+    senderCity: shipment.senderCity || userBranch,
     recipientDocument: shipment.recipientDocument || "",
     recipientName: shipment.recipientName || "",
     recipientPhone: shipment.recipientPhone || "",
@@ -247,11 +247,21 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
                 </div>
                 <div className="space-y-1.5">
                   <Label>Ciudad de Origen</Label>
-                  <Input
-                    {...register("senderCity")}
-                    readOnly
-                    className="h-11 rounded-xl bg-slate-100 font-semibold text-slate-700 cursor-not-allowed"
-                  />
+                  {isAdmin ? (
+                    <>
+                      <input type="hidden" {...register("senderCity")} />
+                      <CitySearchCombobox
+                        value={watch("senderCity")}
+                        onChange={(v) => setValue("senderCity", v, { shouldValidate: true })}
+                      />
+                    </>
+                  ) : (
+                    <Input
+                      {...register("senderCity")}
+                      readOnly
+                      className="h-11 rounded-xl bg-slate-100 font-semibold text-slate-700 cursor-not-allowed"
+                    />
+                  )}
                   {errors.senderCity && <p className="text-red-500 text-xs">{errors.senderCity.message}</p>}
                 </div>
                 <div className="col-span-2 space-y-1.5">
