@@ -777,7 +777,7 @@ export default function ShipmentDetail() {
                 )}
               </div>
               <div className="w-[120px] flex flex-col items-center justify-center p-2 border-[3px] border-black rounded-xl shrink-0">
-                 {printMode === "guia" && (
+                 {(printMode === "guia" || printMode === "guia_conductor") && (
                    <span className="text-[8px] font-bold leading-none mb-1.5 text-black">NIT: 901999613</span>
                  )}
 
