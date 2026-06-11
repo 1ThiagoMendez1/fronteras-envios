@@ -225,6 +225,44 @@ export function getShipmentTemplateConfig(shipment: any, overrideName?: string):
 }
 
 /**
+ * Mapea un envío a los parámetros de la plantilla 'guia_creada_destinatario'
+ */
+export function getShipmentRecipientTemplateConfig(shipment: any, overrideName?: string): WhatsAppTemplateConfig {
+  const fecha = new Date(shipment.created_at).toLocaleDateString("es-CO", {
+    year: "numeric", month: "2-digit", day: "2-digit"
+  }) + ", " + new Date(shipment.created_at).toLocaleTimeString("es-CO", {
+    hour: "2-digit", minute: "2-digit", hour12: true
+  });
+
+  const fleteFmt = new Intl.NumberFormat("es-CO", { 
+    style: "currency", 
+    currency: "COP", 
+    maximumFractionDigits: 0 
+  }).format(shipment.shipping_cost || 0);
+
+  return {
+    name: "guia_creada_destinatario",
+    languageCode: "es_CO",
+    headerParameters: [
+      String(overrideName || shipment.recipient_name || "Cliente") // {{1}} Header
+    ],
+    bodyParameters: [
+      String(fecha),                                             // {{1}} Body (Fecha y hora de ingreso)
+      String(shipment.guide_number || shipment.id || "0"),       // {{2}} Body (Guía)
+      String(shipment.sender_city || "Ciudad"),                  // {{3}} Body (Origen)
+      String(shipment.recipient_city || shipment.recipientCity || "Ciudad"), // {{4}} Body (Destino)
+      String(shipment.payment_method || "Efectivo"),             // {{5}} Body (Método de pago)
+      String(fleteFmt),                                          // {{6}} Body (Costo del flete)
+      String(shipment.package_contents || "Mercancía"),          // {{7}} Body (Dice contener)
+      String(shipment.sender_address || shipment.senderAddress || "Dirección") // {{8}} Body (Dirección de recojida)
+    ],
+    buttonParameters: [
+      `?guide=${shipment.guide_number || shipment.id || "0"}`        // {{1}} Button (URL Rastrear)
+    ]
+  };
+}
+
+/**
  * Mapea la asignación de conductor a los parámetros de la plantilla 'conductor_asignado'
  */
 export function getDriverAssignedTemplateConfig(shipment: any, overrideName?: string): WhatsAppTemplateConfig {

@@ -1,7 +1,7 @@
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { getAdminClient } from "@/lib/admin-client";
 import { useToast } from "./use-toast";
-import { handleWhatsAppMultiple, getHumanizedGreeting, getShipmentTemplateConfig, getDriverAssignedTemplateConfig } from "@/lib/whatsapp";
+import { handleWhatsAppMultiple, getHumanizedGreeting, getShipmentTemplateConfig, getShipmentRecipientTemplateConfig, getDriverAssignedTemplateConfig } from "@/lib/whatsapp";
 
 // ─── Helper: Guardar cliente si no existe ─────────────────────────────────────
 // Si el documento lleva guión (ej: 900123456-1) es NIT → JURIDICA
@@ -227,7 +227,7 @@ export function useCreateShipmentMutation() {
                 label: "Destinatario", 
                 phone: shipment.recipient_phone, 
                 text: recipientMessage,
-                template: getShipmentTemplateConfig(shipment, shipment.recipient_name)
+                template: getShipmentRecipientTemplateConfig(shipment, shipment.recipient_name)
               });
             }
 
