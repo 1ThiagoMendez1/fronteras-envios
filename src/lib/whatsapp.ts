@@ -234,12 +234,6 @@ export function getShipmentRecipientTemplateConfig(shipment: any, overrideName?:
     hour: "2-digit", minute: "2-digit", hour12: true
   });
 
-  const fleteFmt = new Intl.NumberFormat("es-CO", { 
-    style: "currency", 
-    currency: "COP", 
-    maximumFractionDigits: 0 
-  }).format(shipment.shipping_cost || 0);
-
   return {
     name: "guia_creada_destinatario",
     languageCode: "es_CO",
@@ -252,9 +246,8 @@ export function getShipmentRecipientTemplateConfig(shipment: any, overrideName?:
       String(shipment.sender_city || "Ciudad"),                  // {{3}} Body (Origen)
       String(shipment.recipient_city || shipment.recipientCity || "Ciudad"), // {{4}} Body (Destino)
       String(shipment.payment_method || "Efectivo"),             // {{5}} Body (Método de pago)
-      String(fleteFmt),                                          // {{6}} Body (Costo del flete)
-      String(shipment.package_contents || "Mercancía"),          // {{7}} Body (Dice contener)
-      String(shipment.sender_address || shipment.senderAddress || "Dirección") // {{8}} Body (Dirección de recojida)
+      String(shipment.package_contents || "Mercancía"),          // {{6}} Body (Dice contener)
+      String(shipment.sender_address || shipment.senderAddress || "Dirección") // {{7}} Body (Dirección de recojida)
     ],
     buttonParameters: [
       `?guide=${shipment.guide_number || shipment.id || "0"}`        // {{1}} Button (URL Rastrear)
