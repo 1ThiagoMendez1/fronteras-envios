@@ -15,7 +15,6 @@ import { useCreateDriverMutation, useUpdateDriverMutation, useDeleteDriverMutati
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 
 const formSchema = z.object({
@@ -51,7 +50,7 @@ function DriverForm({
   onSubmit: (data: FormValues) => void
   isLoading: boolean
 }) {
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: { vehicleType: "van", ratePerDelivery: 0, ...defaultValues },
   })
