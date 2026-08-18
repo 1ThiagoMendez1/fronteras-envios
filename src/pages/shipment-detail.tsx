@@ -805,18 +805,23 @@ export default function ShipmentDetail() {
                         <div className="text-right font-black text-2xl tracking-tight leading-none overflow-hidden">{formatGuide(shipment.guideNumber)}</div>
                       </div>
                       
-                      <div className="flex-1 flex flex-col justify-center relative z-10 w-[70%]">
-                        <div className="text-[10px] font-black uppercase text-black mt-1">DESTINATARIO:</div>
-                        <div className="w-16 border-b-[1.5px] border-gray-300 mb-1 block shrink-0"></div>
-                        <div className="font-extrabold text-[15px] leading-tight uppercase line-clamp-1">{shipment.recipientName}</div>
-                        <div className="text-[12px] leading-snug line-clamp-2 mt-0.5 text-gray-700">{shipment.recipientAddress}</div>
-                        <div className="text-[14px] font-black uppercase mt-1 bg-gray-100 inline-block px-1.5 rounded self-start tracking-tight">{shipment.recipientCity}</div>
-                      </div>
-                      
-                      <div className="absolute right-2 bottom-3 flex flex-col items-center shrink-0 z-20">
-                        <QRCodeSVG value={trackingUrl} size={42} level="L" marginSize={0} />
-                        <div className="text-[10px] font-black uppercase mt-2 bg-black text-white px-2 py-0.5 rounded-full leading-none tracking-widest whitespace-nowrap">
-                          CAJA {lbl.number} / {quantityLabel}
+                      <div className="flex-1 flex flex-row justify-between w-full relative z-10 overflow-hidden">
+                        <div className="flex flex-col justify-center w-[75%] pr-2">
+                          <div className="text-[9px] font-black uppercase text-black">DESTINATARIO:</div>
+                          <div className="font-extrabold text-[13px] leading-tight uppercase line-clamp-1 mt-0.5">{shipment.recipientName}</div>
+                          <div className="flex items-center gap-1.5 mt-0.5 w-full">
+                            <div className="text-[10px] leading-tight text-gray-700 truncate">{shipment.recipientAddress}</div>
+                            <div className="text-[10px] font-black uppercase bg-gray-100 px-1.5 py-0.5 rounded tracking-tight border border-gray-200 whitespace-nowrap shrink-0">
+                              {shipment.recipientCity || "CIUDAD DESTINO"}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col items-center justify-center shrink-0">
+                          <QRCodeSVG value={trackingUrl} size={38} level="L" marginSize={0} />
+                          <div className="text-[9px] font-black uppercase mt-1.5 bg-black text-white px-2 py-0.5 rounded-full leading-none tracking-widest whitespace-nowrap">
+                            CAJA {lbl.number} / {quantityLabel}
+                          </div>
                         </div>
                       </div>
                     </div>
