@@ -23,7 +23,7 @@ const formSchema = z.object({
   phone: z.string().min(7, "Requerido"),
   email: z.string().optional(),
   company: z.string().optional(),
-  vehicleType: z.enum(["motorcycle", "car", "van", "truck", "office", "bus"]),
+  vehicleType: z.string().min(2, "Requerido"),
   city: z.string().min(3, "Requerido"),
   ratePerDelivery: z.coerce.number().min(0, "Requerido")
 })
@@ -76,17 +76,8 @@ function DriverForm({
         </div>
         <div className="space-y-1.5">
           <Label>Tipo de Vehículo</Label>
-          <Select onValueChange={(v: any) => setValue("vehicleType", v)} defaultValue={defaultValues?.vehicleType ?? "van"}>
-            <SelectTrigger className="rounded-xl bg-slate-50"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="motorcycle">Motocicleta</SelectItem>
-              <SelectItem value="car">Automóvil</SelectItem>
-              <SelectItem value="van">Furgoneta / Van</SelectItem>
-              <SelectItem value="truck">Camión</SelectItem>
-              <SelectItem value="bus">Bus</SelectItem>
-              <SelectItem value="office">Oficina</SelectItem>
-            </SelectContent>
-          </Select>
+          <Input {...register("vehicleType")} placeholder="Ej. Bus, Moto, Furgón..." className="rounded-xl bg-slate-50" />
+          {errors.vehicleType && <p className="text-xs text-red-500">{errors.vehicleType.message}</p>}
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">

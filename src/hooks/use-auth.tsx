@@ -203,9 +203,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // Idle Timeout (30 minutos)
+    // Idle Timeout (2 horas)
     let idleTimer: any;
-    const IDLE_TIMEOUT = 30 * 60 * 1000;
+    const IDLE_TIMEOUT = 120 * 60 * 1000;
 
     const resetIdleTimer = () => {
       if (idleTimer) clearTimeout(idleTimer);
