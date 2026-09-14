@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAdminClient } from "@/lib/admin-client";
+import { getLocalDateString } from "@/lib/utils";
 
 // ─── Financial Summary ────────────────────────────────────────────────────────
 export function useFinancialSummary(options: {
@@ -109,8 +110,8 @@ export function useFinancialSummary(options: {
       const dailyData = Array.from({ length: 7 }).map((_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - (6 - i));
-        const dateStr = d.toISOString().split("T")[0];
-        const dayShipments = all.filter(s => s.created_at.startsWith(dateStr));
+        const dateStr = getLocalDateString(d);
+        const dayShipments = all.filter(s => getLocalDateString(new Date(s.created_at)) === dateStr);
         const revenue = dayShipments.reduce((sum, s) => sum + (s.shipping_cost || 0), 0);
         const costs = dayShipments.reduce((sum, s) => sum + (s.driver_payment || 0), 0);
         return {
@@ -307,10 +308,10 @@ export function useUnclosedDays(branch: string = "Todas las Sedes") {
       if (cErr) throw cErr;
 
       const shipmentDays = Array.from(new Set(
-        (shipments || []).map((s: any) => s.created_at.split('T')[0])
+        (shipments || []).map((s: any) => getLocalDateString(new Date(s.created_at)))
       ));
       
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       
       const unclosed = shipmentDays.filter(day => {
          const dayClose = closes?.find((c: any) => c.close_date && c.close_date.startsWith(day));

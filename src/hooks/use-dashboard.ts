@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAdminClient } from "@/lib/admin-client";
+import { getLocalDateString } from "@/lib/utils";
 
 interface DashboardShipment {
   id: number;
@@ -154,7 +155,7 @@ export function useDashboardStats(period: "today" | "week" | "month" = "today", 
       const { data: recent } = await recentQuery;
 
       // 4. Check if today is closed
-      const todayString = new Date().toISOString().split('T')[0];
+      const todayString = getLocalDateString();
       let closedQuery = adminClient.from("daily_close").select("id").gte("close_date", `${todayString}T00:00:00`).limit(1);
       if (branch !== "Todas las Sedes") closedQuery = closedQuery.eq("branch", branch);
       const { data: closest } = await closedQuery;
@@ -178,7 +179,7 @@ export function useDashboardStats(period: "today" | "week" | "month" = "today", 
       for(let i = sparkDays - 1; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        const dayStr = d.toISOString().split('T')[0];
+        const dayStr = getLocalDateString(d);
         const label = d.toLocaleDateString("es-CO", { weekday: 'short' });
         
         const dayShips = filteredSevenDays.filter(s => s.created_at.startsWith(dayStr));

@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { cn, formatCurrency } from "@/lib/utils"
+import { cn, formatCurrency, getLocalDateString } from "@/lib/utils"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { CalendarCheck, Lock, Download, ChevronDown, ChevronUp, Package, DollarSign, TrendingUp, AlertTriangle, CheckCircle2, XCircle, FileText, ArrowRight, LayoutDashboard, Wallet, Search } from "lucide-react"
@@ -40,7 +40,7 @@ export default function DailyClosePage() {
   }, [profile?.branch])
   const { data: closes, isLoading } = useDailyCloseList(branch)
   const { data: unclosedDays } = useUnclosedDays(branch)
-  const [targetCloseDate, setTargetCloseDate] = useState(new Date().toISOString().split('T')[0])
+  const [targetCloseDate, setTargetCloseDate] = useState(getLocalDateString())
   const { data: summary } = useFinancialSummary({ 
     startDate: targetCloseDate + 'T00:00:00-05:00',
     endDate: targetCloseDate + 'T23:59:59-05:00'
@@ -89,7 +89,7 @@ export default function DailyClosePage() {
       return;
     }
     await createMutation.mutateAsync({
-      closeDate: new Date(targetCloseDate + 'T12:00:00').toISOString(),
+      closeDate: targetCloseDate,
       branch: branch,
       totalShipments: preCloseData.totalShipments,
       totalRevenue: preCloseData.totalRevenue,
@@ -246,7 +246,7 @@ export default function DailyClosePage() {
               </select>
               <Button 
                 className="bg-white text-primary hover:bg-slate-100 rounded-xl h-12 px-6 font-bold text-base shadow-lg w-full sm:w-auto" 
-                onClick={() => { setTargetCloseDate(new Date().toISOString().split('T')[0]); setWizardStep('pre-close'); }} 
+                onClick={() => { setTargetCloseDate(getLocalDateString()); setWizardStep('pre-close'); }} 
                 disabled={wizardStep !== 'idle' || branch === 'Todas las Sedes'}
                 title={branch === 'Todas las Sedes' ? "Seleccione una sede para cerrar" : "Cerrar día para esta sede"}
               >
