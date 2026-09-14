@@ -29,7 +29,7 @@ export function useListShipments(options: ListShipmentsOptions = {}) {
 
       if (search) {
         query = query.or(
-          `guide_number.ilike.%${search}%,sender_name.ilike.%${search}%,recipient_name.ilike.%${search}%`
+          `guide_number.ilike.%${search}%,sender_name.ilike.%${search}%,recipient_name.ilike.%${search}%,sender_document.ilike.%${search}%,recipient_document.ilike.%${search}%`
         );
       }
 

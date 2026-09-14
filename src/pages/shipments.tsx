@@ -37,7 +37,9 @@ export default function Shipments() {
   const filteredShipments = data?.shipments.filter(s => {
     const matchesSearch = search ? s.guideNumber.toLowerCase().includes(search.toLowerCase()) ||
       s.senderName.toLowerCase().includes(search.toLowerCase()) ||
-      s.recipientName.toLowerCase().includes(search.toLowerCase())
+      s.recipientName.toLowerCase().includes(search.toLowerCase()) ||
+      (s.senderDocument && s.senderDocument.toLowerCase().includes(search.toLowerCase())) ||
+      (s.recipientDocument && s.recipientDocument.toLowerCase().includes(search.toLowerCase()))
       : true
     const hasUnread = s.comentarios && s.comentarios.length > 0 && s.comentarios[s.comentarios.length - 1].sender === "user"
     const matchesUnread = unreadOnly ? hasUnread : true
@@ -61,7 +63,7 @@ export default function Shipments() {
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
-              placeholder="Buscar por guía, remitente o destinatario..."
+              placeholder="Buscar por guía, nombre o NIT de remitente/destinatario..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
               className="pl-10 h-12 rounded-xl bg-white border-slate-200"
