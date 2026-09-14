@@ -71,6 +71,10 @@ export default function DailyClosePage() {
   const [closeNotes, setCloseNotes] = useState("")
   const [historySearch, setHistorySearch] = useState("")
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 30
+
   // Filter history
   const filteredCloses = useMemo(() => {
     if (!closes) return []
@@ -81,6 +85,17 @@ export default function DailyClosePage() {
       return dateStr.includes(historySearch.toLowerCase()) || c.closedBy.toLowerCase().includes(historySearch.toLowerCase())
     })
   }, [closes, historySearch])
+
+  // Reset page on search change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [historySearch])
+
+  // Paginated history
+  const totalPages = Math.ceil(filteredCloses.length / pageSize)
+  const paginatedCloses = useMemo(() => {
+    return filteredCloses.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  }, [filteredCloses, currentPage])
 
   const handleCreateClose = async (status: 'pre_close' | 'completed' = 'completed') => {
     if (!preCloseData) return;
@@ -501,7 +516,7 @@ export default function DailyClosePage() {
               <p className="text-sm mt-1">{historySearch ? 'Intente con otro término de búsqueda.' : 'Ejecute su primer cierre diario para comenzar.'}</p>
             </Card>
           ) : (
-            filteredCloses.map((close: any, idx: number) => {
+            paginatedCloses.map((close: any, idx: number) => {
               const isExpanded = expandedCloseId === close.id
               const marginPct = close.totalRevenue > 0 ? ((close.totalNetProfit / close.totalRevenue) * 100) : 0
               const deliveryRate = close.totalShipments > 0 ? ((close.deliveredCount / close.totalShipments) * 100) : 0
@@ -615,6 +630,19 @@ export default function DailyClosePage() {
             })
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-5 border-t border-slate-100 pt-5">
+            <span className="text-sm text-slate-500">
+              Mostrando <span className="font-bold text-slate-700">{((currentPage - 1) * pageSize) + 1}</span> a <span className="font-bold text-slate-700">{Math.min(currentPage * pageSize, filteredCloses.length)}</span> de <span className="font-bold text-slate-700">{filteredCloses.length}</span> registros
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="rounded-xl h-9" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Anterior</Button>
+              <div className="text-sm font-semibold px-3 py-1 bg-white border border-slate-200 text-slate-700 rounded-lg">Página {currentPage} de {totalPages}</div>
+              <Button variant="outline" size="sm" className="rounded-xl h-9" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Siguiente</Button>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   )
