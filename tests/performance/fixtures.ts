@@ -31,10 +31,10 @@ export async function signInOffline(context: BrowserContext, role = 'admin') {
   }, syntheticSession(role))
 }
 
-type Traffic = { reads: URL[]; writes: string[]; blocked: number; clientName: string }
+type Traffic = { reads: URL[]; writes: string[]; blocked: number; clientName: string; paymentMethod: string }
 export const test = base.extend<{ traffic: Traffic }>({
   traffic: [async ({ context }, use) => {
-    const traffic: Traffic = { reads: [], writes: [], blocked: 0, clientName: 'Cliente Sintético' }
+    const traffic: Traffic = { reads: [], writes: [], blocked: 0, clientName: 'Cliente Sintético', paymentMethod: 'Efectivo' }
     await context.routeWebSocket('**/*', socket => socket.close())
     await context.route('**/*', async route => {
       const request = route.request()
@@ -65,7 +65,7 @@ export const test = base.extend<{ traffic: Traffic }>({
         { id: 'operator', name: 'Operador', permissions: ['clients', 'shipments', 'daily_close'] },
       ]
       if (table === 'shipments') {
-        rows = url.searchParams.get('cash_on_delivery') ? [] : [shipment]
+        rows = url.searchParams.get('cash_on_delivery') ? [] : [{ ...shipment, payment_method: traffic.paymentMethod }]
         const search = url.searchParams.get('or')
         if (search && !search.toLowerCase().includes('test')) rows = []
       }

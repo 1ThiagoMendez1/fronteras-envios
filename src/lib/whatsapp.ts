@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from "@/lib/payment-methods"
 
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -213,7 +214,7 @@ export function getShipmentTemplateConfig(shipment: any, overrideName?: string):
       String(shipment.guide_number || shipment.id || "0"),       // {{2}} Body (Guía)
       String(shipment.sender_city || "Ciudad"),                  // {{3}} Body (Origen)
       String(shipment.recipient_city || shipment.recipientCity || "Ciudad"), // {{4}} Body (Destino)
-      String(shipment.payment_method || "Efectivo"),             // {{5}} Body (Método de pago)
+      paymentMethodLabel(shipment.payment_method),             // {{5}} Body (Método de pago)
       String(fleteFmt),                                          // {{6}} Body (Costo del flete)
       String(shipment.package_contents || "Mercancía"),          // {{7}} Body (Dice contener)
       String(shipment.sender_address || shipment.senderAddress || "Dirección") // {{8}} Body (Dirección de recojida)
@@ -245,7 +246,7 @@ export function getShipmentRecipientTemplateConfig(shipment: any, overrideName?:
       String(shipment.guide_number || shipment.id || "0"),       // {{2}} Body (Guía)
       String(shipment.sender_city || "Ciudad"),                  // {{3}} Body (Origen)
       String(shipment.recipient_city || shipment.recipientCity || "Ciudad"), // {{4}} Body (Destino)
-      String(shipment.payment_method || "Efectivo"),             // {{5}} Body (Método de pago)
+      paymentMethodLabel(shipment.payment_method),             // {{5}} Body (Método de pago)
       String(shipment.package_contents || "Mercancía"),          // {{6}} Body (Dice contener)
       String(shipment.sender_address || shipment.senderAddress || "Dirección") // {{7}} Body (Dirección de recojida)
     ],

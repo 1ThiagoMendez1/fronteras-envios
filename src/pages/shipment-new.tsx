@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from "@/lib/payment-methods"
 import { useLocation } from "wouter"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -429,15 +430,12 @@ export default function NewShipment() {
                   defaultValue="Efectivo"
                   render={({ field }) => (
                     <Select value={field.value || "Efectivo"} onValueChange={field.onChange}>
-                      <SelectTrigger className="h-11 rounded-xl bg-slate-50">
-                        <SelectValue placeholder="Efectivo 💵" />
+                      <SelectTrigger aria-label="Método de Pago" className="h-11 rounded-xl bg-slate-50">
+                        <SelectValue placeholder="Efectivo 💵">{paymentMethodLabel(field.value)}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Efectivo">Efectivo 💵</SelectItem>
-                        <SelectItem value="Nequi">Nequi 📱</SelectItem>
-                        <SelectItem value="DaviPlata">DaviPlata 📱</SelectItem>
-                        <SelectItem value="Transferencia">Transferencia 🏦</SelectItem>
-                        <SelectItem value="Tarjeta">Tarjeta 💳</SelectItem>
+                        <SelectItem value="Nequi">Transferencia 🏦</SelectItem>
                       </SelectContent>
                     </Select>
                   )}

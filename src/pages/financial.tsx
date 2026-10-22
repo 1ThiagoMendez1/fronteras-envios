@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from "@/lib/payment-methods"
 import { useFinancialSummary, useFinancialMovements } from "@/hooks/use-financial"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -235,7 +236,7 @@ export default function Financial() {
                   {summary.revenueByPaymentMethod?.map((pm: any) => (
                     <div key={pm.method} className="space-y-2">
                       <div className="flex justify-between items-end">
-                        <span className="font-bold text-slate-700">{pm.method}</span>
+                        <span className="font-bold text-slate-700">{paymentMethodLabel(pm.method)}</span>
                         <span className="text-xs font-semibold text-slate-500">{pm.percentage.toFixed(1)}% del total</span>
                       </div>
                       <div className="h-2 bg-slate-100 rounded-full overflow-hidden">

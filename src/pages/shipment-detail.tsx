@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from "@/lib/payment-methods"
 import { useState, useRef } from "react"
 import { useRoute, Link } from "wouter"
 import SignatureCanvas from "react-signature-canvas"
@@ -382,7 +383,7 @@ export default function ShipmentDetail() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1">Método de Pago</p>
-                  <p className="font-bold text-lg">{shipment.paymentMethod}</p>
+                  <p className="font-bold text-lg">{paymentMethodLabel(shipment.paymentMethod)}</p>
                 </div>
               </div>
               {shipment.packageContents && (

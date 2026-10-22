@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from "@/lib/payment-methods"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { useState } from "react"
 import { useListShipments } from "@/hooks/use-shipments"
@@ -191,7 +192,7 @@ export default function Shipments() {
                               shipment.paymentMethod === "DaviPlata" ? "bg-red-50 text-red-700" : 
                               "bg-blue-50 text-blue-700"
                             )}>
-                              {shipment.paymentMethod || "Efectivo"}
+                              {paymentMethodLabel(shipment.paymentMethod)}
                             </span>
                             {shipment.cashOnDelivery > 0 && (
                               <span className="inline-flex text-[10px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm bg-orange-500 text-white shadow-sm mt-0.5">
