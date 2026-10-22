@@ -1,6 +1,5 @@
 import { useFinancialSummary, useFinancialMovements } from "@/hooks/use-financial"
 import { useState } from "react"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -43,7 +42,7 @@ export default function Financial() {
 
   if (loadingSummary || loadingTransactions || !summary) {
     return (
-      <DashboardLayout>
+      <>
         <div className="space-y-6 animate-pulse">
           <div className="h-20 bg-white rounded-2xl" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -51,7 +50,7 @@ export default function Financial() {
           </div>
           <div className="h-96 bg-white rounded-2xl" />
         </div>
-      </DashboardLayout>
+      </>
     )
   }
 
@@ -67,7 +66,7 @@ export default function Financial() {
   )
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -337,7 +336,7 @@ export default function Financial() {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+    </>
   )
 }
 

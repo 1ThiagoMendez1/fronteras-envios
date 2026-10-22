@@ -14,6 +14,7 @@ import {
   UserCircle,
   ChevronRight
 } from "lucide-react"
+import { preloadRoute } from "@/lib/routes"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { CashOnDeliveryAlert } from "@/components/cash-on-delivery-alert"
@@ -81,6 +82,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       )}>
         {/* Toggle Button placed outside the sidebar */}
         <button
+          aria-label={isCollapsed ? "Expandir menú" : "Contraer menú"}
           onClick={() => setIsCollapsed(!isCollapsed)}
           className={cn(
             "absolute -right-3.5 top-6 z-[60] hidden lg:flex h-7 w-7 items-center justify-center rounded-full bg-primary text-white shadow-md border-2 border-slate-50 hover:bg-primary/90 transition-transform",
@@ -117,7 +119,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {filteredNavItems.map((item) => {
               const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href))
               return (
-                <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
+                <Link key={item.href} href={item.href} onMouseEnter={() => preloadRoute(item.href)} onFocus={() => preloadRoute(item.href)} onClick={() => setIsMobileMenuOpen(false)}>
                   <div className={cn(
                     "flex items-center rounded-xl py-3 text-sm font-medium transition-all duration-200",
                     isCollapsed ? "justify-center px-0" : "gap-3 px-4",
@@ -180,7 +182,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Mobile top header */}
         <header className="flex h-16 shrink-0 items-center justify-between border-b bg-white/50 backdrop-blur-md px-6 shadow-sm z-30 lg:hidden">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(true)}>
+            <Button variant="ghost" size="icon" aria-label="Abrir menú" onClick={() => setIsMobileMenuOpen(true)}>
               <Menu className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">

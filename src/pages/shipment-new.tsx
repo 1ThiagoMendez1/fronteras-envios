@@ -2,7 +2,6 @@ import { useLocation } from "wouter"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -199,7 +198,7 @@ export default function NewShipment() {
 
   return (
     <ErrorBoundary>
-    <DashboardLayout>
+    <>
       <div className="space-y-6 pb-20">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -471,7 +470,7 @@ export default function NewShipment() {
           </div>
         </form>
       </div>
-    </DashboardLayout>
+    </>
     </ErrorBoundary>
   )
 }

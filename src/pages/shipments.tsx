@@ -1,6 +1,6 @@
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { useState } from "react"
 import { useListShipments } from "@/hooks/use-shipments"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -20,6 +20,7 @@ export default function Shipments() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [branchFilter, setBranchFilter] = useState<string>("all")
   const [search, setSearch] = useState("")
+  const debouncedSearch = useDebouncedValue(search)
   const [unreadOnly, setUnreadOnly] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -28,7 +29,7 @@ export default function Shipments() {
   const { data, isLoading } = useListShipments({
     status: statusFilter !== "all" ? statusFilter : undefined,
     branch: branchFilter !== "all" ? branchFilter : undefined,
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     page: currentPage,
     pageSize: 50
   })
@@ -47,7 +48,7 @@ export default function Shipments() {
   }) || []
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -248,6 +249,6 @@ export default function Shipments() {
           </div>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   )
 }

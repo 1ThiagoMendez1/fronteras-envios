@@ -5,14 +5,12 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+const currencyFormatter = new Intl.NumberFormat('es-CO', {
+  style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0,
+})
+
 export function formatCurrency(amount: number | undefined | null) {
-  const value = typeof amount === 'number' ? amount : 0;
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
+  return currencyFormatter.format(typeof amount === 'number' ? amount : 0)
 }
 
 export function getStatusColor(status: string) {

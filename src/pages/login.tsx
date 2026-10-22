@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Link } from "wouter"
+import { Link, useLocation } from "wouter"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 
 export default function Login() {
+  const [, setLocation] = useLocation()
   const { login, isAuthenticated, isLoading: isAuthLoading, user, profile } = useAuth()
   const { toast } = useToast()
 
@@ -21,12 +22,12 @@ export default function Login() {
   useEffect(() => {
     if (!isAuthLoading && isAuthenticated && user && profile) {
       if (profile.role === "operator") {
-        window.location.href = "/clients"
+        setLocation("/clients", { replace: true })
       } else {
-        window.location.href = "/dashboard"
+        setLocation("/dashboard", { replace: true })
       }
     }
-  }, [isAuthenticated, isAuthLoading, user, profile])
+  }, [isAuthenticated, isAuthLoading, user, profile, setLocation])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,9 +53,9 @@ export default function Login() {
       // Redirigir inmediatamente según el rol
       const role = profile?.role || loggedUser?.user_metadata?.role
       if (role === "operator") {
-        window.location.href = "/clients"
+        setLocation("/clients", { replace: true })
       } else {
-        window.location.href = "/dashboard"
+        setLocation("/dashboard", { replace: true })
       }
     } catch (error) {
       console.error("Login failed:", error)

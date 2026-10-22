@@ -1,0 +1,7 @@
+{
+  "branch": "v2.3.1",
+  "commit": "d8e2367884c4358ae1ad1ef4337743874c5741ab",
+  "jsBytes": 2188269,
+  "jsGzipBytes": 642377,
+  "description": "Unmodified branch build with offline config, gzipSync defaults; excludes CSS."
+}

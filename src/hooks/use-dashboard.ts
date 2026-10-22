@@ -58,7 +58,7 @@ export interface DashboardStats {
 export function useDashboardStats(period: "today" | "week" | "month" = "today", branch: string = "Todas las Sedes") {
   return useQuery<DashboardStats>({
     queryKey: ["dashboard", "stats", period, branch],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const adminClient = getAdminClient();
       
       const now = new Date();
@@ -98,8 +98,29 @@ export function useDashboardStats(period: "today" | "week" | "month" = "today", 
         query = query.eq("branch_origin", branch);
       }
 
-      const { data: allShipmentsPeriod, error: sErr } = await query;
-      
+      // These reads share filters but do not depend on each other's results.
+      let recentQuery = adminClient.from("shipments").select("*")
+        .order("created_at", { ascending: false }).limit(15);
+      if (branch !== "Todas las Sedes") recentQuery = recentQuery.eq("branch_origin", branch);
+      const todayString = getLocalDateString();
+      let closedQuery = adminClient.from("daily_close").select("id")
+        .gte("close_date", `${todayString}T00:00:00`).limit(1);
+      if (branch !== "Todas las Sedes") closedQuery = closedQuery.eq("branch", branch);
+      const [shipmentResult, driverResult, recentResult, closeResult, sevenDaysResult] = await Promise.all([
+        query.abortSignal(signal),
+        adminClient.from("drivers").select("id", { count: "exact", head: true })
+          .eq("is_active", true).abortSignal(signal),
+        recentQuery.abortSignal(signal),
+        closedQuery.abortSignal(signal),
+        adminClient.from("shipments").select("shipping_cost, driver_payment, created_at, branch_origin")
+          .gte("created_at", new Date(new Date().setDate(new Date().getDate() - 7)).toISOString())
+          .abortSignal(signal),
+      ]);
+      const { data: allShipmentsPeriod, error: sErr } = shipmentResult;
+      const { count: activeDrivers } = driverResult;
+      const { data: recent } = recentResult;
+      const { data: closest } = closeResult;
+      const { data: sevenDays } = sevenDaysResult;
       if (sErr) throw sErr;
 
       const shipments = allShipmentsPeriod ?? [];
@@ -138,43 +159,14 @@ export function useDashboardStats(period: "today" | "week" | "month" = "today", 
       const delivered = statusCounts["delivered"] || 0;
       const totalCount = currentShipments.length;
       
-      // 2. Fetch Active Drivers total
-      const { count: activeDrivers } = await adminClient
-        .from("drivers")
-        .select("id", { count: "exact", head: true })
-        .eq("is_active", true);
-
-      // 3. Fetch recent for the table
-      let recentQuery = adminClient
-        .from("shipments")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(15);
-        
-      if (branch !== "Todas las Sedes") recentQuery = recentQuery.eq("branch_origin", branch);
-      const { data: recent } = await recentQuery;
-
-      // 4. Check if today is closed
-      const todayString = getLocalDateString();
-      let closedQuery = adminClient.from("daily_close").select("id").gte("close_date", `${todayString}T00:00:00`).limit(1);
-      if (branch !== "Todas las Sedes") closedQuery = closedQuery.eq("branch", branch);
-      const { data: closest } = await closedQuery;
-
-      // Generate Sparklines from last 7 days history
       const sparkDays = 7;
       const weeklyTrends: { name: string; envios: number; ingresos: number }[] = [];
       const revenueSparkline: number[] = [];
       const profitSparkline: number[] = [];
       const shipmentsSparkline: number[] = [];
-      
-      const { data: sevenDays } = await adminClient
-         .from("shipments")
-         .select("shipping_cost, driver_payment, created_at, branch_origin")
-         .gte("created_at", new Date(new Date().setDate(new Date().getDate() - 7)).toISOString());
-         
-      const filteredSevenDays = branch !== "Todas las Sedes" 
-         ? (sevenDays || []).filter(s => s.branch_origin === branch)
-         : (sevenDays || []);
+      const filteredSevenDays = branch !== "Todas las Sedes"
+        ? (sevenDays || []).filter(s => s.branch_origin === branch)
+        : (sevenDays || []);
 
       for(let i = sparkDays - 1; i >= 0; i--) {
         const d = new Date();

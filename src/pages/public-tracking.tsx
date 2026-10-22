@@ -29,7 +29,7 @@ import { es } from "date-fns/locale"
 import { getStatusColor, getStatusLabel, cn, formatGuide } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChatBox } from "@/components/chat-box"
-import { ColombiaMap } from "@/components/colombia-map"
+import { ColombiaMap } from "@/components/lazy-colombia-map"
 
 const STATUS_ORDER = ["created","assigned","picked_up","in_transit","out_for_delivery","delivered"]
 const STEP_LABELS: Record<string, string> = {

@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react"
 import { useDashboardStats } from "@/hooks/use-dashboard"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card } from "@/components/ui/card"
 import { Package, TrendingUp, Users, DollarSign, ArrowUpRight, Timer, Target, Search, LayoutDashboard, Activity, BarChart3, Map as MapIcon, CheckCircle2, AlertTriangle } from "lucide-react"
 import { cn, formatCurrency, getStatusColor, getStatusLabel } from "@/lib/utils"
@@ -13,7 +12,7 @@ import { StatCardEnhanced } from "@/components/dashboard/stat-card-enhanced"
 import { DayContextBar } from "@/components/dashboard/day-context-bar"
 import { AlertPanel, generateOperationalAlerts } from "@/components/dashboard/alert-panel"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ColombiaMap } from "@/components/colombia-map"
+import { ColombiaMap } from "@/components/lazy-colombia-map"
 
 type DashboardPeriod = "today" | "week" | "month"
 
@@ -55,7 +54,7 @@ export default function Dashboard() {
 
   if (isLoading || !stats) {
     return (
-      <DashboardLayout>
+      <>
         <div className="space-y-6">
           <div className="h-16 bg-white rounded-2xl animate-pulse" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -65,7 +64,7 @@ export default function Dashboard() {
           </div>
           <div className="h-[400px] bg-white rounded-2xl animate-pulse" />
         </div>
-      </DashboardLayout>
+      </>
     )
   }
 
@@ -82,7 +81,7 @@ export default function Dashboard() {
   const alerts = generateOperationalAlerts(stats)
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Day Context Bar */}
         <DayContextBar closedToday={stats.closedToday} />
@@ -395,7 +394,7 @@ export default function Dashboard() {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+    </>
   )
 }
 

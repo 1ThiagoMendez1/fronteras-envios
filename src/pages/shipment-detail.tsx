@@ -3,7 +3,6 @@ import { useRoute, Link } from "wouter"
 import SignatureCanvas from "react-signature-canvas"
 import { useGetShipment } from "@/hooks/use-shipments"
 import { useListDrivers } from "@/hooks/use-drivers"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { formatCurrency, getStatusColor, getStatusLabel, cn, formatGuide } from "@/lib/utils"
@@ -63,11 +62,11 @@ export default function ShipmentDetail() {
 
   if (isLoading || !shipment) {
     return (
-      <DashboardLayout>
+      <>
          <div className="h-full w-full flex items-center justify-center p-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
-      </DashboardLayout>
+      </>
     )
   }
 
@@ -239,7 +238,7 @@ export default function ShipmentDetail() {
   const displayHistory = isHistoryExpanded ? sortedHistory : sortedHistory.slice(0, 3)
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6 pb-20 no-print">
         
         {/* Header */}
@@ -839,6 +838,6 @@ export default function ShipmentDetail() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   )
 }

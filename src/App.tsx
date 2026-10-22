@@ -4,28 +4,16 @@ import { Toaster } from "@/components/ui/toaster"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { AuthProvider, useAuth } from "@/hooks/use-auth"
 
-// Pages
-import Login from "@/pages/login"
-import Dashboard from "@/pages/dashboard"
-import PublicTracking from "@/pages/public-tracking"
-import Shipments from "@/pages/shipments"
-import ShipmentDetail from "@/pages/shipment-detail"
-import NewShipment from "@/pages/shipment-new"
-import EditShipment from "@/pages/shipment-edit"
-import Register from "@/pages/register"
-import Drivers from "@/pages/drivers"
-import Financial from "@/pages/financial"
-import DailyClosePage from "@/pages/daily-close"
-import ClientsPage from "@/pages/clients"
-import UsersPage from "@/pages/users"
-import NotFound from "@/pages/not-found"
-
-import { Redirect } from "wouter"
+import { Suspense, type ComponentType } from "react"
+import { Redirect, useLocation } from "wouter"
+import { DashboardLayout } from "@/components/layout/dashboard-layout"
+import { pages, isPrivatePath } from "@/lib/routes"
+import { RouteErrorBoundary } from "@/components/route-error-boundary"
 
 const queryClient = new QueryClient()
 
 // Protected Route Wrapper — NO "Verificando sesión" text, ever
-function ProtectedRoute({ component: Component, requiredPermission, ...rest }: { component: any; path: string; requiredPermission?: string }) {
+function ProtectedRoute({ component: Component, requiredPermission, ...rest }: { component: ComponentType; path: string; requiredPermission?: string }) {
   const { isAuthenticated, isLoading, hasPermission } = useAuth();
   
   // Mientras se restaura la sesión, mostrar pantalla en blanco (sin spinner ni texto)
@@ -59,31 +47,41 @@ function ProtectedRoute({ component: Component, requiredPermission, ...rest }: {
   return <Route {...rest} component={Component} />;
 }
 
+function RouteLoading() {
+  return <div role="status" className="flex min-h-48 items-center justify-center text-muted-foreground">Cargando página…</div>
+}
+
 function Router() {
+  const [location] = useLocation()
+  if (isPrivatePath(location)) return (
+    <DashboardLayout>
+      <RouteErrorBoundary>
+        <Suspense fallback={<RouteLoading />}>
+          <Switch>
+            <ProtectedRoute path="/dashboard" component={pages.dashboard} requiredPermission="dashboard" />
+            <ProtectedRoute path="/shipments" component={pages.shipments} requiredPermission="shipments" />
+            <ProtectedRoute path="/shipments/new" component={pages.newShipment} requiredPermission="shipments" />
+            <ProtectedRoute path="/shipments/:id/edit" component={pages.editShipment} requiredPermission="shipments" />
+            <ProtectedRoute path="/shipments/:id" component={pages.shipmentDetail} requiredPermission="shipments" />
+            <ProtectedRoute path="/drivers" component={pages.drivers} requiredPermission="drivers" />
+            <ProtectedRoute path="/clients" component={pages.clients} requiredPermission="clients" />
+            <ProtectedRoute path="/financial" component={pages.financial} requiredPermission="financial" />
+            <ProtectedRoute path="/daily-close" component={pages.dailyClose} requiredPermission="daily_close" />
+            <ProtectedRoute path="/users" component={pages.users} requiredPermission="users" />
+          </Switch>
+        </Suspense>
+      </RouteErrorBoundary>
+    </DashboardLayout>
+  )
   return (
-    <Switch>
-
-      {/* Public routes */}
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route path="/" component={PublicTracking} />
-
-      {/* App routes (protegidas) */}
-      <ProtectedRoute path="/dashboard" component={Dashboard} requiredPermission="dashboard" />
-      <ProtectedRoute path="/shipments" component={Shipments} requiredPermission="shipments" />
-      <ProtectedRoute path="/shipments/new" component={NewShipment} requiredPermission="shipments" />
-      <ProtectedRoute path="/shipments/:id/edit" component={EditShipment} requiredPermission="shipments" />
-      <ProtectedRoute path="/shipments/:id" component={ShipmentDetail} requiredPermission="shipments" />
-      <ProtectedRoute path="/drivers" component={Drivers} requiredPermission="drivers" />
-      <ProtectedRoute path="/clients" component={ClientsPage} requiredPermission="clients" />
-      <ProtectedRoute path="/financial" component={Financial} requiredPermission="financial" />
-      <ProtectedRoute path="/daily-close" component={DailyClosePage} requiredPermission="daily_close" />
-      <ProtectedRoute path="/users" component={UsersPage} requiredPermission="users" />
-
-      {/* 404 */}
-      <Route component={NotFound} />
-
-    </Switch>
+    <Suspense fallback={<RouteLoading />}>
+      <Switch>
+        <Route path="/login" component={pages.login} />
+        <Route path="/register" component={pages.register} />
+        <Route path="/" component={pages.tracking} />
+        <Route component={pages.notFound} />
+      </Switch>
+    </Suspense>
   )
 }
 
@@ -93,7 +91,9 @@ export default function App() {
       <AuthProvider>
         <TooltipProvider>
           <WouterRouter>
-            <Router />
+            <RouteErrorBoundary resetOnNavigation={false}>
+              <Router />
+            </RouteErrorBoundary>
           </WouterRouter>
           <Toaster />
         </TooltipProvider>

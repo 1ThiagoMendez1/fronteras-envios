@@ -19,17 +19,11 @@ export function useFinancialSummary(options: {
       if (options.endDate) query = query.lte("created_at", options.endDate);
       if (branch !== "Todas las Sedes") query = query.eq("branch_origin", branch);
 
-      const { data: shipments, error: sErr } = await query;
-      if (sErr) throw sErr;
-
       let mQuery = adminClient
         .from("financial_movements")
         .select("*")
         .order("movement_date", { ascending: false });
       if (branch !== "Todas las Sedes") mQuery = mQuery.eq("branch", branch);
-
-      const { data: movements, error: mErr } = await mQuery;
-      if (mErr) throw mErr;
 
       let cQuery = adminClient
         .from("daily_close")
@@ -37,7 +31,12 @@ export function useFinancialSummary(options: {
         .order("close_date", { ascending: false });
       if (branch !== "Todas las Sedes") cQuery = cQuery.eq("branch", branch);
 
-      const { data: closes, error: cErr } = await cQuery;
+      const [shipmentResult, movementResult, closeResult] = await Promise.all([query, mQuery, cQuery]);
+      const { data: shipments, error: sErr } = shipmentResult;
+      const { data: movements, error: mErr } = movementResult;
+      const { data: closes, error: cErr } = closeResult;
+      if (sErr) throw sErr;
+      if (mErr) throw mErr;
       if (cErr) throw cErr;
 
       const all = shipments ?? [];

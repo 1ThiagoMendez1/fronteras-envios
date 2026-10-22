@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -38,7 +37,6 @@ import { cn } from "@/lib/utils"
 import { useListShipments } from "@/hooks/use-shipments"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import * as XLSX from "xlsx"
 
 // ─── localStorage-backed option lists (user can add new values) ───────────────
 function useOptions(key: string, defaults: string[]) {
@@ -384,7 +382,8 @@ const EXCEL_COLUMNS = [
   "CORREO", "TELEFONO", "DEPARTAMENTO", "CIUDAD", "DIRECCION", "CATEGORIA",
 ]
 
-function downloadTemplate() {
+async function downloadTemplate() {
+  const XLSX = await import("xlsx")
   const ws = XLSX.utils.aoa_to_sheet([EXCEL_COLUMNS])
   // Style header row (xlsx CE doesn't support styles but we can set column widths)
   ws["!cols"] = EXCEL_COLUMNS.map(() => ({ wch: 20 }))
@@ -393,7 +392,8 @@ function downloadTemplate() {
   XLSX.writeFile(wb, "plantilla_clientes.xlsx")
 }
 
-function parseExcel(file: File): Promise<ClientInput[]> {
+async function parseExcel(file: File): Promise<ClientInput[]> {
+  const XLSX = await import("xlsx")
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -481,7 +481,7 @@ function BulkImportDialog({
               <p className="text-sm font-semibold">1. Descarga la plantilla</p>
               <p className="text-xs text-slate-500">Usa esta plantilla con el orden exacto de columnas</p>
             </div>
-            <Button variant="outline" size="sm" className="rounded-lg gap-2" onClick={downloadTemplate}>
+            <Button variant="outline" size="sm" className="rounded-lg gap-2" onClick={() => { void downloadTemplate().catch(() => setError("No se pudo descargar la plantilla. Intenta de nuevo.")) }}>
               <Download className="w-4 h-4" /> Plantilla .xlsx
             </Button>
           </div>
@@ -664,7 +664,7 @@ export default function ClientsPage() {
   type FormValues = z.infer<typeof formSchema>
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1003,6 +1003,6 @@ export default function ClientsPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   )
 }

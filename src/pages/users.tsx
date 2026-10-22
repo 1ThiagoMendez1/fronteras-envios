@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { getAdminClient } from "@/lib/admin-client"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { useUsers, type UserProfile } from "@/hooks/use-users"
 import {
   Table,
@@ -214,7 +213,7 @@ export default function UsersPage() {
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -570,6 +569,6 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
 
-    </DashboardLayout>
+    </>
   )
 }

@@ -1,5 +1,7 @@
 'use client';
 import React from 'react';
+import { Link } from 'wouter';
+import { preloadRoute } from '@/lib/routes';
 import type { ComponentProps, ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { FacebookIcon, InstagramIcon, LinkedinIcon, YoutubeIcon } from 'lucide-react';
@@ -80,13 +82,13 @@ export function Footer() {
 								<ul className="text-muted-foreground space-y-3 text-sm">
 									{section.links.map((link) => (
 										<li key={link.title}>
-											<a
+											<FooterAnchor
 												href={link.href}
 												className="hover:text-primary hover:translate-x-1 inline-flex items-center transition-all duration-300"
 											>
 												{link.icon && <link.icon className="mr-2 size-4" />}
 												{link.title}
-											</a>
+											</FooterAnchor>
 										</li>
 									))}
 								</ul>
@@ -124,3 +126,9 @@ function AnimatedContainer({ className, delay = 0.1, children }: ViewAnimationPr
 		</motion.div>
 	);
 };
+
+function FooterAnchor({ href, children, className }: { href: string; children: ReactNode; className?: string }) {
+  return href.startsWith("/")
+    ? <Link href={href} className={className} onMouseEnter={() => preloadRoute(href)} onFocus={() => preloadRoute(href)}>{children}</Link>
+    : <a href={href} className={className}>{children}</a>
+}

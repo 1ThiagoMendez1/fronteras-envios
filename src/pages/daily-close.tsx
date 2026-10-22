@@ -2,7 +2,6 @@ import { useDailyCloseList, useFinancialSummary, useDailyCloseShipments, useUncl
 import { useState, useMemo, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
 
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn, formatCurrency, getLocalDateString } from "@/lib/utils"
@@ -224,7 +223,7 @@ export default function DailyClosePage() {
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header Banner */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
@@ -644,6 +643,6 @@ export default function DailyClosePage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   )
 }

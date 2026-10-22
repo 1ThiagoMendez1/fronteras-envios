@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { useListDrivers } from "@/hooks/use-drivers"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -120,7 +119,7 @@ export default function Drivers() {
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -275,7 +274,7 @@ export default function Drivers() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </DashboardLayout>
+    </>
   )
 }
 

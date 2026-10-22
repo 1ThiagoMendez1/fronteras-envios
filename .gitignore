@@ -46,3 +46,7 @@ firestore-debug.log
 
 # supabase schema
 supabase/schema.sql
+# Isolated performance validation outputs
+/.perf-dist/
+/test-results/
+/playwright-report/

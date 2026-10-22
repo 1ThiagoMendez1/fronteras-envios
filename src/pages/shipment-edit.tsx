@@ -2,7 +2,6 @@ import { useLocation, useRoute } from "wouter"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -114,14 +113,14 @@ export default function EditShipment() {
 
   if (isShipmentLoading || isAuthLoading || !shipment) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <p className="text-slate-500 text-sm animate-pulse">
             {isAuthLoading ? "Verificando permisos..." : "Cargando envío..."}
           </p>
         </div>
-      </DashboardLayout>
+      </>
     )
   }
 
@@ -201,7 +200,7 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6 pb-20">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -474,6 +473,6 @@ function EditShipmentForm({ shipment, profile, id }: { shipment: any, profile: a
           </div>
         </form>
       </div>
-    </DashboardLayout>
+    </>
   )
 }

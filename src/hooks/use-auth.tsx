@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { decodeJwtPayload } from "@/lib/jwt";
@@ -115,6 +116,8 @@ function buildProfileFromSession(currentUser: User, session: Session): Profile {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
+  const identityRef = useRef<string | null>(null);
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -178,6 +181,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Paso 4: Escuchar cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       try {
+        const nextIdentity = newSession?.user.id ?? null;
+        if (identityRef.current !== nextIdentity) {
+          void queryClient.cancelQueries();
+          queryClient.clear();
+          identityRef.current = nextIdentity;
+        }
         setSession(newSession);
         setUser(newSession?.user ?? null);
         if (newSession?.user) {
@@ -236,7 +245,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       if (idleTimer) clearTimeout(idleTimer);
     };
-  }, []);
+  }, [queryClient]);
 
   const login = async (data: LoginRequest) => {
     setIsLoading(true);
@@ -265,6 +274,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
+      identityRef.current = null;
+      await queryClient.cancelQueries();
+      queryClient.clear();
       // Limpiar estado React PRIMERO para redirección inmediata
       setUser(null);
       setProfile(null);

@@ -14,8 +14,8 @@ export function useListShipments(options: ListShipmentsOptions = {}) {
   const { status, search, senderDocument, branch, page = 1, pageSize = 50 } = options;
 
   return useQuery({
-    queryKey: ["shipments", { status, search, senderDocument, branch, page }],
-    queryFn: async () => {
+    queryKey: ["shipments", { status, search, senderDocument, branch, page, pageSize }],
+    queryFn: async ({ signal }) => {
       const adminClient = getAdminClient();
       let query = adminClient
         .from("shipments")
@@ -41,7 +41,7 @@ export function useListShipments(options: ListShipmentsOptions = {}) {
         query = query.eq("sender_document", senderDocument);
       }
 
-      const { data, error, count } = await query;
+      const { data, error, count } = await query.abortSignal(signal);
       if (error) throw error;
 
       // Map snake_case DB columns → camelCase for the UI
