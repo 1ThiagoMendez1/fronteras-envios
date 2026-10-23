@@ -1,4 +1,4 @@
-import { test, expect, signInOffline } from './fixtures'
+import { test, expect, signInOffline, shipment } from './fixtures'
 
 for (const path of ['/shipments/new', '/shipments/1/edit']) {
   test(`only cash and renamed Nequi are selectable: ${path}`, async ({ context, page, traffic }) => {
@@ -37,7 +37,7 @@ for (const legacy of ['DaviPlata', 'Tarjeta', 'Transferencia']) {
 for (const [stored, visible, amount, explanation] of [
   ['Nequi', 'Transferencia', '15.000', 'brutos (total flete)'],
   ['Efectivo', 'Efectivo', '10.000', 'netos (tras caja conductor)'],
-  ['Transferencia', 'Transferencia', '10.000', 'netos (tras caja conductor)'],
+  ['Transferencia', 'Transferencia', '15.000', 'brutos (total flete)'],
 ]) {
   test(`financial calculation is unchanged for stored ${stored}`, async ({ context, page, traffic }) => {
     traffic.paymentMethod = stored
@@ -50,13 +50,41 @@ for (const [stored, visible, amount, explanation] of [
   })
 }
 
-test('historical Nequi displays as Transferencia without showing conductor net', async ({ context, page, traffic }) => {
-  traffic.paymentMethod = 'Nequi'
+for (const stored of ['Nequi', 'Transferencia']) {
+  test(`${stored} displays the full freight without conductor deduction`, async ({ context, page, traffic }) => {
+    traffic.paymentMethod = stored
+    await signInOffline(context)
+    await page.goto('/shipments')
+    const row = page.locator('tbody tr').filter({ hasText: 'TEST-1001' })
+    await expect(row).toContainText('Transferencia')
+    await expect(row).toContainText('15.000')
+    await expect(row).not.toContainText('Neto:')
+    await page.getByRole('link', { name: 'TEST-1001', exact: true }).click()
+    await expect(page.getByText('Transferencia', { exact: true })).toBeVisible()
+  })
+}
+
+test('cash still shows freight minus conductor payment', async ({ context, page }) => {
   await signInOffline(context)
   await page.goto('/shipments')
   const row = page.locator('tbody tr').filter({ hasText: 'TEST-1001' })
-  await expect(row).toContainText('Transferencia')
-  await expect(row).not.toContainText('Neto:')
-  await page.getByRole('link', { name: 'TEST-1001', exact: true }).click()
-  await expect(page.getByText('Transferencia', { exact: true })).toBeVisible()
+  await expect(row).toContainText('Neto:')
+  await expect(row).toContainText('10.000')
+})
+
+test('Nequi and Transferencia combine into one gross transfer total', async ({ context, page }) => {
+  await signInOffline(context)
+  await page.route('https://review.invalid/rest/v1/shipments*', async route => {
+    const url = new URL(route.request().url())
+    const rows = url.searchParams.has('cash_on_delivery') ? [] : [
+      { ...shipment, payment_method: 'Nequi' },
+      { ...shipment, id: 2, guide_number: 'TEST-1002', payment_method: 'Transferencia' },
+    ]
+    await route.fulfill({ status: 200, headers: { 'content-type': 'application/json',
+      'access-control-allow-origin': '*', 'content-range': '0-1/2' }, body: JSON.stringify(rows) })
+  })
+  await page.goto('/financial')
+  await page.getByRole('tab', { name: 'Rentabilidad Detallada' }).click()
+  await expect(page.getByText('Transferencia', { exact: true })).toHaveCount(1)
+  await expect(page.getByText('brutos (total flete)', { exact: false })).toContainText('30.000')
 })

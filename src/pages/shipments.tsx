@@ -1,4 +1,4 @@
-import { paymentMethodLabel } from "@/lib/payment-methods"
+import { isTransferPayment, paymentMethodLabel } from "@/lib/payment-methods"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { useState } from "react"
 import { useListShipments } from "@/hooks/use-shipments"
@@ -179,7 +179,7 @@ export default function Shipments() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="font-semibold text-slate-700">Flete: {formatCurrency(shipment.cashOnDelivery > 0 ? shipment.cashOnDelivery : shipment.shippingCost)}</div>
-                          {profile?.role === "admin" && shipment.paymentMethod !== "Nequi" && (
+                          {profile?.role === "admin" && !isTransferPayment(shipment.paymentMethod) && (
                             <div className="text-[11px] font-bold text-green-600 uppercase tracking-widest mt-0.5">Neto: {formatCurrency(shipment.shippingCost - (shipment.driverPayment || 0))}</div>
                           )}
                         </td>
@@ -188,7 +188,7 @@ export default function Shipments() {
                             <span className={cn(
                               "inline-flex text-[11px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md", 
                               shipment.paymentMethod === "Efectivo" ? "bg-emerald-50 text-emerald-700" :
-                              shipment.paymentMethod === "Nequi" ? "bg-purple-50 text-purple-700" :
+                              isTransferPayment(shipment.paymentMethod) ? "bg-purple-50 text-purple-700" :
                               shipment.paymentMethod === "DaviPlata" ? "bg-red-50 text-red-700" : 
                               "bg-blue-50 text-blue-700"
                             )}>

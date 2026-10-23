@@ -1,3 +1,4 @@
+import { isTransferPayment } from "@/lib/payment-methods"
 import { useQuery } from "@tanstack/react-query";
 import { getAdminClient } from "@/lib/admin-client";
 import { getLocalDateString } from "@/lib/utils";
@@ -56,9 +57,9 @@ export function useFinancialSummary(options: {
 
       // BI Aggregations
       const methodTotals = all.reduce<Record<string, number>>((acc, s) => {
-        const method = s.payment_method || "Efectivo";
+        const method = isTransferPayment(s.payment_method) ? "Nequi" : s.payment_method || "Efectivo";
         if (!acc[method]) acc[method] = 0;
-        const amountToAdd = method === "Nequi" 
+        const amountToAdd = isTransferPayment(method)
           ? Number(s.shipping_cost || 0) 
           : Number(s.shipping_cost || 0) - Number(s.driver_payment || 0);
         acc[method] += amountToAdd;
