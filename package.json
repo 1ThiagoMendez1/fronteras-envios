@@ -11,7 +11,8 @@
     "build:review": "node scripts/performance/build-review.mjs",
     "test:performance": "playwright test --config playwright.performance.config.ts",
     "check:bundle": "node scripts/performance/check-bundle.mjs",
-    "validate:performance": "npm run build:review && npm run check:bundle && npm run test:performance"
+    "validate:performance": "npm run test:dates && npm run build:review && npm run check:bundle && npm run test:performance",
+    "test:dates": "node --test tests/unit/financial-dates.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

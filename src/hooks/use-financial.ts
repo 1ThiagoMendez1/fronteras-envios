@@ -1,3 +1,4 @@
+import { colombiaDay, financialDayBounds } from "@/lib/financial-dates"
 import { isTransferPayment } from "@/lib/payment-methods"
 import { useQuery } from "@tanstack/react-query";
 import { getAdminClient } from "@/lib/admin-client";
@@ -7,6 +8,7 @@ import { getLocalDateString } from "@/lib/utils";
 export function useFinancialSummary(options: {
   startDate?: string;
   endDate?: string;
+  day?: string;
 } = {}, branch: string = "Todas las Sedes") {
   return useQuery({
     queryKey: ["financial", "summary", options, branch],
@@ -16,6 +18,10 @@ export function useFinancialSummary(options: {
         .from("shipments")
         .select("shipping_cost, driver_payment, status, created_at, branch_origin, recipient_city, payment_method");
 
+      if (options.day) {
+        const bounds = financialDayBounds(options.day);
+        query = query.gte("created_at", bounds.start).lt("created_at", bounds.endExclusive);
+      }
       if (options.startDate) query = query.gte("created_at", options.startDate);
       if (options.endDate) query = query.lte("created_at", options.endDate);
       if (branch !== "Todas las Sedes") query = query.eq("branch_origin", branch);
@@ -24,12 +30,14 @@ export function useFinancialSummary(options: {
         .from("financial_movements")
         .select("*")
         .order("movement_date", { ascending: false });
+      if (options.day) mQuery = mQuery.eq("movement_date", options.day);
       if (branch !== "Todas las Sedes") mQuery = mQuery.eq("branch", branch);
 
       let cQuery = adminClient
         .from("daily_close")
         .select("*")
         .order("close_date", { ascending: false });
+      if (options.day) cQuery = cQuery.eq("close_date", options.day);
       if (branch !== "Todas las Sedes") cQuery = cQuery.eq("branch", branch);
 
       const [shipmentResult, movementResult, closeResult] = await Promise.all([query, mQuery, cQuery]);
@@ -107,11 +115,13 @@ export function useFinancialSummary(options: {
       }));
 
       // Daily trends for chart (last 7 days)
-      const dailyData = Array.from({ length: 7 }).map((_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (6 - i));
-        const dateStr = getLocalDateString(d);
-        const dayShipments = all.filter(s => getLocalDateString(new Date(s.created_at)) === dateStr);
+      const dailyData = Array.from({ length: options.day ? 1 : 7 }).map((_, i) => {
+        const d = options.day ? new Date(`${options.day}T12:00:00-05:00`) : new Date();
+        if (!options.day) d.setDate(d.getDate() - (6 - i));
+        const dateStr = options.day || getLocalDateString(d);
+        const dayShipments = all.filter(s => (options.day
+          ? colombiaDay(new Date(s.created_at))
+          : getLocalDateString(new Date(s.created_at))) === dateStr);
         const revenue = dayShipments.reduce((sum, s) => sum + (s.shipping_cost || 0), 0);
         const costs = dayShipments.reduce((sum, s) => sum + (s.driver_payment || 0), 0);
         return {
@@ -179,6 +189,7 @@ export function useFinancialMovements(options: {
   type?: "income" | "expense";
   startDate?: string;
   endDate?: string;
+  day?: string;
 } = {}, branch: string = "Todas las Sedes") {
   return useQuery({
     queryKey: ["financial", "movements", options, branch],
@@ -189,6 +200,7 @@ export function useFinancialMovements(options: {
         .select("*")
         .order("movement_date", { ascending: false });
 
+      if (options.day) query = query.eq("movement_date", options.day);
       if (options.type) query = query.eq("type", options.type);
       if (options.startDate) query = query.gte("movement_date", options.startDate);
       if (options.endDate) query = query.lte("movement_date", options.endDate);

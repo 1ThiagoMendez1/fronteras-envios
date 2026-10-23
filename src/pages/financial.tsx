@@ -1,3 +1,4 @@
+import { colombiaDay, financialChartDate, financialMovementDate } from "@/lib/financial-dates"
 import { isTransferPayment, paymentMethodLabel } from "@/lib/payment-methods"
 import { useFinancialSummary, useFinancialMovements } from "@/hooks/use-financial"
 import { useState } from "react"
@@ -8,16 +9,17 @@ import { Card } from "@/components/ui/card"
 import { formatCurrency, cn } from "@/lib/utils"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { TrendingUp, DollarSign, CreditCard, Wallet, AlertCircle, Search, Download, LayoutDashboard, PieChart as PieChartIcon, History, ChevronLeft, ChevronRight, Briefcase } from "lucide-react"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
 import { motion } from "framer-motion"
 
 export default function Financial() {
-  const [period, setPeriod] = useState<"today" | "week" | "month" | "all">("month")
+  const [period, setPeriod] = useState<"today" | "week" | "month" | "all" | "day">("month")
+  const [selectedDay, setSelectedDay] = useState(() => colombiaDay())
+  const [activeTab, setActiveTab] = useState("resumen")
   const [branch, setBranch] = useState("Todas las Sedes")
 
   // Function to calculate dates based on string period
   const getPeriodDates = () => {
+    if (period === "day") return { day: selectedDay }
     if (period === "all") return {}
     const now = new Date()
     let startDate
@@ -35,21 +37,69 @@ export default function Financial() {
     return { startDate }
   }
 
-  const { data: summary, isLoading: loadingSummary } = useFinancialSummary(getPeriodDates(), branch)
-  const { data: transactions, isLoading: loadingTransactions } = useFinancialMovements(getPeriodDates(), branch)
+  const { data: summary, isLoading: loadingSummary, isError: summaryError } = useFinancialSummary(getPeriodDates(), branch)
+  const { data: transactions, isLoading: loadingTransactions, isError: transactionsError } = useFinancialMovements(getPeriodDates(), branch)
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 8
 
-  if (loadingSummary || loadingTransactions || !summary) {
+  const header = (
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-display font-bold text-slate-900">Gestión Financiera</h1>
+            <p className="text-slate-500 mt-1">Control integral de ingresos, egresos y rentabilidad logística.</p>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-end items-center gap-3">
+            <div className="flex items-center bg-white rounded-xl border border-border/50 shadow-sm p-1 gap-0.5">
+              <select aria-label="Sede" value={branch} onChange={(e) => { setBranch(e.target.value); setCurrentPage(1) }} className="px-3 py-1.5 text-sm font-semibold text-slate-700 rounded-lg bg-transparent border-none outline-none cursor-pointer focus:ring-0">
+                <option value="Todas las Sedes">Todas las Sedes</option>
+                <option value="Bogotá">Sede Bogotá</option>
+                <option value="Medellín">Sede Medellín</option>
+              </select>
+            </div>
+            <div className="flex flex-wrap items-center bg-white rounded-xl border border-slate-200 shadow-sm p-1 gap-0.5">
+              {(["today", "week", "month", "all", "day"] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => { setPeriod(p); setCurrentPage(1) }}
+                  aria-pressed={period === p}
+                  className={cn(
+                    "px-4 py-2 text-sm font-semibold rounded-lg transition-all",
+                    period === p
+                      ? "bg-primary text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  )}
+                >
+                  {p === "today" ? "Hoy" : p === "week" ? "Semana" : p === "month" ? "Mes" : p === "day" ? "Día específico" : "Todo"}
+                </button>
+              ))}
+            </div>
+            {period === "day" && (
+              <div className="flex items-center gap-2">
+                <label htmlFor="financial-day" className="text-sm font-semibold text-slate-700">Fecha</label>
+                <Input id="financial-day" type="date" value={selectedDay}
+                  onChange={event => { if (event.target.value) { setSelectedDay(event.target.value); setCurrentPage(1) } }}
+                  className="w-auto rounded-xl bg-white" />
+              </div>
+            )}
+            <Button variant="outline" className="rounded-xl border-slate-200 bg-white shadow-sm text-xs font-bold gap-2">
+              <Download className="w-4 h-4" /> Exportar Reporte
+            </Button>
+          </div>
+        </div>
+  )
+
+  if (loadingSummary || loadingTransactions || !summary || summaryError || transactionsError) {
     return (
       <>
-        <div className="space-y-6 animate-pulse">
-          <div className="h-20 bg-white rounded-2xl" />
+        <div className="space-y-6">
+          {header}
+          {(summaryError || transactionsError) ? <p role="alert" className="text-red-600">No se pudo cargar la información financiera. Intenta seleccionar el período de nuevo.</p> : <div role="status" className="space-y-6 animate-pulse">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-32 bg-white rounded-2xl" />)}
           </div>
           <div className="h-96 bg-white rounded-2xl" />
+          </div>}
         </div>
       </>
     )
@@ -69,43 +119,9 @@ export default function Financial() {
   return (
     <>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-display font-bold text-slate-900">Gestión Financiera</h1>
-            <p className="text-slate-500 mt-1">Control integral de ingresos, egresos y rentabilidad logística.</p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="flex items-center bg-white rounded-xl border border-border/50 shadow-sm p-1 gap-0.5">
-              <select value={branch} onChange={(e) => setBranch(e.target.value)} className="px-3 py-1.5 text-sm font-semibold text-slate-700 rounded-lg bg-transparent border-none outline-none cursor-pointer focus:ring-0">
-                <option value="Todas las Sedes">Todas las Sedes</option>
-                <option value="Bogotá">Sede Bogotá</option>
-                <option value="Medellín">Sede Medellín</option>
-              </select>
-            </div>
-            <div className="flex items-center bg-white rounded-xl border border-slate-200 shadow-sm p-1 gap-0.5">
-              {(["today", "week", "month", "all"] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={cn(
-                    "px-4 py-2 text-sm font-semibold rounded-lg transition-all",
-                    period === p
-                      ? "bg-primary text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                  )}
-                >
-                  {p === "today" ? "Hoy" : p === "week" ? "Semana" : p === "month" ? "Mes" : "Todo"}
-                </button>
-              ))}
-            </div>
-            <Button variant="outline" className="rounded-xl border-slate-200 bg-white shadow-sm text-xs font-bold gap-2">
-              <Download className="w-4 h-4" /> Exportar Reporte
-            </Button>
-          </div>
-        </div>
+        {header}
 
-        <Tabs defaultValue="resumen" className="w-full space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
           <TabsList className="bg-white/50 backdrop-blur-md border border-slate-200 p-1 rounded-2xl h-auto flex flex-wrap gap-1 shadow-sm overflow-x-auto no-scrollbar">
             <TabsTrigger value="resumen" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white transition-all gap-2">
               <LayoutDashboard className="w-4 h-4" /> Resumen General
@@ -132,7 +148,7 @@ export default function Financial() {
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h3 className="font-bold text-slate-900">Balance de Operación</h3>
-                    <p className="text-xs text-slate-500">Ingresos vs Utilidad (Últimos 7 días)</p>
+                    <p className="text-xs text-slate-500">Ingresos vs Utilidad ({period === "day" ? "Día seleccionado" : "Últimos 7 días"})</p>
                   </div>
                 </div>
                 <div className="h-[300px] w-full">
@@ -143,11 +159,11 @@ export default function Financial() {
                         <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="date" tickFormatter={(str) => format(new Date(str), "dd MMM", { locale: es })} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
+                      <XAxis dataKey="date" tickFormatter={(str) => financialChartDate(str)} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} tickFormatter={(val) => `$${val/1000}k`} />
                       <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                      <Area type="monotone" dataKey="revenue" stroke="#3b82f6" fillOpacity={1} fill="url(#colorRevenue)" strokeWidth={2} name="Ingresos" />
-                      <Area type="monotone" dataKey="netProfit" stroke="#10b981" fillOpacity={1} fill="url(#colorProfit)" strokeWidth={2} name="Utilidad" />
+                      <Area dot={period === "day"} type="monotone" dataKey="revenue" stroke="#3b82f6" fillOpacity={1} fill="url(#colorRevenue)" strokeWidth={2} name="Ingresos" />
+                      <Area dot={period === "day"} type="monotone" dataKey="netProfit" stroke="#10b981" fillOpacity={1} fill="url(#colorProfit)" strokeWidth={2} name="Utilidad" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -292,7 +308,7 @@ export default function Financial() {
                   <tbody className="divide-y divide-slate-50">
                     {paginatedTransactions.map((tx: any) => (
                       <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4 text-slate-500 text-xs">{format(new Date(tx.movementDate || tx.createdAt || new Date()), "dd/MM HH:mm")}</td>
+                        <td className="px-6 py-4 text-slate-500 text-xs">{financialMovementDate(tx.movementDate || tx.createdAt || new Date().toISOString())}</td>
                         <td className="px-6 py-4">
                           <span className={cn(
                             "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
